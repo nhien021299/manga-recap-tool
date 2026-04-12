@@ -133,37 +133,45 @@ body {
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* Deep Midnight Indigo background for Dark Studio vibe */
+  --background: oklch(0.14 0.02 255);
+  --foreground: oklch(0.98 0 0);
+  
+  /* Slightly elevated surfaces */
+  --card: oklch(0.18 0.02 255);
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.18 0.02 255);
+  --popover-foreground: oklch(0.98 0 0);
+  
+  /* Primary: Bright Sky Blue / Indigo */
+  --primary: oklch(0.65 0.2 255);
+  --primary-foreground: oklch(0.98 0 0);
+  
+  /* Secondary: Muted indigo for secondary elements */
+  --secondary: oklch(0.25 0.04 255);
+  --secondary-foreground: oklch(0.98 0 0);
+  
+  /* Muted & Accent: Used for hovers and subtle backgrounds */
+  --muted: oklch(0.22 0.03 255);
+  --muted-foreground: oklch(0.7 0.02 255);
+  --accent: oklch(0.25 0.04 255);
+  --accent-foreground: oklch(0.98 0 0);
+  
+  /* System colors */
+  --destructive: oklch(0.6 0.2 20);
+  --border: oklch(0.25 0.02 255);
+  --input: oklch(0.25 0.02 255);
+  --ring: oklch(0.65 0.2 255);
+  
+  /* Sidebar */
+  --sidebar: oklch(0.14 0.02 255);
+  --sidebar-foreground: oklch(0.98 0 0);
+  --sidebar-primary: oklch(0.65 0.2 255);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.25 0.04 255);
+  --sidebar-accent-foreground: oklch(0.98 0 0);
+  --sidebar-border: oklch(0.22 0.03 255);
+  --sidebar-ring: oklch(0.65 0.2 255);
 }
 
 @layer base {

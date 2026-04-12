@@ -14,7 +14,7 @@ export const generateScriptDirect = async (
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
 
   const prompt = `
-  Bạn là một biên kịch chuyên nghiệp, chuyên tóm tắt truyện tranh (Manhwa/Manhua).
+  Bạn là một MC/Biên kịch chuyên nghiệp, chuyên làm video recap tóm tắt truyện tranh (Manhwa/Manhua) trên YouTube.
   Tôi sẽ cung cấp cho bạn các khung truyện (panel) theo thứ tự từ trên xuống dưới của một chapter.
 
   Thông tin bộ truyện:
@@ -23,21 +23,22 @@ export const generateScriptDirect = async (
   - Bối cảnh: ${context.summary || "Không có"}
 
   Nhiệm vụ:
-  1. Đọc tất cả lời thoại và hiệu ứng âm thanh (SFX) trong các bức ảnh.
-  2. Phân tích ngữ cảnh để xác định ai đang nói (Dựa vào Tên nhân vật chính đã cung cấp ở trên). Nếu không biết tên, hãy dùng format: [Nhân vật A], [Kẻ thù], [Dân làng].
-  3. Viết kịch bản recap tóm tắt lại diễn biến, kết hợp thoại và hành động.
+  1. QUAN TRỌNG NHẤT: Bạn phải đóng vai MC kể chuyện. Hãy sáng tạo ra "Lời dẫn truyện" (narration) cuốn hút, mang văn phong review YouTube để nối kết các khung hình lại với nhau.
+  2. Trích xuất lời thoại (dialogue) và xác định người nói.
+  3. Nếu khung tranh chỉ có hành động (không có thoại), lời dẫn truyện phải miêu tả lại hành động đó một cách kịch tính.
 
   Hãy trả về định dạng JSON theo đúng schema sau, là một mảng các object:
   [
     {
-      "panel_index": 1, 
-      "scene_description": "Mô tả ngắn gọn bối cảnh/hành động trong ảnh",
-      "speaker": "Tên người nói hoặc [Biến số]",
-      "dialogue": "Nội dung lời thoại đã được chỉnh sửa cho tự nhiên",
-      "sfx": "Tiếng sấm sét (nếu có)"
+      "panel_index": 1,
+      "ai_view": "Mô tả ngắn gọn bối cảnh/hành động ẩn trong ảnh để Editor hiểu",
+      "speaker": "Tên người nói hoặc [Biến số]. Để trống nếu không có ai nói.",
+      "dialogue": "Nội dung lời thoại trực tiếp trong bong bóng chat (nếu có).",
+      "narration": "LỜI DẪN TRUYỆN CỦA MC. Kể lại diễn biến, phân tích tâm lý hoặc dẫn dắt vào câu thoại. Dùng văn phong kể chuyện.",
+      "sfx": "Tiếng động (Kếch, Rầm...) nếu có"
     }
   ]
-  
+
   QUAN TRỌNG: Chỉ trả về mảng JSON, không bọc trong markdown. Thứ tự item trong mảng phải khớp với thứ tự panel gửi lên.
   `;
 
@@ -61,11 +62,11 @@ export const generateScriptDirect = async (
       }
     ],
     generationConfig: {
-      temperature: 0.4, // Lower for more accurate OCR
+      temperature: 0.7, // Higher for creative MC narration
       topK: 40,
       topP: 0.95,
       maxOutputTokens: 8192,
-      response_mime_type: "application/json" // Force JSON output mode if supported
+      response_mime_type: "application/json"
     }
   };
 

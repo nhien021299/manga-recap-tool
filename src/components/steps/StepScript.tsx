@@ -13,9 +13,11 @@ import {
   AlertCircle,
   Music,
   User,
-  Type,
+  Mic,
+  MessageSquareQuote,
   History,
-  Ghost
+  Ghost,
+  Eye
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useState, useMemo } from "react";
@@ -43,12 +45,15 @@ export function StepScript() {
   const unknownCharacters = useMemo(() => {
     const found = new Set<string>();
     timeline.forEach(item => {
-      const match = item.scriptItem.speaker.match(/\[(.*?)\]/);
-      if (match) found.add(match[0]);
+      const speakerMatch = item.scriptItem.speaker.match(/\[(.*?)\]/);
+      if (speakerMatch) found.add(speakerMatch[0]);
       
-      // Also check dialogue for placeholders
-      const diagMatch = item.scriptItem.dialogue.match(/\[(.*?)\]/);
-      if (diagMatch) found.add(diagMatch[0]);
+      const dialogueMatch = item.scriptItem.dialogue.match(/\[(.*?)\]/);
+      if (dialogueMatch) found.add(dialogueMatch[0]);
+      
+      // Also check narration for placeholders
+      const narrationMatch = item.scriptItem.narration.match(/\[(.*?)\]/);
+      if (narrationMatch) found.add(narrationMatch[0]);
     });
     return Array.from(found);
   }, [timeline]);
@@ -61,7 +66,8 @@ export function StepScript() {
       scriptItem: {
         ...item.scriptItem,
         speaker: item.scriptItem.speaker.replace(placeholder, replacementName),
-        dialogue: item.scriptItem.dialogue.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), replacementName)
+        dialogue: item.scriptItem.dialogue.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), replacementName),
+        narration: item.scriptItem.narration.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), replacementName)
       }
     }));
     
@@ -210,12 +216,38 @@ export function StepScript() {
                              <span className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs ring-1 ring-primary/20">
                                {index + 1}
                              </span>
-                             <h4 className="font-bold text-muted-foreground text-xs uppercase tracking-tighter">Mô tả bối cảnh</h4>
+                             <h4 className="font-bold text-muted-foreground text-xs uppercase tracking-tighter">Cảnh #{index + 1}</h4>
                            </div>
+                           {item.scriptItem.sfx && (
+                             <span className="text-[10px] px-2 py-1 rounded-lg bg-amber-500/10 text-amber-400 flex items-center gap-1 font-mono">
+                               <Music className="w-3 h-3" /> {item.scriptItem.sfx}
+                             </span>
+                           )}
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* MAIN: Lời dẫn truyện MC (narration) */}
+                        <div className="space-y-2">
+                          <Label className="text-[10px] uppercase text-muted-foreground flex items-center gap-1.5"><Mic className="w-3 h-3"/> Lời dẫn truyện MC</Label>
+                          <Textarea 
+                            value={item.scriptItem.narration}
+                            onChange={(e) => updateTimelineItem(index, { scriptItem: { ...item.scriptItem, narration: e.target.value } })}
+                            className="min-h-[90px] resize-y bg-primary/5 border-primary/10 focus-visible:ring-primary text-base leading-relaxed rounded-2xl font-medium"
+                            placeholder="Lời kể chuyện của MC..."
+                          />
+                        </div>
+
+                        {/* SECONDARY: Thoại + Speaker */}
+                        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
                           <div className="space-y-2">
+                            <Label className="text-[10px] uppercase text-muted-foreground flex items-center gap-1.5"><MessageSquareQuote className="w-3 h-3"/> Thoại gốc</Label>
+                            <Textarea 
+                              value={item.scriptItem.dialogue}
+                              onChange={(e) => updateTimelineItem(index, { scriptItem: { ...item.scriptItem, dialogue: e.target.value } })}
+                              className="min-h-[60px] resize-y bg-white/5 border-white/5 focus-visible:ring-primary text-sm leading-relaxed rounded-xl italic"
+                              placeholder="Lời thoại trực tiếp (nếu có)..."
+                            />
+                          </div>
+                          <div className="space-y-2 min-w-[160px]">
                             <Label className="text-[10px] uppercase text-muted-foreground flex items-center gap-1.5"><User className="w-3 h-3"/> Người nói</Label>
                             <Input 
                               value={item.scriptItem.speaker}
@@ -223,32 +255,25 @@ export function StepScript() {
                               className="bg-white/5 border-white/5 focus-visible:ring-primary h-10 rounded-xl font-bold"
                             />
                           </div>
-                          <div className="space-y-2">
-                            <Label className="text-[10px] uppercase text-muted-foreground flex items-center gap-1.5"><Music className="w-3 h-3"/> SFX / Âm thanh</Label>
+                        </div>
+
+                        {/* FOOTER: AI View + SFX */}
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1 p-3 rounded-xl bg-white/5 border border-white/5">
+                             <p className="text-[11px] text-muted-foreground leading-snug italic">
+                               <span className="font-bold not-italic mr-1 inline-flex items-center gap-1"><Eye className="w-3 h-3 inline" /> AI View:</span>
+                               {item.scriptItem.ai_view}
+                             </p>
+                          </div>
+                          <div className="space-y-1 shrink-0 min-w-[120px]">
+                            <Label className="text-[10px] uppercase text-muted-foreground flex items-center gap-1.5"><Music className="w-3 h-3"/> SFX</Label>
                             <Input 
                               value={item.scriptItem.sfx}
                               onChange={(e) => updateTimelineItem(index, { scriptItem: { ...item.scriptItem, sfx: e.target.value } })}
-                              className="bg-white/5 border-white/5 focus-visible:ring-primary h-10 rounded-xl"
-                              placeholder="Kếch, Rầm, Ting..."
+                              className="bg-white/5 border-white/5 focus-visible:ring-primary h-8 rounded-lg text-xs"
+                              placeholder="Kếch, Rầm..."
                             />
                           </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label className="text-[10px] uppercase text-muted-foreground flex items-center gap-1.5"><Type className="w-3 h-3"/> Lời thoại / Dẫn truyện</Label>
-                          <Textarea 
-                            value={item.scriptItem.dialogue}
-                            onChange={(e) => updateTimelineItem(index, { scriptItem: { ...item.scriptItem, dialogue: e.target.value } })}
-                            className="min-h-[100px] resize-y bg-white/5 border-white/5 focus-visible:ring-primary text-base leading-relaxed rounded-2xl"
-                            placeholder="Nhập nội dung lồng tiếng..."
-                          />
-                        </div>
-                        
-                        <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-                           <p className="text-[11px] text-muted-foreground leading-snug italic">
-                             <span className="font-bold not-italic mr-1">AI View:</span>
-                             {item.scriptItem.scene_description}
-                           </p>
                         </div>
                       </div>
                     </Card>

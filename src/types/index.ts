@@ -19,10 +19,11 @@ export interface ScriptContext {
 
 export interface ScriptItem {
   panel_index: number;
-  scene_description: string;
-  speaker: string;
-  dialogue: string;
-  sfx: string;
+  ai_view: string;       // Mô tả ngắn gọn bối cảnh ẩn trong ảnh (dành cho Editor)
+  speaker: string;       // Tên người nói hoặc [Biến số], trống nếu không ai nói
+  dialogue: string;      // Lời thoại trực tiếp trong bong bóng chat (nếu có)
+  narration: string;     // LỜI DẪN TRUYỆN CỦA MC. Kể lại diễn biến, phân tích tâm lý
+  sfx: string;           // Tiếng động (Kếch, Rầm...) nếu có
 }
 
 export interface TimelineItem {

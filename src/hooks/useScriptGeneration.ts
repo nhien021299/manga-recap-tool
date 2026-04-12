@@ -36,9 +36,10 @@ export function useScriptGeneration() {
         const itemIndex = index + 1;
         const scriptItem = generatedItems.find(item => item.panel_index === itemIndex) || {
           panel_index: itemIndex,
-          scene_description: "Không có mô tả",
-          speaker: "Ẩn danh",
-          dialogue: "...",
+          ai_view: "Không có mô tả",
+          speaker: "",
+          dialogue: "",
+          narration: "...",
           sfx: ""
         };
         

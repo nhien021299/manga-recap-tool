@@ -24,10 +24,9 @@ dist-ssr
 *.sw?
 
 # Vite / React / Environment
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env
+.env.*
+!.env.example
 .eslintcache
 
 # Tooling

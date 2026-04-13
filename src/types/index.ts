@@ -19,9 +19,16 @@ export interface SafeBreakpoint {
 
 export interface Scene {
   id: string;
+  x?: number;
   y: number;
+  width?: number;
   height: number;
   isAuto: boolean;
+  confidence?: number;
+  boundaryLinked?: boolean;
+  mergeCandidate?: boolean;
+  splitCandidate?: boolean;
+  failureModes?: string[];
 }
 export interface Panel {
   id: string;

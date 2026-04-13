@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState } from "react";
 import { Upload, X, FileImage, Loader2 } from "lucide-react";
 import { useRecapStore } from "@/store/useRecapStore";
 import { Button } from "@/components/ui/button";
@@ -6,11 +6,39 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { imageToImageData } from "@/lib/utils/imageUtils";
 import { buildVirtualStrip } from "@/lib/image/virtualStrip";
-import { STRIP_WIDTH } from "@/types";
+import { buildSceneSuggestions, type DetectedLocalRect, type ImageDetectionResult } from "@/lib/image/sceneDetection";
 
 export function StepUpload() {
-  const { setVirtualStrip, setScenes, setCurrentStep, setIsLoading, isLoading, setProgress, progress, aspectRatio } = useRecapStore();
+  const { setVirtualStrip, setScenes, setCurrentStep, setIsLoading, isLoading, setProgress, progress } = useRecapStore();
   const [files, setFiles] = useState<File[]>([]);
+
+  const runWorkerTask = <T,>(worker: Worker, type: string, payload: Record<string, unknown>) =>
+    new Promise<T>((resolve, reject) => {
+      const handleMessage = (event: MessageEvent) => {
+        const message = event.data as { type?: string; payload?: T };
+        if (message.type === "SUCCESS") {
+          cleanup();
+          resolve(message.payload as T);
+          return;
+        }
+        cleanup();
+        reject(new Error(`Worker task failed: ${type}`));
+      };
+
+      const handleError = (error: ErrorEvent) => {
+        cleanup();
+        reject(error.error ?? new Error(error.message));
+      };
+
+      const cleanup = () => {
+        worker.removeEventListener("message", handleMessage);
+        worker.removeEventListener("error", handleError);
+      };
+
+      worker.addEventListener("message", handleMessage);
+      worker.addEventListener("error", handleError);
+      worker.postMessage({ type, payload });
+    });
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -29,50 +57,40 @@ export function StepUpload() {
     setProgress(5);
 
     try {
-      const { images: stripImages, totalHeight } = await buildVirtualStrip(files);
-      setVirtualStrip(stripImages, totalHeight);
+      const { images: stripImages, totalHeight, stripWidth } = await buildVirtualStrip(files);
+      setVirtualStrip(stripImages, totalHeight, stripWidth);
       setProgress(15);
 
       const worker = new Worker(new URL('../../workers/imageProcessor.worker.ts', import.meta.url), { type: 'module' });
-      const suggestedScenes = [];
-      let sceneCounter = 1;
+      const detections: ImageDetectionResult[] = [];
 
       for (let i = 0; i < stripImages.length; i++) {
         const imgMeta = stripImages[i];
         const imageData = await imageToImageData(imgMeta.file);
-        
-        const localRects = await new Promise<{y: number, height: number, x: number, width: number}[]>((resolve, reject) => {
-          worker.onmessage = (e) => {
-            if (e.data.type === 'SUCCESS') resolve(e.data.payload);
-            else reject(new Error('Processing failed'));
-          };
-          worker.postMessage({ 
-            type: 'EXTRACT_PANELS_ROW_SCAN', 
-            payload: { imageData } 
-          });
+
+        const localRects = await runWorkerTask<DetectedLocalRect[]>(
+          worker,
+          "EXTRACT_PANELS_ROW_SCAN",
+          { imageData }
+        );
+        const safeBreaks = await runWorkerTask<number[]>(
+          worker,
+          "SCAN_SAFE_BREAKS",
+          { imageData }
+        );
+
+        detections.push({
+          image: imgMeta,
+          rects: localRects,
+          safeBreaks,
         });
 
-        // Translate to Global Y & Scale
-        const scale = STRIP_WIDTH / imgMeta.originalWidth;
-        localRects.forEach(rect => {
-            // Apply scale to height and global Y
-            const scaledY = imgMeta.globalY + (rect.y * scale);
-            const scaledHeight = rect.height * scale;
-            
-            suggestedScenes.push({
-                id: `scene-${Date.now()}-${sceneCounter++}`,
-                y: scaledY,
-                height: scaledHeight,
-                isAuto: true
-            });
-        });
-        
-        setProgress(15 + Math.round((i / stripImages.length) * 70));
+        setProgress(15 + Math.round(((i + 1) / stripImages.length) * 65));
       }
       
       worker.terminate();
-      setProgress(85);
-
+      const suggestedScenes = buildSceneSuggestions(detections, stripWidth);
+      setProgress(88);
       setScenes(suggestedScenes);
       setCurrentStep('extract');
     } catch (error) {

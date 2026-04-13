@@ -1,0 +1,29 @@
+Project rules:
+- This is a full-web manga recap tool.
+- Avoid giant canvases.
+- Use global coordinates as source of truth.
+- Preview scale is never canonical.
+- Scene boxes are suggestions, not truth.
+- Extraction is deferred and intersection-based.
+- Prefer memory-safe, incremental processing.
+- Keep code TypeScript-friendly and testable.
+- Do not tightly couple heavy image logic to React components.
+- Use feature-first structure where possible.
+- Separate UI, orchestration, domain logic, and infrastructure concerns.
+- Keep page components focused on screen coordination.
+- Keep presentational components focused on rendering and interaction.
+- Move business logic into hooks, services, or use cases.
+- Isolate API calls in service or repository layers.
+- Do not let UI components depend on endpoint details.
+- Normalize API responses before they enter UI state.
+- Handle loading, success, empty, and error states explicitly.
+- Prefer explicit and stable TypeScript domain types.
+- Avoid giant components, giant hooks, and giant utility files.
+- Prefer small, measurable refactors over broad speculative rewrites.
+- UI should feel like a professional creator tool, not a marketing page.
+- Prefer neutral dark surfaces with one restrained accent color.
+- Use token-based styling only.
+- Keep typography hierarchy simple and readable.
+- Maintain consistent spacing, border, and radius values.
+- Images and crop regions must remain the visual focus.
+- Decorative effects should be subtle and rare.

@@ -1,5 +1,4 @@
 import { useRecapStore } from "@/store/useRecapStore";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Terminal, Trash2 } from "lucide-react";
 import { useEffect, useRef } from "react";

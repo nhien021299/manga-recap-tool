@@ -11,9 +11,7 @@ import {
   Wand2, 
   AlertCircle,
   Music,
-  User,
   Mic,
-  MessageSquareQuote,
   History,
   Ghost,
   Eye,
@@ -36,7 +34,6 @@ export function StepScript() {
   } = useRecapStore();
   
   const { generateScript, error } = useScriptGeneration();
-  const [unknownCharId, setUnknownCharId] = useState<string | null>(null);
   const [replacementName, setReplacementName] = useState("");
 
   const nextStep = () => setCurrentStep('voice');
@@ -69,7 +66,6 @@ export function StepScript() {
     }));
     
     setTimeline(newTimeline);
-    setUnknownCharId(null);
     setReplacementName("");
   };
 

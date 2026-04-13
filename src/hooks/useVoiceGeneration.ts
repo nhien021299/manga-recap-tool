@@ -39,7 +39,7 @@ export function useVoiceGeneration() {
         updateTimelineItem(i, { 
           audioBlob,
           audioUrl,
-          duration
+          audioDuration: duration
         });
 
         setProgress(Math.round(((i + 1) / timeline.length) * 100));
@@ -72,7 +72,7 @@ export function useVoiceGeneration() {
       updateTimelineItem(index, { 
         audioBlob,
         audioUrl,
-        duration
+        audioDuration: duration
       });
     } catch (e: any) {
       setError(e.message);

@@ -1,0 +1,30 @@
+{
+  "name": "manga-recap-webtool",
+  "version": "0.1.0",
+  "description": "Skills for building a full-web manga/webtoon recap tool with virtual-strip architecture, scene detection, worker optimization, cross-image extraction, and crop editor UX.",
+  "author": {
+    "name": "Nguyen Tuan Nhien"
+  },
+  "license": "UNLICENSED",
+  "keywords": [
+    "react",
+    "webtoon",
+    "manga",
+    "image-processing",
+    "crop",
+    "scene-detection",
+    "workers"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Manga Recap Webtool",
+    "shortDescription": "Skills for virtual-strip, scene detect, extract, and crop UX.",
+    "longDescription": "A repo-local Codex plugin for a full-web manga/webtoon recap tool. It helps Codex reason about coordinate systems, scene crop suggestions, worker-safe image processing, cross-image extraction, and crop editor UX.",
+    "developerName": "Nguyen Tuan Nhien",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write"
+    ]
+  }
+}

@@ -62,12 +62,14 @@ export async function cropSceneFromStrip(
   scene: import('@/types').Scene, 
   stripWidth: number
 ): Promise<Blob> {
-  const canvas = new OffscreenCanvas(stripWidth, scene.height);
+  const sceneX = Math.max(0, Math.min(scene.x ?? 0, stripWidth - 1));
+  const sceneWidth = Math.max(1, Math.min(scene.width ?? stripWidth, stripWidth - sceneX));
+  const canvas = new OffscreenCanvas(sceneWidth, scene.height);
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Could not get 2d context');
 
   ctx.fillStyle = 'white';
-  ctx.fillRect(0, 0, stripWidth, scene.height);
+  ctx.fillRect(0, 0, sceneWidth, scene.height);
 
   for (const imgMeta of stripImages) {
     const imgTop = imgMeta.globalY;
@@ -82,8 +84,8 @@ export async function cropSceneFromStrip(
       // Calculate drawing coordinates
       const drawY = imgTop - sceneTop;
       
-      // Draw the original image scaled to strip width
-      ctx.drawImage(img, 0, drawY, stripWidth, imgMeta.scaledHeight);
+      // Draw the scaled strip image with horizontal offset to keep 2D crop accuracy.
+      ctx.drawImage(img, -sceneX, drawY, stripWidth, imgMeta.scaledHeight);
       img.close();
     }
   }

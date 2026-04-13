@@ -10,8 +10,7 @@ import {
   Play,
   Pause,
   AlertCircle,
-  Clock,
-  Mic
+  Clock
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -40,7 +39,7 @@ export function StepVoice() {
     }
   };
 
-  const totalDuration = timeline.reduce((acc, item) => acc + (item.duration || 0), 0);
+  const totalDuration = timeline.reduce((acc, item) => acc + (item.audioDuration || 0), 0);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -145,7 +144,7 @@ export function StepVoice() {
                             </span>
                          )}
                          <span className="text-[10px] text-muted-foreground uppercase font-mono">
-                            {item.duration ? `${item.duration.toFixed(1)}s` : '--'}
+                            {item.audioDuration ? `${item.audioDuration.toFixed(1)}s` : '--'}
                          </span>
                       </div>
                     </div>

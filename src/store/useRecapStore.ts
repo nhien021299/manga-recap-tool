@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { get, set as idbSet } from 'idb-keyval';
 import type { Panel, TimelineItem, AppConfig, Step, ScriptContext, GeminiLog, SFXItem, VirtualStripImage, Scene } from '@/types';
-import { DEFAULT_ASPECT } from '@/types';
+import { DEFAULT_ASPECT, STRIP_WIDTH } from '@/types';
 
 interface RecapState {
   // Config
@@ -33,7 +33,8 @@ interface RecapState {
   // Image Flow (Virtual)
   virtualStrip: VirtualStripImage[];
   totalVirtualHeight: number;
-  setVirtualStrip: (strip: VirtualStripImage[], totalHeight: number) => void;
+  stripWidth: number;
+  setVirtualStrip: (strip: VirtualStripImage[], totalHeight: number, stripWidth: number) => void;
   
   scenes: Scene[];
   setScenes: (scenes: Scene[]) => void;
@@ -59,6 +60,12 @@ interface RecapState {
   // Actions
   reset: () => void;
 }
+
+const normalizeSceneRect = (scene: Scene, stripWidth: number): Scene => {
+  const x = Math.min(Math.max(scene.x ?? 0, 0), Math.max(0, stripWidth - 1));
+  const width = Math.min(Math.max(scene.width ?? stripWidth, 1), Math.max(1, stripWidth - x));
+  return { ...scene, x, width };
+};
 
 export const useRecapStore = create<RecapState>()(
   persist(
@@ -122,15 +129,22 @@ export const useRecapStore = create<RecapState>()(
       // Image Flow (Virtual)
       virtualStrip: [],
       totalVirtualHeight: 0,
-      setVirtualStrip: (virtualStrip, totalVirtualHeight) => set({ virtualStrip, totalVirtualHeight }),
+      stripWidth: STRIP_WIDTH,
+      setVirtualStrip: (virtualStrip, totalVirtualHeight, stripWidth) => set({ virtualStrip, totalVirtualHeight, stripWidth }),
 
       scenes: [],
-      setScenes: (scenes) => set({ scenes }),
+      setScenes: (scenes) => set((state) => ({
+        scenes: scenes.map((scene) => normalizeSceneRect(scene, state.stripWidth))
+      })),
       updateScene: (id, updates) => set((state) => ({
-        scenes: state.scenes.map(s => s.id === id ? { ...s, ...updates } : s)
+        scenes: state.scenes.map((scene) => {
+          if (scene.id !== id) return scene;
+          return normalizeSceneRect({ ...scene, ...updates }, state.stripWidth);
+        })
       })),
       addScene: (scene) => set((state) => {
-        const newScenes = [...state.scenes, scene].sort((a, b) => a.y - b.y);
+        const normalized = normalizeSceneRect(scene, state.stripWidth);
+        const newScenes = [...state.scenes, normalized].sort((a, b) => a.y - b.y);
         return { scenes: newScenes };
       }),
       removeScene: (id) => set((state) => ({
@@ -189,6 +203,7 @@ export const useRecapStore = create<RecapState>()(
           currentStep: 'upload',
           virtualStrip: [],
           totalVirtualHeight: 0,
+          stripWidth: STRIP_WIDTH,
           scenes: [],
           panels: [],
           timeline: [],

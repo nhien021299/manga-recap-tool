@@ -1,5 +1,3 @@
-import type { TimelineItem } from '@/types';
-
 export const generateSpeech = async (
   apiKey: string, 
   text: string, 

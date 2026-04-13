@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   Trash2,
   Plus,
+  Download,
   GripHorizontal,
   Loader2,
   Maximize2,
@@ -13,10 +14,10 @@ import {
   RotateCcw,
   LocateFixed,
 } from "lucide-react";
-import { useState, useRef, useEffect, useCallback, useLayoutEffect } from "react";
+import { useState, useRef, useEffect, useCallback, useLayoutEffect, useMemo } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { cropSceneFromStrip, generateThumbnail, blobToBase64 } from "@/lib/utils/imageUtils";
-import type { Scene } from "@/types";
+import type { Scene, Panel } from "@/types";
 
 type TransformMode =
   | "move"
@@ -187,7 +188,7 @@ const SceneOverlay = ({
   return (
     <div
       ref={pointerHostRef}
-      className={`absolute border-2 rounded-xl group overflow-hidden pointer-events-auto transition-shadow ${getSceneToneClass(scene)} ${dragMode ? "shadow-2xl z-50 ring-2 ring-cyan-500/50" : "shadow-md z-10"} cursor-move`}
+      className={`absolute border-2 rounded-none group overflow-hidden pointer-events-auto transition-shadow ${getSceneToneClass(scene)} ${dragMode ? "shadow-2xl z-50 ring-2 ring-cyan-500/60" : "shadow-md z-10"} cursor-move`}
       style={{
         left: `${scaledX}px`,
         top: `${scaledY}px`,
@@ -200,17 +201,17 @@ const SceneOverlay = ({
       onPointerUp={(e) => endDrag(e, false)}
       onPointerCancel={(e) => endDrag(e, true)}
     >
-      <Handle mode="top" title="Resize top" className="absolute -top-1 left-3 right-3 h-3 cursor-ns-resize rounded bg-cyan-200/20 opacity-80 group-hover:opacity-100" />
-      <Handle mode="bottom" title="Resize bottom" className="absolute -bottom-1 left-3 right-3 h-3 cursor-ns-resize rounded bg-cyan-200/20 opacity-80 group-hover:opacity-100" />
-      <Handle mode="left" title="Resize left" className="absolute -left-1 top-3 bottom-3 w-3 cursor-ew-resize rounded bg-cyan-200/20 opacity-80 group-hover:opacity-100" />
-      <Handle mode="right" title="Resize right" className="absolute -right-1 top-3 bottom-3 w-3 cursor-ew-resize rounded bg-cyan-200/20 opacity-80 group-hover:opacity-100" />
-      <Handle mode="top-left" title="Resize top-left" className="absolute -top-1 -left-1 h-3 w-3 cursor-nwse-resize rounded bg-cyan-300/50" />
-      <Handle mode="top-right" title="Resize top-right" className="absolute -top-1 -right-1 h-3 w-3 cursor-nesw-resize rounded bg-cyan-300/50" />
-      <Handle mode="bottom-left" title="Resize bottom-left" className="absolute -bottom-1 -left-1 h-3 w-3 cursor-nesw-resize rounded bg-cyan-300/50" />
-      <Handle mode="bottom-right" title="Resize bottom-right" className="absolute -bottom-1 -right-1 h-3 w-3 cursor-nwse-resize rounded bg-cyan-300/50" />
+      <Handle mode="top" title="Resize top" className="absolute -top-px left-2 right-2 h-[2px] cursor-ns-resize bg-white/90" />
+      <Handle mode="bottom" title="Resize bottom" className="absolute -bottom-px left-2 right-2 h-[2px] cursor-ns-resize bg-white/90" />
+      <Handle mode="left" title="Resize left" className="absolute -left-px top-2 bottom-2 w-[2px] cursor-ew-resize bg-white/90" />
+      <Handle mode="right" title="Resize right" className="absolute -right-px top-2 bottom-2 w-[2px] cursor-ew-resize bg-white/90" />
+      <Handle mode="top-left" title="Resize top-left" className="absolute -top-[3px] -left-[3px] h-[8px] w-[8px] cursor-nwse-resize border border-white bg-cyan-300" />
+      <Handle mode="top-right" title="Resize top-right" className="absolute -top-[3px] -right-[3px] h-[8px] w-[8px] cursor-nesw-resize border border-white bg-cyan-300" />
+      <Handle mode="bottom-left" title="Resize bottom-left" className="absolute -bottom-[3px] -left-[3px] h-[8px] w-[8px] cursor-nesw-resize border border-white bg-cyan-300" />
+      <Handle mode="bottom-right" title="Resize bottom-right" className="absolute -bottom-[3px] -right-[3px] h-[8px] w-[8px] cursor-nwse-resize border border-white bg-cyan-300" />
 
-      <div className="absolute top-2 left-1/2 -translate-x-1/2 p-2 bg-black/60 backdrop-blur rounded-full opacity-50 group-hover:opacity-100 transition-opacity pointer-events-none">
-        <GripHorizontal className="w-5 h-5 text-white" />
+      <div className="absolute top-1 left-1/2 -translate-x-1/2 p-1 bg-black/70 border border-white/30 opacity-85 pointer-events-none">
+        <GripHorizontal className="w-4 h-4 text-white" />
       </div>
       <div className="absolute top-2 right-2 flex gap-1 z-20">
         <button
@@ -240,6 +241,9 @@ export function StepExtract() {
 
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
+  const [isSavingExport, setIsSavingExport] = useState(false);
+  const [preparedPanels, setPreparedPanels] = useState<Panel[] | null>(null);
+  const [preparedPanelsKey, setPreparedPanelsKey] = useState<string | null>(null);
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null);
   const [dragPreviewById, setDragPreviewById] = useState<Record<string, SceneRect>>({});
   const parentRef = useRef<HTMLDivElement>(null);
@@ -296,6 +300,25 @@ export function StepExtract() {
     if (!preview) return base;
     return { ...base, ...preview, isAuto: false };
   }).filter(Boolean) as Scene[];
+  const activeScene = activeSceneId
+    ? displayScenes.find((scene) => scene.id === activeSceneId) ?? null
+    : null;
+  const extractionKey = useMemo(
+    () =>
+      JSON.stringify({
+        stripWidth,
+        scenes: [...displayScenes]
+          .sort((a, b) => a.y - b.y)
+          .map((scene) => ({
+            id: scene.id,
+            x: Math.round(scene.x ?? 0),
+            y: Math.round(scene.y),
+            width: Math.round(scene.width ?? stripWidth),
+            height: Math.round(scene.height),
+          })),
+      }),
+    [displayScenes, stripWidth]
+  );
 
   const rowVirtualizer = useVirtualizer({
     count: virtualStrip.length,
@@ -385,32 +408,64 @@ export function StepExtract() {
     scrollSceneInList(found.id);
   }, [displayScenes, previewScale, scrollSceneInList]);
 
+  const addManualScene = useCallback(() => {
+    const currentScroll = parentRef.current?.scrollTop || 0;
+    const newY = currentScroll / previewScale;
+    useRecapStore.getState().addScene({
+      id: `scene-manual-${Date.now()}`,
+      x: 0,
+      y: newY,
+      width: stripWidth,
+      height: Math.round(stripWidth / aspectRatio),
+      isAuto: false,
+    });
+  }, [aspectRatio, previewScale, stripWidth]);
+
+  const preparePanels = useCallback(async (progressScale = 100): Promise<Panel[]> => {
+    const canReusePrepared = preparedPanelsKey === extractionKey && preparedPanels && preparedPanels.length > 0;
+    if (canReusePrepared) return preparedPanels;
+
+    const scenesToExport = [...displayScenes].sort((a, b) => a.y - b.y);
+    const allProcessedPanels: Panel[] = [];
+
+    for (let i = 0; i < scenesToExport.length; i++) {
+      const scene = scenesToExport[i];
+      const sceneBlob = await cropSceneFromStrip(virtualStrip, scene, stripWidth);
+      const thumbnail = await generateThumbnail(sceneBlob);
+      const base64 = await blobToBase64(sceneBlob);
+
+      allProcessedPanels.push({
+        id: scene.id,
+        blob: sceneBlob,
+        base64,
+        thumbnail,
+        width: scene.width ?? stripWidth,
+        height: scene.height,
+        order: i,
+      });
+
+      setExportProgress(Math.round(((i + 1) / scenesToExport.length) * progressScale));
+    }
+
+    setPreparedPanels(allProcessedPanels);
+    setPreparedPanelsKey(extractionKey);
+    return allProcessedPanels;
+  }, [displayScenes, extractionKey, preparedPanels, preparedPanelsKey, stripWidth, virtualStrip]);
+
   const exportScenes = async () => {
+    if (displayScenes.length === 0) return;
+
+    const canReusePrepared = preparedPanelsKey === extractionKey && preparedPanels && preparedPanels.length > 0;
+    if (canReusePrepared) {
+      setPanels(preparedPanels);
+      setCurrentStep("script");
+      return;
+    }
+
     setIsExporting(true);
     setExportProgress(0);
     try {
-      const scenesToExport = [...displayScenes].sort((a, b) => a.y - b.y);
-      const allProcessedPanels = [];
-
-      for (let i = 0; i < scenesToExport.length; i++) {
-        const scene = scenesToExport[i];
-        const sceneBlob = await cropSceneFromStrip(virtualStrip, scene, stripWidth);
-        const thumbnail = await generateThumbnail(sceneBlob);
-        const base64 = await blobToBase64(sceneBlob);
-
-        allProcessedPanels.push({
-          id: scene.id,
-          blob: sceneBlob,
-          base64,
-          thumbnail,
-          width: scene.width ?? stripWidth,
-          height: scene.height,
-          order: i,
-        });
-
-        setExportProgress(Math.round(((i + 1) / scenesToExport.length) * 100));
-      }
-
+      const allProcessedPanels = await preparePanels(100);
       setPanels(allProcessedPanels);
       setCurrentStep("script");
     } catch (error) {
@@ -420,24 +475,73 @@ export function StepExtract() {
     }
   };
 
+  const savePanelsToFolder = async () => {
+    if (displayScenes.length === 0) return;
+
+    const picker = (window as Window & {
+      showDirectoryPicker?: () => Promise<{
+        getFileHandle: (name: string, options: { create: boolean }) => Promise<{
+          createWritable: () => Promise<{ write: (data: Blob) => Promise<void>; close: () => Promise<void> }>;
+        }>;
+      }>;
+    }).showDirectoryPicker;
+
+    if (!picker) {
+      window.alert("Trình duyệt hiện tại chưa hỗ trợ chọn thư mục để export.");
+      return;
+    }
+
+    try {
+      const dirHandle = await picker();
+      setIsSavingExport(true);
+      setExportProgress(0);
+
+      const canReusePrepared = preparedPanelsKey === extractionKey && preparedPanels && preparedPanels.length > 0;
+      const panelsToSave = canReusePrepared ? preparedPanels : await preparePanels(50);
+      const startProgress = canReusePrepared ? 0 : 50;
+      const progressRange = canReusePrepared ? 100 : 50;
+
+      for (let i = 0; i < panelsToSave.length; i++) {
+        const panel = panelsToSave[i];
+        const fileName = `scene-${String(i + 1).padStart(3, "0")}.png`;
+        const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+        const writable = await fileHandle.createWritable();
+        await writable.write(panel.blob);
+        await writable.close();
+        setExportProgress(startProgress + Math.round(((i + 1) / panelsToSave.length) * progressRange));
+      }
+
+      setPanels(panelsToSave);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSavingExport(false);
+    }
+  };
+
   const prevStep = () => setCurrentStep("upload");
+  const onSceneListWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.scrollTop += e.deltaY;
+  };
 
   return (
     <div className="flex flex-col h-[calc(100vh-140px)] animate-in fade-in duration-500 gap-4">
       <div className="flex items-center justify-between bg-white/5 p-4 rounded-3xl border border-white/5 glass shrink-0">
         <div className="flex items-center gap-3">
           <h2 className="text-xl font-bold tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
-            Chon Khung Hinh
+            Tách Panel
           </h2>
           <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-[10px] font-bold border border-primary/20 uppercase tracking-wider">
             {displayScenes.length} scenes
           </span>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={prevStep} disabled={isExporting} className="rounded-xl border-white/10 px-4 h-10 font-bold active:scale-95">
+          <Button variant="outline" size="sm" onClick={prevStep} disabled={isExporting || isSavingExport} className="rounded-xl border-white/10 px-4 h-10 font-bold active:scale-95">
             <ChevronLeft className="w-4 h-4 mr-1" /> Quay lại
           </Button>
-          <Button onClick={exportScenes} disabled={isExporting} size="sm" className="rounded-xl bg-primary text-primary-foreground px-6 h-10 shadow-glow font-black border-none relative overflow-hidden group">
+          <Button onClick={exportScenes} disabled={isExporting || isSavingExport} size="sm" className="rounded-xl bg-primary text-primary-foreground px-6 h-10 shadow-glow font-black border-none relative overflow-hidden group">
             {isExporting ? (
               <span className="flex items-center"><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Xuat ({exportProgress}%)</span>
             ) : (
@@ -448,24 +552,51 @@ export function StepExtract() {
       </div>
 
       <div className="flex flex-col md:flex-row gap-6 flex-1 min-h-0 overflow-hidden">
-        <div className="w-full md:w-[60%] lg:w-[65%] glass border border-white/5 rounded-3xl overflow-hidden relative flex flex-col bg-black/40 h-full">
-          <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-mono text-white/50 border border-white/10 uppercase tracking-widest pointer-events-none">
-            Strip width: {Math.round(stripWidth)}px
+        <div className="w-full md:w-[74%] lg:w-[76%] glass border border-white/5 rounded-3xl overflow-hidden relative flex flex-col bg-black/40 h-full">
+          {activeScene && (
+            <div className="absolute top-14 left-4 z-10 flex items-center gap-2 bg-black/70 border border-cyan-400/40 px-2.5 py-1.5 text-[10px] font-mono text-cyan-100">
+              <span className="uppercase tracking-widest text-cyan-300/90">Scene</span>
+              <span>#{displayScenes.findIndex((s) => s.id === activeScene.id) + 1}</span>
+              <span className="text-white/60">|</span>
+              <span>X:{Math.round(activeScene.x ?? 0)}</span>
+              <span>Y:{Math.round(activeScene.y)}</span>
+              <span>W:{Math.round(activeScene.width ?? stripWidth)}</span>
+              <span>H:{Math.round(activeScene.height)}</span>
+            </div>
+          )}
+          <div className="absolute top-4 right-4 z-10 flex items-center gap-1.5 rounded-xl border border-white/15 bg-black/60 p-2 backdrop-blur-md">
+            <Button size="icon-sm" variant="ghost" className="h-9 w-9 rounded-lg text-white/70 hover:text-white" onClick={() => updateZoom(zoomLevel - 0.1)} title="Zoom out">
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+            <span className="min-w-14 text-center text-xs font-mono text-white/75">{Math.round(zoomLevel * 100)}%</span>
+            <Button size="icon-sm" variant="ghost" className="h-9 w-9 rounded-lg text-white/70 hover:text-white" onClick={() => updateZoom(zoomLevel + 0.1)} title="Zoom in">
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+            <Button size="icon-sm" variant="ghost" className="h-9 w-9 rounded-lg text-white/70 hover:text-white" onClick={() => updateZoom(DEFAULT_ZOOM)} title="Reset zoom">
+              <RotateCcw className="h-4 w-4" />
+            </Button>
           </div>
-          <div className="absolute top-4 right-4 z-10 flex items-center gap-1 rounded-lg border border-white/15 bg-black/60 p-1.5 backdrop-blur-md">
-            <Button size="icon-sm" variant="ghost" className="h-7 w-7 rounded-md text-white/70 hover:text-white" onClick={() => updateZoom(zoomLevel - 0.1)} title="Zoom out">
-              <ZoomOut className="h-3.5 w-3.5" />
+          <div className="absolute top-[5.25rem] right-4 z-10 flex items-center gap-1.5">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-9 text-xs border-white/20 text-white/80 hover:bg-white/10 rounded-lg shrink-0 px-3"
+              onClick={locateCurrentScene}
+              title="Locate current scene in list"
+            >
+              <LocateFixed className="w-4 h-4 mr-1.5" /> Locate
             </Button>
-            <span className="min-w-12 text-center text-[11px] font-mono text-white/70">{Math.round(zoomLevel * 100)}%</span>
-            <Button size="icon-sm" variant="ghost" className="h-7 w-7 rounded-md text-white/70 hover:text-white" onClick={() => updateZoom(zoomLevel + 0.1)} title="Zoom in">
-              <ZoomIn className="h-3.5 w-3.5" />
-            </Button>
-            <Button size="icon-sm" variant="ghost" className="h-7 w-7 rounded-md text-white/70 hover:text-white" onClick={() => updateZoom(DEFAULT_ZOOM)} title="Reset zoom">
-              <RotateCcw className="h-3.5 w-3.5" />
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-9 text-xs border-primary/30 text-primary hover:bg-primary/10 rounded-lg shrink-0 px-3"
+              onClick={addManualScene}
+            >
+              <Plus className="w-4 h-4 mr-1.5" /> Add
             </Button>
           </div>
 
-          <div ref={parentRef} className="flex-1 overflow-y-auto w-full custom-scrollbar relative mx-auto bg-black/20 px-8 lg:px-16">
+          <div ref={parentRef} className="flex-1 overflow-y-auto w-full custom-scrollbar relative mx-auto bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.04),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent_16%)] px-8 lg:px-16">
             <div
               style={{
                 height: `${rowVirtualizer.getTotalSize()}px`,
@@ -514,42 +645,25 @@ export function StepExtract() {
           </div>
         </div>
 
-        <div className="w-full md:w-[40%] lg:w-[35%] flex flex-col min-h-0 glass border border-white/5 rounded-3xl overflow-hidden bg-black/20 p-4 gap-4 h-full">
+        <div className="w-full md:w-[26%] lg:w-[24%] flex flex-col min-h-0 glass border border-white/5 rounded-3xl overflow-hidden bg-black/20 p-4 gap-4 h-full">
           <div className="flex justify-between items-center px-2 shrink-0 gap-2">
-            <h3 className="font-bold text-white/80 uppercase tracking-wider text-xs">Danh sach scene ({displayScenes.length})</h3>
-            <div className="flex items-center gap-1">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 text-xs border-white/20 text-white/80 hover:bg-white/10 rounded-lg shrink-0 w-auto"
-                onClick={locateCurrentScene}
-                title="Locate current scene in list"
-              >
-                <LocateFixed className="w-3.5 h-3.5 mr-1" /> Locate
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 text-xs border-primary/20 text-primary hover:bg-primary/10 rounded-lg shrink-0 w-auto pointer-events-auto"
-                onClick={() => {
-                  const currentScroll = parentRef.current?.scrollTop || 0;
-                  const newY = currentScroll / previewScale;
-                  useRecapStore.getState().addScene({
-                    id: `scene-manual-${Date.now()}`,
-                    x: 0,
-                    y: newY,
-                    width: stripWidth,
-                    height: Math.round(stripWidth / aspectRatio),
-                    isAuto: false,
-                  });
-                }}
-              >
-                <Plus className="w-3.5 h-3.5 mr-1" /> Them
-              </Button>
-            </div>
+            <h3 className="font-bold text-white/80 tracking-wider text-xs">Danh sách scene ({displayScenes.length})</h3>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-10 text-sm border-primary/20 text-primary hover:bg-primary/10 rounded-lg shrink-0 px-3"
+              onClick={savePanelsToFolder}
+              disabled={isExporting || isSavingExport || displayScenes.length === 0}
+            >
+              {isSavingExport ? (
+                <span className="flex items-center"><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Export to ({exportProgress}%)</span>
+              ) : (
+                <span className="flex items-center"><Download className="w-4 h-4 mr-2" /> Export to</span>
+              )}
+            </Button>
           </div>
 
-          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1">
+          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1" onWheel={onSceneListWheel}>
             <div className="space-y-3 pb-8">
               {displayScenes.map((scene, index) => (
                 <div
@@ -557,9 +671,9 @@ export function StepExtract() {
                   ref={(node) => {
                     sceneItemRefs.current[scene.id] = node;
                   }}
-                  className={`p-3 bg-white/5 border rounded-2xl cursor-pointer group transition-all duration-200 relative ${activeSceneId === scene.id
-                      ? "border-cyan-400/70 ring-1 ring-cyan-400/40"
-                      : "border-white/5 hover:border-cyan-500/30"
+                  className={`p-3 bg-white/5 border rounded-none cursor-pointer group transition-all duration-150 relative ${activeSceneId === scene.id
+                    ? "border-cyan-400/80 ring-1 ring-cyan-400/45 bg-cyan-500/10"
+                    : "border-white/5 hover:border-cyan-500/35"
                     }`}
                   onClick={() => {
                     setActiveSceneId(scene.id);
@@ -572,7 +686,7 @@ export function StepExtract() {
                       {scene.isAuto && <span className="absolute top-0 right-0 bg-primary/20 text-primary text-[8px] font-bold px-1 rounded-bl">A</span>}
                     </div>
                     <div className="flex-1">
-                      <h4 className="text-white/80 font-bold text-xs">Canh #{index + 1}</h4>
+                      <h4 className="text-white/80 font-bold text-xs">Scene {index + 1}</h4>
                       <p className="text-[10px] text-white/40 font-mono mt-1">X: {Math.round(scene.x ?? 0)}px</p>
                       <p className="text-[10px] text-white/40 font-mono">Y: {Math.round(scene.y)}px</p>
                       <p className="text-[10px] text-white/40 font-mono">W: {Math.round(scene.width ?? stripWidth)}px</p>
@@ -597,3 +711,5 @@ export function StepExtract() {
     </div>
   );
 }
+
+

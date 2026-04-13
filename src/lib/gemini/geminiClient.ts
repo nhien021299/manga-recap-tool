@@ -1,4 +1,5 @@
 import type { Panel, ScriptContext, ScriptItem } from '@/types';
+import noteScriptTemplateRaw from '../../../note_script.txt?raw';
 
 /**
  * Gemini Script Generator Client
@@ -10,6 +11,7 @@ import type { Panel, ScriptContext, ScriptItem } from '@/types';
 const BATCH_SIZE = 20; // panels per API call
 const MODEL = 'gemini-3-flash-preview';
 const MAX_OUTPUT_TOKENS = 65536;
+const NOTE_SCRIPT_TEMPLATE = noteScriptTemplateRaw.trim();
 
 type LogCallback = (type: 'request' | 'result' | 'error', message: string, details?: string) => void;
 
@@ -194,6 +196,15 @@ function buildPrompt(
   startIndex: number,
   previousScriptContext?: string
 ): string {
+  const templateBlock = NOTE_SCRIPT_TEMPLATE
+    ? `
+  Đây là script note nội bộ cần bám theo khi viết:
+  ---
+  ${NOTE_SCRIPT_TEMPLATE}
+  ---
+  `
+    : '';
+
   const contextBlock = previousScriptContext 
     ? `
   ⚠️ ĐÂY LÀ PHẦN TIẾP THEO CỦA CHAPTER. Dưới đây là tóm tắt kịch bản phần trước để bạn nắm mạch truyện:
@@ -213,6 +224,7 @@ function buildPrompt(
   - Tên truyện: ${context.mangaName}
   - Nhân vật chính: ${context.mainCharacter}
   - Bối cảnh: ${context.summary || "Không có"}
+  ${templateBlock}
   ${contextBlock}
   
   Nhiệm vụ:

@@ -31,6 +31,37 @@ Goals:
 | M4 | Timeline System |
 | M5 | Video Render MVP |
 
+## Progress Snapshot (April 14, 2026)
+
+### Current status
+- Active milestone: `M1 - Extract System Hardening`.
+- M1 is in progress, with major UX and extraction-flow improvements already implemented in `StepExtract.tsx`.
+- Build status after latest updates: `npm run build` passes.
+
+### Completed recently (Extract step)
+- Rebalanced workspace layout to prioritize crop viewport (`md: 74/26`, `lg: 76/24`).
+- Moved `Locate` + `Add` scene actions from scene list header into crop panel controls.
+- Added `Export to` button in scene list header with progress indicator.
+- Implemented folder export flow using directory picker + write cropped images as sequential PNG files.
+- Added prepared-panels cache keyed by extraction state to avoid re-cropping when continuing to next step.
+- Separated loading state between `Continue` and `Export to` so export no longer triggers continue-button loading animation.
+- Enlarged control clusters in crop panel (`zoom`, `Locate`, `Add`, `Export to`) for better usability.
+- Fixed control overlap by increasing vertical offset between top-right toolbars.
+- Fixed inverted mouse-wheel behavior in scene list scroll container.
+
+### M1 task mapping update
+- Scene editor UX:
+  - Done: resize/move/delete/add manual scene.
+  - Done: locate current scene in list.
+  - In progress: merge/split, keyboard nudge, explicit clear-selection action.
+- Extract output pipeline:
+  - Done: crop and panel generation flow.
+  - Done: export to user-selected folder.
+  - Done: panel reuse for next step without duplicate loading.
+- Persistence:
+  - Done: panels saved in IndexedDB via store.
+  - In progress: stricter invalidation rules and full resume validation across all step transitions.
+
 ## M0 - Stabilize Architecture
 
 ### Goal

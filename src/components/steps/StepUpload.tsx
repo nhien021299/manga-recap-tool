@@ -9,7 +9,7 @@ import { buildVirtualStrip } from "@/lib/image/virtualStrip";
 import { buildSceneSuggestions, type DetectedLocalRect, type ImageDetectionResult } from "@/lib/image/sceneDetection";
 
 export function StepUpload() {
-  const { setVirtualStrip, setScenes, setCurrentStep, setIsLoading, isLoading, setProgress, progress } = useRecapStore();
+  const { setVirtualStrip, setScenes, setPanels, setTimeline, setCurrentStep, setIsLoading, isLoading, setProgress, progress } = useRecapStore();
   const [files, setFiles] = useState<File[]>([]);
 
   const runWorkerTask = <T,>(worker: Worker, type: string, payload: Record<string, unknown>) =>
@@ -52,6 +52,11 @@ export function StepUpload() {
 
   const processImages = async () => {
     if (files.length === 0) return;
+
+    // Overwrite previous local working data only when user starts a new upload run.
+    setScenes([]);
+    setPanels([]);
+    setTimeline([]);
 
     setIsLoading(true);
     setProgress(5);

@@ -14,6 +14,18 @@ import { Label } from "@/components/ui/label";
 import { Settings2 } from "lucide-react";
 import { useState, useEffect } from "react";
 
+const normalizeSecret = (value: string): string => {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1).trim();
+  }
+  return trimmed;
+};
+
 export function SettingsDialog() {
   const { config, setConfig } = useRecapStore();
   const [localConfig, setLocalConfig] = useState(config);
@@ -23,7 +35,12 @@ export function SettingsDialog() {
   }, [config]);
 
   const handleSave = () => {
-    setConfig(localConfig);
+    setConfig({
+      ...localConfig,
+      geminiApiKey: normalizeSecret(localConfig.geminiApiKey),
+      elevenLabsApiKey: normalizeSecret(localConfig.elevenLabsApiKey),
+      ttsVoiceId: localConfig.ttsVoiceId.trim(),
+    });
   };
 
   return (

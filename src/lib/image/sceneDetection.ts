@@ -72,7 +72,8 @@ const scoreRect = (
 const splitRectBySafeBreaks = (
   rect: DetectedLocalRect,
   safeBreaks: number[],
-  minSegmentHeight: number
+  minSegmentHeight: number,
+  maxSegmentHeight: number
 ): Array<{ y: number; height: number }> => {
   const start = rect.y;
   const end = rect.y + rect.height;
@@ -102,6 +103,23 @@ const splitRectBySafeBreaks = (
   }
 
   if (segments.length <= 1) {
+    // No reliable safe break found: hard split long segments to prefer shorter crops.
+    if (rect.height > maxSegmentHeight) {
+      const hardSegments: Array<{ y: number; height: number }> = [];
+      let cursor = start;
+      while (cursor < end) {
+        const remaining = end - cursor;
+        const nextHeight = remaining > maxSegmentHeight ? maxSegmentHeight : remaining;
+        if (nextHeight < minSegmentHeight && hardSegments.length > 0) {
+          hardSegments[hardSegments.length - 1].height += remaining;
+          break;
+        }
+        hardSegments.push({ y: cursor, height: nextHeight });
+        cursor += nextHeight;
+      }
+      return hardSegments;
+    }
+
     return [{ y: start, height: rect.height }];
   }
 
@@ -153,6 +171,7 @@ const applyMergeAndSplitHeuristics = (candidates: SceneCandidate[], stripWidth: 
   const tinySceneHeight = Math.round(stripWidth * 0.18);
   const nearGapThreshold = Math.round(stripWidth * 0.02);
   const overlapThreshold = Math.round(stripWidth * 0.015);
+  const preferredMaxHeight = Math.round(stripWidth * 1.35);
 
   let index = 0;
   while (index < candidates.length - 1) {
@@ -175,7 +194,8 @@ const applyMergeAndSplitHeuristics = (candidates: SceneCandidate[], stripWidth: 
     const shouldAutoMerge =
       gap >= 0 &&
       gap <= nearGapThreshold &&
-      (current.height < tinySceneHeight || next.height < tinySceneHeight);
+      (current.height < tinySceneHeight || next.height < tinySceneHeight) &&
+      (current.height + next.height + Math.max(0, gap) <= preferredMaxHeight);
 
     if (shouldAutoMerge) {
       const mergedLeft = Math.min(current.x, next.x);
@@ -196,7 +216,7 @@ const applyMergeAndSplitHeuristics = (candidates: SceneCandidate[], stripWidth: 
       next.failureModes.add("low-gap-merge-risk");
     }
 
-    if (current.height > stripWidth * 2.6) {
+    if (current.height > preferredMaxHeight) {
       current.splitCandidate = true;
       current.failureModes.add("very-tall-scene");
       current.confidence = clamp(current.confidence - 0.08, 0.1, 0.98);
@@ -218,13 +238,14 @@ export const buildSceneSuggestions = (
   detections.forEach((item, imageIndex) => {
     const scale = stripWidth / item.image.originalWidth;
     const minLocalSegment = Math.max(90, Math.floor((stripWidth * 0.18) / scale));
-    const maxGlobalHeight = stripWidth * 2.15;
+    const maxGlobalHeight = stripWidth * 1.35;
+    const maxLocalSegment = Math.max(minLocalSegment + 40, Math.floor(maxGlobalHeight / scale));
 
     const candidates: SceneCandidate[] = [];
 
     for (const rect of item.rects.sort((a, b) => a.y - b.y)) {
       const splitRects = rect.height * scale > maxGlobalHeight
-        ? splitRectBySafeBreaks(rect, item.safeBreaks, minLocalSegment)
+        ? splitRectBySafeBreaks(rect, item.safeBreaks, minLocalSegment, maxLocalSegment)
         : [{ y: rect.y, height: rect.height }];
 
       if (splitRects.length > 1) {

@@ -60,42 +60,55 @@ self.onmessage = async (e: MessageEvent) => {
       }
     }
 
-    // 3. Find horizontal boundaries and apply Smart Padding (Priority 2 & 3)
-    const finalRects = rects.map(rect => {
+    const findTightBounds = (rect: { y: number; height: number }) => {
       let minX = width;
-      let maxX = 0;
+      let maxX = -1;
+      let minY = height;
+      let maxY = -1;
 
-      // Find exact content boundaries horizontally
       for (let y = rect.y; y < rect.y + rect.height; y++) {
-        let rowMin = -1;
-        let rowMax = -1;
+        let rowHasContent = false;
         for (let x = 0; x < width; x++) {
           const idx = (y * width + x) * 4;
           const brightness = (data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114);
-          
           if (brightness < threshold) {
-            if (rowMin === -1) rowMin = x;
-            rowMax = x;
+            rowHasContent = true;
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
           }
         }
-        if (rowMin !== -1 && rowMin < minX) minX = rowMin;
-        if (rowMax !== -1 && rowMax > maxX) maxX = rowMax;
+        if (rowHasContent) {
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
       }
 
-      if (minX > maxX) {
-        minX = 0;
-        maxX = width - 1;
+      if (minX > maxX || minY > maxY) {
+        return {
+          minX: 0,
+          maxX: width - 1,
+          minY: rect.y,
+          maxY: rect.y + rect.height - 1,
+        };
       }
 
-      // Priority 3: Add Padding for Animation (Keyframing headroom)
-      const paddingX = Math.floor(width * 0.04); // 4% screen width padding
-      const paddingY = Math.floor(height * 0.02); // 2% screen height padding (or based on width)
+      return { minX, maxX, minY, maxY };
+    };
 
-      let finalY = Math.max(0, rect.y - paddingY);
-      let finalHeight = Math.min(height - finalY, rect.height + (paddingY * 2));
-      
-      let finalX = Math.max(0, minX - paddingX);
-      let finalWidth = Math.min(width - finalX, (maxX - minX + 1) + (paddingX * 2));
+    // 3. Tight content bounds + low padding to avoid capturing too much white area.
+    const finalRects = rects.map(rect => {
+      const bounds = findTightBounds(rect);
+      const contentWidth = bounds.maxX - bounds.minX + 1;
+      const contentHeight = bounds.maxY - bounds.minY + 1;
+
+      // Keep a very small breathing room, but bias toward tight crop.
+      const paddingX = Math.max(2, Math.min(12, Math.floor(contentWidth * 0.01)));
+      const paddingY = Math.max(2, Math.min(10, Math.floor(contentHeight * 0.01)));
+
+      let finalX = Math.max(0, bounds.minX - paddingX);
+      let finalY = Math.max(0, bounds.minY - paddingY);
+      let finalWidth = Math.min(width - finalX, contentWidth + (paddingX * 2));
+      let finalHeight = Math.min(height - finalY, contentHeight + (paddingY * 2));
 
       return {
         y: finalY,

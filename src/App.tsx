@@ -5,9 +5,14 @@ import { StepUpload } from "@/components/steps/StepUpload";
 import { StepExtract } from "@/components/steps/StepExtract";
 import { StepScript } from "@/components/steps/StepScript";
 import { StepVoice } from "@/components/steps/StepVoice";
+import { useEffect } from "react";
 
 function App() {
-  const { currentStep } = useRecapStore();
+  const { currentStep, init } = useRecapStore();
+
+  useEffect(() => {
+    init();
+  }, [init]);
 
   const renderCurrentStep = () => {
     switch (currentStep) {

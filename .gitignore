@@ -22,3 +22,18 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Vite / React / Environment
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.eslintcache
+
+# Tooling
+coverage
+.nyc_output
+
+# Temporary / OS
+thumbs.db
+.gemini/

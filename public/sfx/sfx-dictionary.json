@@ -1,0 +1,12 @@
+{
+  "sấm sét": { "file": "thunder_01.mp3", "emoji": "🌩️" },
+  "chém kiếm": { "file": "sword_slash.mp3", "emoji": "⚔️" },
+  "bước chân": { "file": "footsteps.mp3", "emoji": "👣" },
+  "đổ vỡ": { "file": "glass_break.mp3", "emoji": "💥" },
+  "gió thổi": { "file": "wind.mp3", "emoji": "🌪️" },
+  "nổ": { "file": "explosion.mp3", "emoji": "💣" },
+  "la hét": { "file": "scream.mp3", "emoji": "😱" },
+  "mưa": { "file": "rain.mp3", "emoji": "🌧️" },
+  "tiếng cười": { "file": "laugh.mp3", "emoji": "😈" },
+  "tim đập": { "file": "heartbeat.mp3", "emoji": "💓" }
+}

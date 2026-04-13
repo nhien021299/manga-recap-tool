@@ -107,4 +107,43 @@ self.onmessage = async (e: MessageEvent) => {
 
     self.postMessage({ type: 'SUCCESS', payload: finalRects });
   }
+
+  if (type === 'SCAN_SAFE_BREAKS') {
+    const { imageData, minGutterHeight = 20, threshold = 250 } = payload;
+    const { width, height, data } = imageData;
+
+    const safeBreaks: number[] = [];
+    let whiteRowCount = 0;
+    const noiseTolerance = 5;
+
+    for (let y = 0; y < height; y++) {
+      let nonWhitePixels = 0;
+      for (let x = 0; x < width; x++) {
+        const idx = (y * width + x) * 4;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
+        
+        if (brightness < threshold) {
+          nonWhitePixels++;
+          if (nonWhitePixels > noiseTolerance) break;
+        }
+      }
+
+      const isWhiteRow = nonWhitePixels <= noiseTolerance;
+
+      if (isWhiteRow) {
+        whiteRowCount++;
+      } else {
+        if (whiteRowCount >= minGutterHeight) {
+           const breakY = y - Math.floor(whiteRowCount / 2); // Middle of the gutter
+           safeBreaks.push(breakY);
+        }
+        whiteRowCount = 0;
+      }
+    }
+
+    self.postMessage({ type: 'SUCCESS', payload: safeBreaks });
+  }
 };

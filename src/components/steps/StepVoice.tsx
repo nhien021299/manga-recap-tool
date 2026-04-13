@@ -65,7 +65,7 @@ export function StepVoice() {
           <Button variant="outline" onClick={prevStep} className="rounded-xl border-white/10">
             <ChevronLeft className="w-4 h-4 mr-2" /> Quay lại
           </Button>
-          <Button onClick={nextStep} disabled={totalDuration === 0} className="bg-primary hover:bg-primary/90 rounded-xl shadow-lg">
+          <Button onClick={nextStep} disabled={totalDuration === 0} className="bg-primary text-primary-foreground hover:opacity-90 rounded-xl shadow-glow shadow-glow-hover transition-all font-bold">
             Tiếp tục bước Cuối <ChevronRight className="w-4 h-4 ml-2" />
           </Button>
         </div>
@@ -95,7 +95,7 @@ export function StepVoice() {
               size="lg" 
               onClick={generateAllVoices} 
               disabled={isLoading}
-              className="w-full bg-primary text-white rounded-2xl h-14 text-lg font-bold shadow-xl shadow-primary/20 active:scale-[0.98] transition-all"
+              className="w-full bg-primary text-primary-foreground rounded-2xl h-14 text-lg font-bold shadow-glow shadow-glow-hover active:scale-[0.98] transition-all hover:opacity-90 border-none"
             >
               {isLoading ? "Đang tạo Audio..." : "Bắt đầu tạo tất cả thoại"}
             </Button>
@@ -111,7 +111,7 @@ export function StepVoice() {
           </div>
         </div>
       ) : (
-        <ScrollArea className="h-[calc(100vh-280px)] rounded-3xl border border-white/5 bg-white/5 p-2 glass">
+        <ScrollArea className="h-[calc(100vh-220px)] rounded-3xl border border-white/5 bg-white/5 p-2 glass">
            <div className="space-y-3 p-4">
               {timeline.map((item, index) => {
                 const panel = panels.find(p => p.id === item.panelId);
@@ -123,7 +123,7 @@ export function StepVoice() {
                     
                     <div className="flex-1 space-y-1">
                       <p className="text-sm font-medium line-clamp-2 leading-relaxed italic text-muted-foreground">
-                        "{item.narrationText}"
+                        "{item.scriptItem.voiceover_text}"
                       </p>
                       <div className="flex items-center gap-3">
                          {item.audioUrl ? (

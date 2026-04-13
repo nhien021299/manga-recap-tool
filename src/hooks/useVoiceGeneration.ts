@@ -19,12 +19,12 @@ export function useVoiceGeneration() {
     try {
       for (let i = 0; i < timeline.length; i++) {
         const item = timeline[i];
-        if (!item.narrationText) continue;
+        if (!item.scriptItem?.voiceover_text) continue;
 
         // Generate speech for each timeline item
         const audioBlob = await generateSpeech(
           config.elevenLabsApiKey,
-          item.narrationText,
+          item.scriptItem.voiceover_text,
           config.ttsVoiceId
         );
 
@@ -54,12 +54,12 @@ export function useVoiceGeneration() {
 
   const generateSingleVoice = async (index: number) => {
     const item = timeline[index];
-    if (!item.narrationText || !config.elevenLabsApiKey) return;
+    if (!item.scriptItem?.voiceover_text || !config.elevenLabsApiKey) return;
 
     try {
       const audioBlob = await generateSpeech(
         config.elevenLabsApiKey,
-        item.narrationText,
+        item.scriptItem.voiceover_text,
         config.ttsVoiceId
       );
 

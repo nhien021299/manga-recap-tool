@@ -31,8 +31,12 @@
 ### 🟢 Milestone 2: Tách Panel (Trích xuất khung truyện)
 - **Mục tiêu**: Tự động nhận diện và cắt dải ảnh dọc dài (Webtoon) thành các panel ảnh rời rạc.
 - **Chi tiết**:
-  - Ứng dụng xử lý hình ảnh trên Canvas để cắt khung.
-  - Cho phép người dùng trực quan xem qua các ảnh panel đã tách (`StepExtract.tsx`), quản lý metadata (id, thumbnail, base64) để sẵn sàng gửi cho AI ở các bước sau.
+  - Đã tái cấu trúc toàn bộ sang cơ chế **Virtual Strip** (dải ảnh ảo), tối ưu hiệu năng không làm sập trình duyệt khi người dùng chèn 50+ ảnh dài.
+  - Sử dụng Web Worker để chạy thuật toán quét pixel (`EXTRACT_PANELS_ROW_SCAN`) tìm bám sát vào ranh giới từng Panel thực tế (bỏ qua khoảng trắng/padding an toàn).
+  - Áp dụng UI kéo thả `SceneOverlay` với `@tanstack/react-virtual` để người dùng dễ dàng tune (tinh chỉnh) độ cao, tạo ra khung ảnh chính xác trước khi xuất.
+  - Quản lý metadata (id, thumbnail, base64) để sẵn sàng gửi cho AI ở bước trích xuất kịch bản.
+- **Lưu ý Hiện tại (Known Issues)**:
+  - Hiện vẫn còn một số lỗi ở bước Cắt Panel (đang fix và tuỳ chỉnh lại UI theo phản hồi của user).
 
 ### ❌ Milestone 3: AI Nhận diện Khuôn mặt (Đã loại bỏ)
 - **Mục tiêu cũ**: Dùng AI/TensorFlow.js (`@vladmandic/face-api`) để tách lập các khuôn mặt và gom nhóm.
@@ -43,13 +47,12 @@
   - Không cần thiết cho quy trình Recap YouTube hiện đại (Thay vào đó, giao việc hiểu và kết nối câu chuyện cho LLM ở Milestone 4 sẽ tốt và tối ưu hơn).
 
 ### 🟢 Milestone 4: Tự động hóa Kịch Bản bằng Gemini AI
-- **Mục tiêu**: Thay thế toàn bộ quá trình viết script review thủ công bằng sức mạnh của LLM (Gemini 3 Flash Preview).
+- **Mục tiêu**: Thay thế toàn bộ quá trình viết script review thủ công bằng sức mạnh của LLM.
 - **Chi tiết**:
-  - Giao diện nhập bối cảnh toàn cục (Tên truyện, nhân vật chính, tóm tắt diễn biến trước đó) giúp AI vào đúng "Mood" truyện.
-  - Thiết kế luồng Prompt Engineering chuyên nghiệp ép AI vào vai MC/Biên kịch review Youtube.
-  - AI đọc OCR các panel truyện, sau đó bóc tách thành: **Lời dẫn truyện MC (Narration)**, **Lời thoại (Dialogue)**, **SFX** và **Bối cảnh AI hiểu (AI View)**.
-  - **The UI Trick**: Tính năng scan văn bản tự động tìm những nhân vật chưa định danh (dạng `[Kẻ thù]`, `[Nhân vật A]`) để người sử dụng (Biên tập viên) có thể thay tên thật đồng loạt bằng 1 nút bấm trực quan.
-  - Giao diện `StepScript.tsx` trình bày các Card Timeline dễ quan sát, phân mảnh giúp tinh chỉnh từng câu chữ trước khi lồng tiếng.
+  - Nâng cấp UI toàn diện ở mục Step Script (`Auto-Script Upgrade`), hiển thị dạng Message/Bubble tối ưu cho editor rà soát kịch bản.
+  - Kết hợp Prompt Engineering để tách giọng (Voiceover text) và sfx (tạo kho json `/public/sfx-dictionary.json` cập nhật tự động khi LLM tạo sfx mới).
+  - Tích hợp Exponential Backoff Retry Handling để né lỗi `503 High Demand` của Gemini AI.
+  - Lưu và cache State local storage cho phép tiếp tục chỉnh sửa Script/Extract mà không cần làm lại từ đầu trừ khi đổi bộ ảnh Upload.
 
 ### ⏳ Milestone 5: Lồng tiếng Tự Động (Voice TTS) - *Sắp tới*
 - **Mục tiêu**: Kết nối nội dung Kịch bản ở Milestone 4 vào API chuyển văn bản thành giọng nói (TTS) như ElevenLabs hoặc Google TTS.

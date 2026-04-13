@@ -56,3 +56,37 @@ export async function generateThumbnail(blob: Blob, maxDimension: number = 200):
   const resizedBlob = await canvas.convertToBlob({ type: 'image/webp', quality: 0.7 });
   return await blobToBase64(resizedBlob);
 }
+
+export async function cropSceneFromStrip(
+  stripImages: import('@/types').VirtualStripImage[], 
+  scene: import('@/types').Scene, 
+  stripWidth: number
+): Promise<Blob> {
+  const canvas = new OffscreenCanvas(stripWidth, scene.height);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Could not get 2d context');
+
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, stripWidth, scene.height);
+
+  for (const imgMeta of stripImages) {
+    const imgTop = imgMeta.globalY;
+    const imgBottom = imgMeta.globalY + imgMeta.scaledHeight;
+    const sceneTop = scene.y;
+    const sceneBottom = scene.y + scene.height;
+
+    // Check intersection
+    if (imgBottom > sceneTop && imgTop < sceneBottom) {
+      const img = await createImageBitmap(imgMeta.file);
+      
+      // Calculate drawing coordinates
+      const drawY = imgTop - sceneTop;
+      
+      // Draw the original image scaled to strip width
+      ctx.drawImage(img, 0, drawY, stripWidth, imgMeta.scaledHeight);
+      img.close();
+    }
+  }
+
+  return canvas.convertToBlob({ type: 'image/jpeg', quality: 0.95 });
+}

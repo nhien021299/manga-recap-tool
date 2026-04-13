@@ -4,16 +4,13 @@ import { useRecapStore } from "@/store/useRecapStore";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { imageToImageData, cropImage, generateThumbnail, blobToBase64 } from "@/lib/utils/imageUtils";
+import { imageToImageData } from "@/lib/utils/imageUtils";
+import { buildVirtualStrip } from "@/lib/image/virtualStrip";
+import { STRIP_WIDTH } from "@/types";
 
 export function StepUpload() {
-  const { addPanels, setCurrentStep, setIsLoading, isLoading, setProgress, progress, reset } = useRecapStore();
+  const { setVirtualStrip, setScenes, setCurrentStep, setIsLoading, isLoading, setProgress, progress, aspectRatio } = useRecapStore();
   const [files, setFiles] = useState<File[]>([]);
-
-  useEffect(() => {
-    // Clear data when entering upload step (Reload or Back)
-    reset();
-  }, [reset]);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -29,60 +26,58 @@ export function StepUpload() {
     if (files.length === 0) return;
 
     setIsLoading(true);
-    setProgress(0);
-
-    const worker = new Worker(new URL('../../workers/imageProcessor.worker.ts', import.meta.url), { type: 'module' });
+    setProgress(5);
 
     try {
-      let allProcessedPanels = [];
-      
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const imageData = await imageToImageData(file);
+      const { images: stripImages, totalHeight } = await buildVirtualStrip(files);
+      setVirtualStrip(stripImages, totalHeight);
+      setProgress(15);
+
+      const worker = new Worker(new URL('../../workers/imageProcessor.worker.ts', import.meta.url), { type: 'module' });
+      const suggestedScenes = [];
+      let sceneCounter = 1;
+
+      for (let i = 0; i < stripImages.length; i++) {
+        const imgMeta = stripImages[i];
+        const imageData = await imageToImageData(imgMeta.file);
         
-        // Use worker for row scan
-        const rects = await new Promise<any[]>((resolve, reject) => {
+        const localRects = await new Promise<{y: number, height: number, x: number, width: number}[]>((resolve, reject) => {
           worker.onmessage = (e) => {
             if (e.data.type === 'SUCCESS') resolve(e.data.payload);
             else reject(new Error('Processing failed'));
           };
           worker.postMessage({ 
             type: 'EXTRACT_PANELS_ROW_SCAN', 
-            payload: { imageData: { width: imageData.width, height: imageData.height, data: imageData.data } } 
+            payload: { imageData } 
           });
         });
 
-        // Slice panels from the original blob
-        for (let j = 0; j < rects.length; j++) {
-          const rect = rects[j];
-          const panelBlob = await cropImage(file, rect);
-          const thumbnail = await generateThumbnail(panelBlob);
-          const base64 = await blobToBase64(panelBlob);
-          const fileUrl = URL.createObjectURL(file); // Create reference to full image
-          
-          allProcessedPanels.push({
-            id: `p-${Date.now()}-${i}-${j}`,
-            blob: panelBlob,
-            base64: base64,
-            thumbnail: thumbnail,
-            width: rect.width,
-            height: rect.height,
-            order: allProcessedPanels.length,
-            originalImageRef: fileUrl,
-            rect: rect
-          });
-
-          const currentProgress = ((i / files.length) + (j / rects.length / files.length)) * 100;
-          setProgress(Math.round(currentProgress));
-        }
+        // Translate to Global Y & Scale
+        const scale = STRIP_WIDTH / imgMeta.originalWidth;
+        localRects.forEach(rect => {
+            // Apply scale to height and global Y
+            const scaledY = imgMeta.globalY + (rect.y * scale);
+            const scaledHeight = rect.height * scale;
+            
+            suggestedScenes.push({
+                id: `scene-${Date.now()}-${sceneCounter++}`,
+                y: scaledY,
+                height: scaledHeight,
+                isAuto: true
+            });
+        });
+        
+        setProgress(15 + Math.round((i / stripImages.length) * 70));
       }
+      
+      worker.terminate();
+      setProgress(85);
 
-      addPanels(allProcessedPanels);
+      setScenes(suggestedScenes);
       setCurrentStep('extract');
     } catch (error) {
       console.error("Error processing images:", error);
     } finally {
-      worker.terminate();
       setIsLoading(false);
       setProgress(100);
     }
@@ -128,7 +123,7 @@ export function StepUpload() {
           {files.length > 0 && !isLoading && (
             <Button 
               size="lg" 
-              className="w-full bg-primary hover:bg-primary/90 text-white rounded-2xl h-14 text-lg font-semibold shadow-lg shadow-primary/20 active:scale-[0.98] transition-all"
+              className="w-full bg-primary text-primary-foreground rounded-2xl h-16 text-xl font-black uppercase tracking-tighter shadow-glow shadow-glow-hover active:scale-[0.98] transition-all hover:opacity-100 border-none btn-pop ring-2 ring-white/10"
               onClick={processImages}
             >
               Tiến hành tách Panel ({files.length} ảnh)

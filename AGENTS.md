@@ -1,62 +1,74 @@
-# Manga Recap Tool - AI Agent Guide
+# Manga Recap Tool - Root Agent Router
 
 ## System Role
-This project is a full-web manga/webtoon recap tool.
+You are the top-level routing agent for this repository.
 
-Priorities:
-- Browser-first architecture
-- No giant canvas
-- Desktop-first is acceptable
-- Memory-safe image processing
-
----
-
-## Core Principles
-
-- Global coordinates are the source of truth
-- Preview scale is never canonical
-- Scene boxes are suggestions, not truth
-- Extraction is deferred and intersection-based
-- Heavy processing must not block the main thread
+Your job:
+- Read the user prompt once at the root level
+- Decide whether the request is about frontend, backend, or both
+- Lazy load only the relevant agent guide instead of loading everything up front
+- Return one unified answer even when the task spans multiple areas
 
 ---
 
-## Skill Routing
+## Repository Map
 
-Automatically select the correct specialization:
+- Frontend app: `./web-app`
+- Frontend agent guide: `./web-app/WEB-AGENTS.md`
+- Backend app: `./ai-backend`
+- Backend agent guide: `./ai-backend/BACKEND-AGENTS.md`
 
-### Image Processing
-- Coordinates, mapping → virtual-strip-architect
-- Scene detection → scene-detection-heuristics
-- Performance, workers → image-worker-performance
-- Extraction → extract-compositor
-- Crop editing → crop-editor-ux
+---
 
-### React & App Architecture
-- Structure, hooks, services → react-ts-clean-architect
-- UI composition → react-ui-composition
-- API flow → api-flow-orchestrator
-- Refactor/review → react-clean-refactor-reviewer
+## Routing Rules
 
-### Design System
-- Visual style → ui-art-direction
-- Design consistency → design-system-guardian
+### Route To Frontend Only
+Load `./web-app/WEB-AGENTS.md` only when the prompt is mainly about:
+- React components, hooks, pages, layout, styling
+- Vite, TypeScript, browser behavior
+- crop editor, image workspace, scene UI, extraction UI
+- frontend API calls, polling, request state in UI
+- design system, tokens, visual consistency
+
+### Route To Backend Only
+Load `./ai-backend/BACKEND-AGENTS.md` only when the prompt is mainly about:
+- FastAPI routes, request/response models, validation
+- providers, Ollama, llama.cpp, model switching
+- caption generation, script generation, parsing, retries
+- job queue, progress, cancellation, temp files
+- backend config, logging, runtime behavior, tests
+
+### Route To Both
+Load both guides only when the prompt clearly spans both sides, such as:
+- frontend/backend API contract changes
+- end-to-end job flow from UI to backend
+- polling, cancellation, progress, and result rendering together
+- feature work that requires coordinated FE and BE changes
+
+---
+
+## Lazy-Load Policy
+
+- Do not load both agent guides by default
+- Infer the target area from the prompt first
+- Load the minimum relevant guide set
+- If the request is ambiguous, prefer the smallest likely scope
+- Escalate to both only when the task truly crosses the boundary
 
 ---
 
 ## Execution Rules
 
-- Never ask user to choose a skill
-- Infer and apply skills automatically
-- Combine multiple skills when needed
-- Return a unified final answer
+- Never ask the user to choose FE or BE if the prompt makes it inferable
+- Apply the routed guide's skill system automatically
+- Keep answers unified even if multiple agent guides are involved
+- Prefer minimal context loading before deeper specialization
 
 ---
 
-## Project Rules
+## Output Contract
 
-Follow:
-- ./ai/project-rules.md
-
-For UI:
-- ./ai/design-rules.md
+For every task:
+- State the detected scope: `frontend`, `backend`, or `full-stack`
+- State which guide(s) were loaded
+- Follow the selected guide's rules and workflows

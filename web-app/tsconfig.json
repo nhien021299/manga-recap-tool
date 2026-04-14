@@ -1,0 +1,17 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ],
+  "compilerOptions": {
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/types": ["./src/shared/types/index.ts"],
+      "@/store/*": ["./src/shared/storage/*"],
+      "@/components/ui/*": ["./src/shared/ui/*"]
+    }
+  }
+}

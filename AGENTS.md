@@ -70,5 +70,4 @@ Load both guides only when the prompt clearly spans both sides, such as:
 
 For every task:
 - State the detected scope: `frontend`, `backend`, or `full-stack`
-- State which guide(s) were loaded
 - Follow the selected guide's rules and workflows

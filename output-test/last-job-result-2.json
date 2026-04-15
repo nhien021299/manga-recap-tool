@@ -1,0 +1,875 @@
+{
+  "understandings": [
+    {
+      "panelId": "scene-001.png",
+      "orderIndex": 0,
+      "summary": "Một người đứng nhìn ra một cảnh quan rộng lớn.",
+      "action": "Quan sát",
+      "emotion": "Thích ngắm",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bầu trời tối sầm xuống."
+    },
+    {
+      "panelId": "scene-002.png",
+      "orderIndex": 1,
+      "summary": "Một người đứng trước một cửa.",
+      "action": "Đứng",
+      "emotion": "Tò mò, lo lắng",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Cửa mở ra..."
+    },
+    {
+      "panelId": "scene-003.png",
+      "orderIndex": 2,
+      "summary": "Một người đứng nhìn ra một cảnh quan rộng lớn.",
+      "action": "Nhìn",
+      "emotion": "Thích ngắm",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng hình xuất hiện phía sau."
+    },
+    {
+      "panelId": "scene-004.png",
+      "orderIndex": 3,
+      "summary": "Một người đang đứng, nhìn ra phía trước.",
+      "action": "Đứng",
+      "emotion": "Tĩnh lặng, quan sát",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Không có gì xảy ra."
+    },
+    {
+      "panelId": "scene-005.png",
+      "orderIndex": 4,
+      "summary": "Một người đứng trước một cửa hàng.",
+      "action": "Đứng",
+      "emotion": "Bình tĩnh",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Tiếp theo..."
+    },
+    {
+      "panelId": "scene-006.png",
+      "orderIndex": 5,
+      "summary": "Một người đứng trước một cửa.",
+      "action": "Đứng",
+      "emotion": "Tò mò, Cẩn trọng",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Cửa mở ra..."
+    },
+    {
+      "panelId": "scene-007.png",
+      "orderIndex": 6,
+      "summary": "Một người đứng trước một cửa cổng lớn.",
+      "action": "Đứng",
+      "emotion": "Tò mò",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Cổng mở ra..."
+    },
+    {
+      "panelId": "scene-008.png",
+      "orderIndex": 7,
+      "summary": "Một người đang đứng nhìn ra xa.",
+      "action": "Đứng nhìn",
+      "emotion": "Tĩnh lặng, trầm tư",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bóng tối dần hiện lên."
+    },
+    {
+      "panelId": "scene-009.png",
+      "orderIndex": 8,
+      "summary": "Một người đứng trước một cửa, vẻ mặt nghiêm trọng.",
+      "action": "Đứng",
+      "emotion": "Nghiêm trọng",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Cửa mở ra..."
+    },
+    {
+      "panelId": "scene-010.png",
+      "orderIndex": 9,
+      "summary": "Một người đứng nhìn ra, vẻ mặt trầm tư.",
+      "action": "Nhìn ra",
+      "emotion": "Trầm tư",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bóng tối bao phủ mọi thứ."
+    },
+    {
+      "panelId": "scene-011.png",
+      "orderIndex": 10,
+      "summary": "Một cảnh vật rộng lớn, có vẻ như là một khu vực ngoại ô.",
+      "action": "Cảnh quan tĩnh lặng",
+      "emotion": "Tranquil",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng hình xuất hiện phía xa xôi."
+    },
+    {
+      "panelId": "scene-012.png",
+      "orderIndex": 11,
+      "summary": "Một khung cảnh tĩnh lặng, không có nhân vật nào.",
+      "action": "Không có hành động",
+      "emotion": "Thanh thản",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Không có"
+    },
+    {
+      "panelId": "scene-013.png",
+      "orderIndex": 12,
+      "summary": "Một người đứng nhìn ra xa.",
+      "action": "Nhìn",
+      "emotion": "Tĩnh lặng",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bóng tối dần hiện lên."
+    },
+    {
+      "panelId": "scene-014.png",
+      "orderIndex": 13,
+      "summary": "Một người đứng nhìn ra xa.",
+      "action": "Nhìn",
+      "emotion": "Tĩnh lặng",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bóng tối dần dày lên."
+    },
+    {
+      "panelId": "scene-015.png",
+      "orderIndex": 14,
+      "summary": "Một cảnh quan tĩnh lặng, có vẻ như một khu vực ngoại cảnh.",
+      "action": "Xem xét",
+      "emotion": "Tranquil",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Mờ ảo phía trước..."
+    },
+    {
+      "panelId": "scene-016.png",
+      "orderIndex": 15,
+      "summary": "Một người đứng nhìn ra một cảnh quan rộng lớn.",
+      "action": "Nhìn",
+      "emotion": "Thích ngắm",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bầu trời bắt đầu tối xuống."
+    },
+    {
+      "panelId": "scene-017.png",
+      "orderIndex": 16,
+      "summary": "Một người đứng trước một cửa ra vào.",
+      "action": "Đứng",
+      "emotion": "Tò mò, bí ẩn",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Cửa mở ra..."
+    },
+    {
+      "panelId": "scene-018.png",
+      "orderIndex": 17,
+      "summary": "Một người đứng nhìn ra một cảnh quan rộng lớn.",
+      "action": "Nhìn",
+      "emotion": "Thích ngắm",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bầu trời bắt đầu tối xuống."
+    },
+    {
+      "panelId": "scene-019.png",
+      "orderIndex": 18,
+      "summary": "Một người đứng nhìn ra một cảnh quan.",
+      "action": "Nhìn",
+      "emotion": "Tranquil",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bầu trời tối sầm xuống."
+    },
+    {
+      "panelId": "scene-020.png",
+      "orderIndex": 19,
+      "summary": "Một người đứng nhìn ra, biểu cảm trầm tư.",
+      "action": "Nhìn",
+      "emotion": "Trầm tư, bí ẩn",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bóng tối bao phủ mọi thứ..."
+    },
+    {
+      "panelId": "scene-021.png",
+      "orderIndex": 20,
+      "summary": "Một người đứng nhìn ra một cảnh quan.",
+      "action": "Quan sát",
+      "emotion": "Tranquil",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bầu trời tối dần."
+    },
+    {
+      "panelId": "scene-022.png",
+      "orderIndex": 21,
+      "summary": "Một người đứng nhìn ra một cảnh quan rộng lớn.",
+      "action": "Nhìn",
+      "emotion": "Thích ngắm",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bầu trời tối sầm xuống."
+    },
+    {
+      "panelId": "scene-023.png",
+      "orderIndex": 22,
+      "summary": "Một cảnh vật rộng lớn, có vẻ như một khu vực ngoại cảnh.",
+      "action": "Cảnh quan rộng lớn",
+      "emotion": "Minh bạch, rộng lớn",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Tiếp tục khám phá khu vực này."
+    },
+    {
+      "panelId": "scene-024.png",
+      "orderIndex": 23,
+      "summary": "Một người phụ nữ đang nhìn xuống một vật thể.",
+      "action": "Nhìn xuống",
+      "emotion": "Tò mò",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bất ngờ xuất hiện."
+    },
+    {
+      "panelId": "scene-025.png",
+      "orderIndex": 24,
+      "summary": "Một người đứng nhìn ra, biểu cảm trầm tư.",
+      "action": "Nhìn",
+      "emotion": "Trầm tư",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Không có gì rõ ràng."
+    },
+    {
+      "panelId": "scene-026.png",
+      "orderIndex": 25,
+      "summary": "Một người đứng nhìn ra một cảnh quan rộng lớn.",
+      "action": "Quan sát",
+      "emotion": "Tĩnh lặng, trầm ngâm",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng hình xuất hiện phía sau."
+    },
+    {
+      "panelId": "scene-027.png",
+      "orderIndex": 26,
+      "summary": "Một người đứng nhìn ra một cảnh quan rộng lớn.",
+      "action": "Nhìn",
+      "emotion": "Thích ngắm",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bầu trời bắt đầu tối xuống."
+    },
+    {
+      "panelId": "scene-028.png",
+      "orderIndex": 27,
+      "summary": "Một người đứng trong một căn phòng tối.",
+      "action": "Đứng",
+      "emotion": "Không rõ",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Tiếp theo..."
+    },
+    {
+      "panelId": "scene-029.png",
+      "orderIndex": 28,
+      "summary": "Một người đứng trước một cửa cổng lớn.",
+      "action": "Đứng",
+      "emotion": "Tò mò, Cẩn trọng",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Cửa cổng mở ra."
+    },
+    {
+      "panelId": "scene-030.png",
+      "orderIndex": 29,
+      "summary": "Một người đứng trước một cửa.",
+      "action": "Đứng",
+      "emotion": "Tò mò, lo lắng",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Cửa mở ra..."
+    },
+    {
+      "panelId": "scene-031.png",
+      "orderIndex": 30,
+      "summary": "Một người đứng nhìn ra một cảnh quan tối.",
+      "action": "Quan sát",
+      "emotion": "Tĩnh lặng, trầm tư",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bóng tối ẩn chứa điều gì?"
+    },
+    {
+      "panelId": "scene-032.png",
+      "orderIndex": 31,
+      "summary": "Một người đứng nhìn ra một cảnh quan rộng lớn.",
+      "action": "Quan sát",
+      "emotion": "Tranquil",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bầu trời bắt đầu tối sầm xuống."
+    },
+    {
+      "panelId": "scene-033.png",
+      "orderIndex": 32,
+      "summary": "Một người đứng nhìn ra xa.",
+      "action": "Nhìn",
+      "emotion": "Tĩnh lặng, trầm tư",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bóng tối dần hiện lên."
+    },
+    {
+      "panelId": "scene-034.png",
+      "orderIndex": 33,
+      "summary": "Một người đứng nhìn ra một cảnh quan rộng lớn.",
+      "action": "Nhìn",
+      "emotion": "Thích ngắm",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bầu trời tối sầm xuống."
+    },
+    {
+      "panelId": "scene-035.png",
+      "orderIndex": 34,
+      "summary": "Một người đứng nhìn ra một cảnh quan rộng lớn.",
+      "action": "Đứng",
+      "emotion": "Thầm lặng",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bầu trời tối sầm xuống."
+    },
+    {
+      "panelId": "scene-036.png",
+      "orderIndex": 35,
+      "summary": "Một người đứng nhìn ra xa.",
+      "action": "Nhìn",
+      "emotion": "Tĩnh lặng",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bầu trời tối sầm xuống."
+    },
+    {
+      "panelId": "scene-037.png",
+      "orderIndex": 36,
+      "summary": "Một người đứng nhìn ra xa, vẻ mặt trầm tư.",
+      "action": "Nhìn xa",
+      "emotion": "Trầm tư",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "..."
+    },
+    {
+      "panelId": "scene-038.png",
+      "orderIndex": 37,
+      "summary": "Một người đứng nhìn ra xa.",
+      "action": "Nhìn",
+      "emotion": "Tĩnh lặng, trầm tư",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bóng tối ẩn hiện phía trước."
+    },
+    {
+      "panelId": "scene-039.png",
+      "orderIndex": 38,
+      "summary": "Một người đứng nhìn ra xa.",
+      "action": "Nhìn",
+      "emotion": "Tĩnh lặng",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bóng tối ẩn hiện."
+    },
+    {
+      "panelId": "scene-040.png",
+      "orderIndex": 39,
+      "summary": "Một người đứng nhìn ra, vẻ mặt trầm tư.",
+      "action": "Nhìn ra",
+      "emotion": "Trầm tư",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bóng tối dần dày lên."
+    },
+    {
+      "panelId": "scene-041.png",
+      "orderIndex": 40,
+      "summary": "Một người phụ nữ đang nhìn xuống một vật thể.",
+      "action": "Nhìn xuống",
+      "emotion": "Tò mò, Nghiêm túc",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một tiếng động lạ vang lên."
+    },
+    {
+      "panelId": "scene-042.png",
+      "orderIndex": 41,
+      "summary": "Một người đứng nhìn ra xa.",
+      "action": "Nhìn",
+      "emotion": "Tĩnh lặng",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bóng tối ẩn hiện."
+    },
+    {
+      "panelId": "scene-043.png",
+      "orderIndex": 42,
+      "summary": "Một người phụ nữ đang nhìn xuống một vật thể.",
+      "action": "Nhìn xuống",
+      "emotion": "Tò mò",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Điều gì đang xảy ra?"
+    },
+    {
+      "panelId": "scene-044.png",
+      "orderIndex": 43,
+      "summary": "Một người đứng nhìn ra, vẻ mặt trầm tư.",
+      "action": "Nhìn",
+      "emotion": "Trầm tư",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bóng tối bao phủ mọi thứ."
+    },
+    {
+      "panelId": "scene-045.png",
+      "orderIndex": 44,
+      "summary": "Một người đứng nhìn ra, biểu cảm trầm tư.",
+      "action": "Nhìn",
+      "emotion": "Trầm tư",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bóng tối bao phủ mọi thứ."
+    },
+    {
+      "panelId": "scene-046.png",
+      "orderIndex": 45,
+      "summary": "Một cảnh vật tĩnh lặng, không có nhân vật.",
+      "action": "Không có hành động",
+      "emotion": "Im lặng",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Không có"
+    },
+    {
+      "panelId": "scene-047.png",
+      "orderIndex": 46,
+      "summary": "Một người phụ nữ đang đứng nhìn ra ngoài, vẻ mặt trầm tư.",
+      "action": "Nhìn ra",
+      "emotion": "Trầm tư",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bầu trời tối đen."
+    },
+    {
+      "panelId": "scene-048.png",
+      "orderIndex": 47,
+      "summary": "Một người đứng nhìn ra xa.",
+      "action": "Nhìn",
+      "emotion": "Tĩnh lặng, trầm tư",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bóng tối ẩn chứa điều gì?"
+    },
+    {
+      "panelId": "scene-049.png",
+      "orderIndex": 48,
+      "summary": "Một người đứng nhìn ra xa.",
+      "action": "Quan sát",
+      "emotion": "Tĩnh lặng, trầm tư",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bóng tối dần hiện lên."
+    },
+    {
+      "panelId": "scene-050.png",
+      "orderIndex": 49,
+      "summary": "Một người đứng nhìn ra xa.",
+      "action": "Nhìn",
+      "emotion": "Tĩnh lặng",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bóng tối ẩn hiện."
+    },
+    {
+      "panelId": "scene-051.png",
+      "orderIndex": 50,
+      "summary": "Panel 51 summary unavailable",
+      "action": "Một người đứng nhìn ra.",
+      "emotion": "Tĩnh lặng, trầm tư",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Mờ ảo phía trước..."
+    },
+    {
+      "panelId": "scene-052.png",
+      "orderIndex": 51,
+      "summary": "Một người đứng nhìn ra, biểu cảm trầm tư.",
+      "action": "Nhìn",
+      "emotion": "Trầm tư",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Không rõ mục đích."
+    }
+  ],
+  "generatedItems": [
+    {
+      "panel_index": 1,
+      "ai_view": "Một người đàn ông đứng trầm mặc, ngắm nhìn một cảnh quan rộng lớn dưới bầu trời đang dần tối sầm.",
+      "voiceover_text": "Bầu trời tối sầm xuống. Một sự tĩnh lặng đáng sợ bắt đầu.",
+      "sfx": []
+    },
+    {
+      "panel_index": 2,
+      "ai_view": "Một người đứng trước một cánh cửa gỗ cũ kỹ. Cánh cửa từ từ mở ra, hé lộ một khoảng tối bên trong.",
+      "voiceover_text": "Cửa mở ra... Một bí ẩn đang chờ đợi.",
+      "sfx": []
+    },
+    {
+      "panel_index": 3,
+      "ai_view": "Người đó tiếp tục quan sát, nhưng lần này, một bóng hình mờ ảo xuất hiện phía sau cánh cửa.",
+      "voiceover_text": "Một bóng hình... Sự nguy hiểm đang đến gần.",
+      "sfx": []
+    },
+    {
+      "panel_index": 4,
+      "ai_view": "Người đó vẫn đứng yên, nhìn ra xa, không có bất kỳ thay đổi nào trong khung cảnh.",
+      "voiceover_text": "Không có gì xảy ra. Chỉ có sự chờ đợi.",
+      "sfx": []
+    },
+    {
+      "panel_index": 5,
+      "ai_view": "Một người đứng trước một cửa hàng nhỏ, vẻ mặt bình tĩnh, nhưng ánh mắt vẫn đầy tò mò.",
+      "voiceover_text": "Tiếp theo... Một bước đi quan trọng.",
+      "sfx": []
+    },
+    {
+      "panel_index": 6,
+      "ai_view": "Người đó đứng trước một cánh cửa khác, vẻ mặt tò mò và thận trọng, cánh cửa mở ra một cách chậm rãi.",
+      "voiceover_text": "Cửa mở ra... Một lời mời nguy hiểm.",
+      "sfx": []
+    },
+    {
+      "panel_index": 7,
+      "ai_view": "Người đó đứng trước một cổng lớn, có vẻ như cổ xưa, và cổng mở ra, dẫn đến một con đường tối tăm.",
+      "voiceover_text": "Cổng mở ra... Bước vào vực thẳm.",
+      "sfx": []
+    },
+    {
+      "panel_index": 8,
+      "ai_view": "Người đó đứng nhìn xa, vẻ mặt trầm tư, ánh mắt đầy suy nghĩ sâu sắc.",
+      "voiceover_text": "Bóng tối dần hiện lên. Một kế hoạch đang được hình thành.",
+      "sfx": []
+    },
+    {
+      "panel_index": 9,
+      "ai_view": "Người đó đứng trước một cánh cửa, vẻ mặt nghiêm trọng, ánh mắt sắc lạnh, cánh cửa mở ra một cách đột ngột.",
+      "voiceover_text": "Cửa mở ra... Sự thật phơi bày.",
+      "sfx": []
+    },
+    {
+      "panel_index": 10,
+      "ai_view": "Người đó nhìn ra, vẻ mặt trầm tư, ánh mắt chứa đựng cả sự nguy hiểm và chiến lược.",
+      "voiceover_text": "Bóng tối bao phủ mọi thứ. Cuộc chiến bắt đầu.",
+      "sfx": []
+    },
+    {
+      "panel_index": 11,
+      "ai_view": "Một cảnh quan rộng lớn, ngoại ô tĩnh lặng. Ánh sáng yếu ớt, một bóng hình mờ ảo xuất hiện ở phía xa.",
+      "voiceover_text": "Một không gian rộng lớn, tĩnh lặng. Một bóng hình... xuất hiện từ đâu đó.",
+      "sfx": []
+    },
+    {
+      "panel_index": 12,
+      "ai_view": "Cảnh quan vẫn yên tĩnh, không có bất kỳ nhân vật nào rõ ràng. Sự tĩnh lặng bao trùm mọi thứ.",
+      "voiceover_text": "Sự im lặng... kéo dài vô tận.",
+      "sfx": []
+    },
+    {
+      "panel_index": 13,
+      "ai_view": "Một người đứng, hướng mắt nhìn về phía xa, biểu cảm bình thản. Bóng tối bắt đầu len lỏi.",
+      "voiceover_text": "Một người nhìn xa... Bóng tối dần hiện lên.",
+      "sfx": []
+    },
+    {
+      "panel_index": 14,
+      "ai_view": "Người đó vẫn đứng, mắt nhìn xa hơn. Bóng tối ngày càng dày đặc, bao phủ mọi thứ.",
+      "voiceover_text": "Bóng tối... ngày càng dày lên.",
+      "sfx": []
+    },
+    {
+      "panel_index": 15,
+      "ai_view": "Cảnh quan vẫn yên bình, một khu vực ngoại cảnh. Mờ ảo phía trước, như có một điều gì đó đang chờ đợi.",
+      "voiceover_text": "Mờ ảo... một điều gì đó đang chờ đợi phía trước.",
+      "sfx": []
+    },
+    {
+      "panel_index": 16,
+      "ai_view": "Người đó tiếp tục ngắm nhìn, một cảnh quan rộng lớn trải dài trước mắt. Bầu trời bắt đầu chuyển sang màu tối.",
+      "voiceover_text": "Bầu trời... bắt đầu tối xuống.",
+      "sfx": []
+    },
+    {
+      "panel_index": 17,
+      "ai_view": "Người đó đứng trước một cánh cửa, biểu cảm tò mò và bí ẩn. Cánh cửa từ từ mở ra.",
+      "voiceover_text": "Cánh cửa... mở ra.",
+      "sfx": []
+    },
+    {
+      "panel_index": 18,
+      "ai_view": "Người đó vẫn nhìn ra, bầu trời tối sầm xuống. Một cảm giác bất an bắt đầu lan tỏa.",
+      "voiceover_text": "Bầu trời... tối sầm hơn.",
+      "sfx": []
+    },
+    {
+      "panel_index": 19,
+      "ai_view": "Người đó nhìn ra, biểu cảm trầm tư. Bóng tối bao phủ mọi thứ xung quanh, nhấn mạnh sự bí ẩn.",
+      "voiceover_text": "Trầm tư... bóng tối bao phủ mọi thứ.",
+      "sfx": []
+    },
+    {
+      "panel_index": 20,
+      "ai_view": "Người đó nhìn ra, biểu cảm đầy suy tư. Bóng tối hoàn toàn bao phủ, nhấn mạnh sự nguy hiểm.",
+      "voiceover_text": "Sự đen tối... bao trùm mọi thứ.",
+      "sfx": []
+    },
+    {
+      "panel_index": 21,
+      "ai_view": "Một người đàn ông đứng nhìn ra một cảnh quan xa xôi, bầu trời dần chuyển tối.",
+      "voiceover_text": "Bầu trời tối dần... một sự tĩnh lặng đáng sợ bắt đầu.",
+      "sfx": []
+    },
+    {
+      "panel_index": 22,
+      "ai_view": "Người đó tiếp tục quan sát, cảnh quan rộng lớn hơn bao la trước mắt.",
+      "voiceover_text": "Bầu trời sầm tối hơn nữa, một cảm giác bất an len lỏi.",
+      "sfx": []
+    },
+    {
+      "panel_index": 23,
+      "ai_view": "Một khu vực ngoại cảnh rộng lớn, có vẻ như một vùng đất chưa được khám phá.",
+      "voiceover_text": "Tiếp tục khám phá khu vực này... điều gì đang chờ đợi?",
+      "sfx": []
+    },
+    {
+      "panel_index": 24,
+      "ai_view": "Một người phụ nữ nhìn xuống một vật thể nhỏ, biểu cảm tò mò.",
+      "voiceover_text": "Bất ngờ xuất hiện... một sự thật khó tin.",
+      "sfx": []
+    },
+    {
+      "panel_index": 25,
+      "ai_view": "Một người đàn ông đứng nhìn ra, biểu cảm trầm tư, ánh mắt dò xét.",
+      "voiceover_text": "Trầm tư... có thể đây là một cạm bẫy?",
+      "sfx": []
+    },
+    {
+      "panel_index": 26,
+      "ai_view": "Người đó quan sát một cảnh quan rộng lớn, một bóng hình mờ ảo xuất hiện phía sau.",
+      "voiceover_text": "Một bóng hình... ẩn mình trong bóng tối.",
+      "sfx": []
+    },
+    {
+      "panel_index": 27,
+      "ai_view": "Người đó tiếp tục quan sát, bầu trời bắt đầu tối hơn, không gian trở nên lạnh lẽo.",
+      "voiceover_text": "Bầu trời tối xuống... sự lạnh lẽo tăng lên.",
+      "sfx": []
+    },
+    {
+      "panel_index": 28,
+      "ai_view": "Một người đứng trong một căn phòng tối, không rõ biểu cảm.",
+      "voiceover_text": "Tiếp theo... nơi này là gì?",
+      "sfx": []
+    },
+    {
+      "panel_index": 29,
+      "ai_view": "Người đó đứng trước một cánh cổng lớn, biểu cảm tò mò và cẩn trọng.",
+      "voiceover_text": "Cửa cổng mở ra... một thế giới mới?",
+      "sfx": []
+    },
+    {
+      "panel_index": 30,
+      "ai_view": "Người đó đứng trước một cánh cửa, biểu cảm lo lắng và tò mò.",
+      "voiceover_text": "Cửa mở ra... nguy hiểm đang đến gần.",
+      "sfx": []
+    },
+    {
+      "panel_index": 31,
+      "ai_view": "Một người đàn ông đứng lặng nhìn ra một cảnh quan tối tăm, bầu trời bắt đầu chuyển màu đen. Bóng tối bao phủ mọi thứ, ẩn chứa điều gì?",
+      "voiceover_text": "Bầu trời tối sầm xuống, một cảm giác bất an lan tỏa...",
+      "sfx": []
+    },
+    {
+      "panel_index": 32,
+      "ai_view": "Người đó tiếp tục quan sát, một cảnh quan rộng lớn hiện ra trong bóng tối. Bầu trời vẫn tiếp tục tối sầm xuống, một sự thay đổi đáng lo ngại.",
+      "voiceover_text": "Bầu trời bắt đầu tối sầm xuống, một sự thay đổi không tự nhiên.",
+      "sfx": []
+    },
+    {
+      "panel_index": 33,
+      "ai_view": "Người đàn ông nhìn xa hơn, bóng tối ngày càng hiện lên rõ ràng hơn. Sự tĩnh lặng bao trùm mọi thứ.",
+      "voiceover_text": "Bóng tối dần hiện lên, một sự thật đáng sợ.",
+      "sfx": []
+    },
+    {
+      "panel_index": 34,
+      "ai_view": "Người đó vẫn đứng nhìn, vẻ mặt tập trung vào cảnh quan rộng lớn đang dần biến mất trong bóng tối. Bầu trời tối sầm xuống nhanh chóng.",
+      "voiceover_text": "Bầu trời tối sầm xuống, tốc độ chóng mặt.",
+      "sfx": []
+    },
+    {
+      "panel_index": 35,
+      "ai_view": "Người đàn ông đứng im lặng, nhìn ra xa, vẻ mặt trầm tư. Bầu trời tối sầm xuống, không còn dấu vết của ánh sáng.",
+      "voiceover_text": "Bầu trời tối sầm xuống, không còn hy vọng.",
+      "sfx": []
+    },
+    {
+      "panel_index": 36,
+      "ai_view": "Người đó nhìn xa hơn nữa, vẻ mặt vẫn giữ nguyên sự tĩnh lặng. Bầu trời tối sầm xuống, một sự thật đáng sợ.",
+      "voiceover_text": "Bầu trời tối sầm xuống, một sự thật đáng sợ.",
+      "sfx": []
+    },
+    {
+      "panel_index": 37,
+      "ai_view": "Người đàn ông đứng nhìn xa, vẻ mặt trầm tư sâu sắc. Sự im lặng bao trùm mọi thứ, không có dấu hiệu nào của sự sống.",
+      "voiceover_text": "Trầm tư... điều gì đang xảy ra?",
+      "sfx": []
+    },
+    {
+      "panel_index": 38,
+      "ai_view": "Người đó tiếp tục nhìn ra xa, bóng tối ngày càng dày lên. Một cảm giác nguy hiểm bao trùm.",
+      "voiceover_text": "Bóng tối ẩn hiện phía trước, một mối nguy hiểm tiềm tàng.",
+      "sfx": []
+    },
+    {
+      "panel_index": 39,
+      "ai_view": "Người đàn ông nhìn ra xa, vẻ mặt vẫn giữ nguyên sự tĩnh lặng. Bóng tối dần dày lên, che khuất mọi thứ.",
+      "voiceover_text": "Bóng tối ẩn hiện, không còn lối thoát.",
+      "sfx": []
+    },
+    {
+      "panel_index": 40,
+      "ai_view": "Người đó đứng nhìn ra, vẻ mặt trầm tư, bóng tối dần dày lên, bao trùm mọi thứ. Một sự thật đáng sợ đang đến gần.",
+      "voiceover_text": "Bóng tối dần dày lên... nguy hiểm đang đến!",
+      "sfx": []
+    },
+    {
+      "panel_index": 41,
+      "ai_view": "Một người phụ nữ, vẻ mặt tò mò và nghiêm túc, đang nhìn xuống một vật thể nhỏ. Một tiếng động lạ vang lên trong không gian tĩnh mịch.",
+      "voiceover_text": "Một tiếng động lạ! Bất chợt, một cảm giác bất an len lỏi.",
+      "sfx": []
+    },
+    {
+      "panel_index": 42,
+      "ai_view": "Một người đàn ông đứng nhìn xa, vẻ mặt tĩnh lặng. Bóng tối bắt đầu ẩn hiện trên đường chân trời.",
+      "voiceover_text": "Bóng tối... Nó đang đến gần hơn.",
+      "sfx": []
+    },
+    {
+      "panel_index": 43,
+      "ai_view": "Người phụ nữ tiếp tục nhìn xuống vật thể, biểu cảm tò mò vẫn không thay đổi. Điều gì đang xảy ra?",
+      "voiceover_text": "Điều gì đang xảy ra? Sự tò mò này... nó nguy hiểm.",
+      "sfx": []
+    },
+    {
+      "panel_index": 44,
+      "ai_view": "Một người đứng nhìn ra, vẻ mặt trầm tư. Bóng tối dần bao phủ mọi thứ xung quanh.",
+      "voiceover_text": "Bóng tối bao phủ... Sự thật đáng sợ đang lộ diện.",
+      "sfx": []
+    },
+    {
+      "panel_index": 45,
+      "ai_view": "Người đàn ông vẫn nhìn ra, biểu cảm trầm tư sâu sắc. Không có dấu hiệu nào của sự sống.",
+      "voiceover_text": "Không có gì cả... Chỉ có bóng tối và sự im lặng.",
+      "sfx": []
+    },
+    {
+      "panel_index": 46,
+      "ai_view": "Cảnh vật tĩnh lặng, không có nhân vật nào xuất hiện. Một không gian rộng lớn, trống rỗng.",
+      "voiceover_text": "Im lặng... Một sự im lặng chết chóc.",
+      "sfx": []
+    },
+    {
+      "panel_index": 47,
+      "ai_view": "Một người phụ nữ đứng nhìn ra ngoài, vẻ mặt trầm tư, suy nghĩ về điều gì đó. Bầu trời đã chuyển sang màu đen.",
+      "voiceover_text": "Bầu trời tối đen... Một dấu hiệu báo trước nguy hiểm.",
+      "sfx": []
+    },
+    {
+      "panel_index": 48,
+      "ai_view": "Một người đàn ông nhìn xa, vẻ mặt tĩnh lặng và trầm tư. Bóng tối ẩn chứa điều gì?",
+      "voiceover_text": "Bóng tối ẩn chứa điều gì? Một bí mật đen tối.",
+      "sfx": []
+    },
+    {
+      "panel_index": 49,
+      "ai_view": "Người đàn ông tiếp tục quan sát, bóng tối dần hiện lên, bao trùm mọi thứ. Sự căng thẳng tăng lên.",
+      "voiceover_text": "Bóng tối dần hiện lên... Sự thật kinh hoàng.",
+      "sfx": []
+    },
+    {
+      "panel_index": 50,
+      "ai_view": "Một người đứng nhìn ra xa, vẻ mặt tĩnh lặng, không thay đổi. Bóng tối bao trùm hoàn toàn.",
+      "voiceover_text": "Bóng tối bao phủ... Không còn hy vọng.",
+      "sfx": []
+    },
+    {
+      "panel_index": 51,
+      "ai_view": "Một người đàn ông đứng lặng nhìn về phía trước, bóng tối bao phủ tầm nhìn của anh ta. Không gian xung quanh có vẻ mờ ảo và đầy rẫy những điều không rõ.",
+      "voiceover_text": "Bóng tối bao trùm... một cảm giác bất an lan tỏa.",
+      "sfx": []
+    },
+    {
+      "panel_index": 52,
+      "ai_view": "Người đàn ông vẫn đứng nhìn ra, biểu cảm trầm tư. Ánh mắt anh ta tập trung vào một điểm nào đó phía xa, không rõ mục đích.",
+      "voiceover_text": "Không rõ mục đích... một sự thật đáng sợ sắp lộ diện.",
+      "sfx": []
+    }
+  ],
+  "storyMemories": [
+    {
+      "chunkIndex": 0,
+      "summary": "L? V?n T?m đối mặt với một bí ẩn nguy hiểm, bước vào một vực thẳm đầy kế hoạch và sự chờ đợi trước khi cuộc chiến bắt đầu."
+    },
+    {
+      "chunkIndex": 1,
+      "summary": "L? V?n T?m bước vào một không gian tĩnh lặng và tối tăm, nơi bóng tối ngày càng dày lên và một cánh cửa mở ra."
+    },
+    {
+      "chunkIndex": 2,
+      "summary": "L? V?n T?m tiếp tục khám phá khu vực bí ẩn, nơi bầu trời tối sầm và cảm giác bất an tăng lên, dẫn đến việc phát hiện ra một thế giới mới và nguy hiểm tiềm tàng."
+    },
+    {
+      "chunkIndex": 3,
+      "summary": "Bầu trời đang dần tối đen, mang theo một cảm giác bất an và sự thật đáng sợ, báo hiệu nguy hiểm đang đến gần."
+    },
+    {
+      "chunkIndex": 4,
+      "summary": "L? V?n T?m cảm nhận được sự bất an và bóng tối đang dần bao trùm, báo hiệu một sự thật đáng sợ và nguy hiểm sắp lộ diện."
+    },
+    {
+      "chunkIndex": 5,
+      "summary": "Một bầu không khí u ám và đáng sợ đang bao trùm, báo hiệu một sự thật nguy hiểm sắp được hé lộ."
+    }
+  ],
+  "panelSignature": "d26d43cbdad2aed1cee145422549bebb7804ede410085081e3bcf15802d32db7",
+  "rawOutputs": {
+    "understanding": "{\n  \"items\": [\n    {\n      \"panel_index\": 1,\n      \"summary\": \"Một người đứng nhìn ra một cảnh quan rộng lớn.\",\n      \"action\": \"Quan sát\",\n      \"emotion\": \"Thích ngắm\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bầu trời tối sầm xuống.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 2,\n      \"summary\": \"Một người đứng trước một cửa.\",\n      \"action\": \"Đứng\",\n      \"emotion\": \"Tò mò, lo lắng\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Cửa mở ra...\"\n    }\n  ]\n}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 3,\n    \"summary\": \"Một người đứng nhìn ra một cảnh quan rộng lớn.\",\n    \"action\": \"Nhìn\",\n    \"emotion\": \"Thích ngắm\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Một bóng hình xuất hiện phía sau.\"\n  }\n]}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 4,\n      \"summary\": \"Một người đang đứng, nhìn ra phía trước.\",\n      \"action\": \"Đứng\",\n      \"emotion\": \"Tĩnh lặng, quan sát\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Không có gì xảy ra.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 5,\n      \"summary\": \"Một người đứng trước một cửa hàng.\",\n      \"action\": \"Đứng\",\n      \"emotion\": \"Bình tĩnh\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Tiếp theo...\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 6,\n      \"summary\": \"Một người đứng trước một cửa.\",\n      \"action\": \"Đứng\",\n      \"emotion\": \"Tò mò, Cẩn trọng\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Cửa mở ra...\"\n    }\n  ]\n}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 7,\n    \"summary\": \"Một người đứng trước một cửa cổng lớn.\",\n    \"action\": \"Đứng\",\n    \"emotion\": \"Tò mò\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Cổng mở ra...\"\n  }\n]}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 8,\n      \"summary\": \"Một người đang đứng nhìn ra xa.\",\n      \"action\": \"Đứng nhìn\",\n      \"emotion\": \"Tĩnh lặng, trầm tư\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bóng tối dần hiện lên.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 9,\n      \"summary\": \"Một người đứng trước một cửa, vẻ mặt nghiêm trọng.\",\n      \"action\": \"Đứng\",\n      \"emotion\": \"Nghiêm trọng\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Cửa mở ra...\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 10,\n      \"summary\": \"Một người đứng nhìn ra, vẻ mặt trầm tư.\",\n      \"action\": \"Nhìn ra\",\n      \"emotion\": \"Trầm tư\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bóng tối bao phủ mọi thứ.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 11,\n      \"summary\": \"Một cảnh vật rộng lớn, có vẻ như là một khu vực ngoại ô.\",\n      \"action\": \"Cảnh quan tĩnh lặng\",\n      \"emotion\": \"Tranquil\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Một bóng hình xuất hiện phía xa xôi.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 12,\n      \"summary\": \"Một khung cảnh tĩnh lặng, không có nhân vật nào.\",\n      \"action\": \"Không có hành động\",\n      \"emotion\": \"Thanh thản\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Không có\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 13,\n      \"summary\": \"Một người đứng nhìn ra xa.\",\n      \"action\": \"Nhìn\",\n      \"emotion\": \"Tĩnh lặng\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bóng tối dần hiện lên.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 14,\n      \"summary\": \"Một người đứng nhìn ra xa.\",\n      \"action\": \"Nhìn\",\n      \"emotion\": \"Tĩnh lặng\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bóng tối dần dày lên.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 15,\n      \"summary\": \"Một cảnh quan tĩnh lặng, có vẻ như một khu vực ngoại cảnh.\",\n      \"action\": \"Xem xét\",\n      \"emotion\": \"Tranquil\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Mờ ảo phía trước...\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 16,\n      \"summary\": \"Một người đứng nhìn ra một cảnh quan rộng lớn.\",\n      \"action\": \"Nhìn\",\n      \"emotion\": \"Thích ngắm\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bầu trời bắt đầu tối xuống.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 17,\n      \"summary\": \"Một người đứng trước một cửa ra vào.\",\n      \"action\": \"Đứng\",\n      \"emotion\": \"Tò mò, bí ẩn\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Cửa mở ra...\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 18,\n      \"summary\": \"Một người đứng nhìn ra một cảnh quan rộng lớn.\",\n      \"action\": \"Nhìn\",\n      \"emotion\": \"Thích ngắm\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bầu trời bắt đầu tối xuống.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 19,\n      \"summary\": \"Một người đứng nhìn ra một cảnh quan.\",\n      \"action\": \"Nhìn\",\n      \"emotion\": \"Tranquil\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bầu trời tối sầm xuống.\"\n    }\n  ]\n}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 20,\n    \"summary\": \"Một người đứng nhìn ra, biểu cảm trầm tư.\",\n    \"action\": \"Nhìn\",\n    \"emotion\": \"Trầm tư, bí ẩn\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Bóng tối bao phủ mọi thứ...\"\n  }\n]}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 21,\n      \"summary\": \"Một người đứng nhìn ra một cảnh quan.\",\n      \"action\": \"Quan sát\",\n      \"emotion\": \"Tranquil\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bầu trời tối dần.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 22,\n      \"summary\": \"Một người đứng nhìn ra một cảnh quan rộng lớn.\",\n      \"action\": \"Nhìn\",\n      \"emotion\": \"Thích ngắm\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bầu trời tối sầm xuống.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 23,\n      \"summary\": \"Một cảnh vật rộng lớn, có vẻ như một khu vực ngoại cảnh.\",\n      \"action\": \"Cảnh quan rộng lớn\",\n      \"emotion\": \"Minh bạch, rộng lớn\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Tiếp tục khám phá khu vực này.\"\n    }\n  ]\n}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 24,\n    \"summary\": \"Một người phụ nữ đang nhìn xuống một vật thể.\",\n    \"action\": \"Nhìn xuống\",\n    \"emotion\": \"Tò mò\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Bất ngờ xuất hiện.\"\n  }\n]}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 25,\n      \"summary\": \"Một người đứng nhìn ra, biểu cảm trầm tư.\",\n      \"action\": \"Nhìn\",\n      \"emotion\": \"Trầm tư\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Không có gì rõ ràng.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 26,\n      \"summary\": \"Một người đứng nhìn ra một cảnh quan rộng lớn.\",\n      \"action\": \"Quan sát\",\n      \"emotion\": \"Tĩnh lặng, trầm ngâm\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Một bóng hình xuất hiện phía sau.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 27,\n      \"summary\": \"Một người đứng nhìn ra một cảnh quan rộng lớn.\",\n      \"action\": \"Nhìn\",\n      \"emotion\": \"Thích ngắm\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bầu trời bắt đầu tối xuống.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 28,\n      \"summary\": \"Một người đứng trong một căn phòng tối.\",\n      \"action\": \"Đứng\",\n      \"emotion\": \"Không rõ\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Tiếp theo...\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 29,\n      \"summary\": \"Một người đứng trước một cửa cổng lớn.\",\n      \"action\": \"Đứng\",\n      \"emotion\": \"Tò mò, Cẩn trọng\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Cửa cổng mở ra.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 30,\n      \"summary\": \"Một người đứng trước một cửa.\",\n      \"action\": \"Đứng\",\n      \"emotion\": \"Tò mò, lo lắng\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Cửa mở ra...\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 31,\n      \"summary\": \"Một người đứng nhìn ra một cảnh quan tối.\",\n      \"action\": \"Quan sát\",\n      \"emotion\": \"Tĩnh lặng, trầm tư\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bóng tối ẩn chứa điều gì?\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 32,\n      \"summary\": \"Một người đứng nhìn ra một cảnh quan rộng lớn.\",\n      \"action\": \"Quan sát\",\n      \"emotion\": \"Tranquil\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bầu trời bắt đầu tối sầm xuống.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 33,\n      \"summary\": \"Một người đứng nhìn ra xa.\",\n      \"action\": \"Nhìn\",\n      \"emotion\": \"Tĩnh lặng, trầm tư\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bóng tối dần hiện lên.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 34,\n      \"summary\": \"Một người đứng nhìn ra một cảnh quan rộng lớn.\",\n      \"action\": \"Nhìn\",\n      \"emotion\": \"Thích ngắm\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bầu trời tối sầm xuống.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 35,\n      \"summary\": \"Một người đứng nhìn ra một cảnh quan rộng lớn.\",\n      \"action\": \"Đứng\",\n      \"emotion\": \"Thầm lặng\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bầu trời tối sầm xuống.\"\n    }\n  ]\n}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 36,\n    \"summary\": \"Một người đứng nhìn ra xa.\",\n    \"action\": \"Nhìn\",\n    \"emotion\": \"Tĩnh lặng\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Bầu trời tối sầm xuống.\"\n  }\n]}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 37,\n      \"summary\": \"Một người đứng nhìn ra xa, vẻ mặt trầm tư.\",\n      \"action\": \"Nhìn xa\",\n      \"emotion\": \"Trầm tư\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"...\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 38,\n      \"summary\": \"Một người đứng nhìn ra xa.\",\n      \"action\": \"Nhìn\",\n      \"emotion\": \"Tĩnh lặng, trầm tư\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bóng tối ẩn hiện phía trước.\"\n    }\n  ]\n}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 39,\n    \"summary\": \"Một người đứng nhìn ra xa.\",\n    \"action\": \"Nhìn\",\n    \"emotion\": \"Tĩnh lặng\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Bóng tối ẩn hiện.\"\n  }\n]}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 40,\n      \"summary\": \"Một người đứng nhìn ra, vẻ mặt trầm tư.\",\n      \"action\": \"Nhìn ra\",\n      \"emotion\": \"Trầm tư\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bóng tối dần dày lên.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 41,\n      \"summary\": \"Một người phụ nữ đang nhìn xuống một vật thể.\",\n      \"action\": \"Nhìn xuống\",\n      \"emotion\": \"Tò mò, Nghiêm túc\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Một tiếng động lạ vang lên.\"\n    }\n  ]\n}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 42,\n    \"summary\": \"Một người đứng nhìn ra xa.\",\n    \"action\": \"Nhìn\",\n    \"emotion\": \"Tĩnh lặng\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Bóng tối ẩn hiện.\"\n  }\n]}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 43,\n      \"summary\": \"Một người phụ nữ đang nhìn xuống một vật thể.\",\n      \"action\": \"Nhìn xuống\",\n      \"emotion\": \"Tò mò\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Điều gì đang xảy ra?\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 44,\n      \"summary\": \"Một người đứng nhìn ra, vẻ mặt trầm tư.\",\n      \"action\": \"Nhìn\",\n      \"emotion\": \"Trầm tư\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bóng tối bao phủ mọi thứ.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 45,\n      \"summary\": \"Một người đứng nhìn ra, biểu cảm trầm tư.\",\n      \"action\": \"Nhìn\",\n      \"emotion\": \"Trầm tư\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bóng tối bao phủ mọi thứ.\"\n    }\n  ]\n}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 46,\n    \"summary\": \"Một cảnh vật tĩnh lặng, không có nhân vật.\",\n    \"action\": \"Không có hành động\",\n    \"emotion\": \"Im lặng\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Không có\"\n  }\n]}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 47,\n      \"summary\": \"Một người phụ nữ đang đứng nhìn ra ngoài, vẻ mặt trầm tư.\",\n      \"action\": \"Nhìn ra\",\n      \"emotion\": \"Trầm tư\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bầu trời tối đen.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 48,\n      \"summary\": \"Một người đứng nhìn ra xa.\",\n      \"action\": \"Nhìn\",\n      \"emotion\": \"Tĩnh lặng, trầm tư\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bóng tối ẩn chứa điều gì?\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 49,\n      \"summary\": \"Một người đứng nhìn ra xa.\",\n      \"action\": \"Quan sát\",\n      \"emotion\": \"Tĩnh lặng, trầm tư\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bóng tối dần hiện lên.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 50,\n      \"summary\": \"Một người đứng nhìn ra xa.\",\n      \"action\": \"Nhìn\",\n      \"emotion\": \"Tĩnh lặng\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bóng tối ẩn hiện.\"\n    }\n  ]\n}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 51,\n    \"action\": \"Một người đứng nhìn ra.\",\n    \"emotion\": \"Tĩnh lặng, trầm tư\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Mờ ảo phía trước...\"\n  }\n]}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 52,\n      \"summary\": \"Một người đứng nhìn ra, biểu cảm trầm tư.\",\n      \"action\": \"Nhìn\",\n      \"emotion\": \"Trầm tư\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Không rõ mục đích.\"\n    }\n  ]\n}",
+    "script": "{\n  \"items\": [\n    {\n      \"panel_index\": 1,\n      \"ai_view\": \"Một người đàn ông đứng trầm mặc, ngắm nhìn một cảnh quan rộng lớn dưới bầu trời đang dần tối sầm.\",\n      \"voiceover_text\": \"Bầu trời tối sầm xuống. Một sự tĩnh lặng đáng sợ bắt đầu.\"\n    },\n    {\n      \"panel_index\": 2,\n      \"ai_view\": \"Một người đứng trước một cánh cửa gỗ cũ kỹ. Cánh cửa từ từ mở ra, hé lộ một khoảng tối bên trong.\",\n      \"voiceover_text\": \"Cửa mở ra... Một bí ẩn đang chờ đợi.\"\n    },\n    {\n      \"panel_index\": 3,\n      \"ai_view\": \"Người đó tiếp tục quan sát, nhưng lần này, một bóng hình mờ ảo xuất hiện phía sau cánh cửa.\",\n      \"voiceover_text\": \"Một bóng hình... Sự nguy hiểm đang đến gần.\"\n    },\n    {\n      \"panel_index\": 4,\n      \"ai_view\": \"Người đó vẫn đứng yên, nhìn ra xa, không có bất kỳ thay đổi nào trong khung cảnh.\",\n      \"voiceover_text\": \"Không có gì xảy ra. Chỉ có sự chờ đợi.\"\n    },\n    {\n      \"panel_index\": 5,\n      \"ai_view\": \"Một người đứng trước một cửa hàng nhỏ, vẻ mặt bình tĩnh, nhưng ánh mắt vẫn đầy tò mò.\",\n      \"voiceover_text\": \"Tiếp theo... Một bước đi quan trọng.\"\n    },\n    {\n      \"panel_index\": 6,\n      \"ai_view\": \"Người đó đứng trước một cánh cửa khác, vẻ mặt tò mò và thận trọng, cánh cửa mở ra một cách chậm rãi.\",\n      \"voiceover_text\": \"Cửa mở ra... Một lời mời nguy hiểm.\"\n    },\n    {\n      \"panel_index\": 7,\n      \"ai_view\": \"Người đó đứng trước một cổng lớn, có vẻ như cổ xưa, và cổng mở ra, dẫn đến một con đường tối tăm.\",\n      \"voiceover_text\": \"Cổng mở ra... Bước vào vực thẳm.\"\n    },\n    {\n      \"panel_index\": 8,\n      \"ai_view\": \"Người đó đứng nhìn xa, vẻ mặt trầm tư, ánh mắt đầy suy nghĩ sâu sắc.\",\n      \"voiceover_text\": \"Bóng tối dần hiện lên. Một kế hoạch đang được hình thành.\"\n    },\n    {\n      \"panel_index\": 9,\n      \"ai_view\": \"Người đó đứng trước một cánh cửa, vẻ mặt nghiêm trọng, ánh mắt sắc lạnh, cánh cửa mở ra một cách đột ngột.\",\n      \"voiceover_text\": \"Cửa mở ra... Sự thật phơi bày.\"\n    },\n    {\n      \"panel_index\": 10,\n      \"ai_view\": \"Người đó nhìn ra, vẻ mặt trầm tư, ánh mắt chứa đựng cả sự nguy hiểm và chiến lược.\",\n      \"voiceover_text\": \"Bóng tối bao phủ mọi thứ. Cuộc chiến bắt đầu.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"summary\": \"L? V?n T?m đối mặt với một bí ẩn nguy hiểm, bước vào một vực thẳm đầy kế hoạch và sự chờ đợi trước khi cuộc chiến bắt đầu.\"\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 11,\n      \"ai_view\": \"Một cảnh quan rộng lớn, ngoại ô tĩnh lặng. Ánh sáng yếu ớt, một bóng hình mờ ảo xuất hiện ở phía xa.\",\n      \"voiceover_text\": \"Một không gian rộng lớn, tĩnh lặng. Một bóng hình... xuất hiện từ đâu đó.\"\n    },\n    {\n      \"panel_index\": 12,\n      \"ai_view\": \"Cảnh quan vẫn yên tĩnh, không có bất kỳ nhân vật nào rõ ràng. Sự tĩnh lặng bao trùm mọi thứ.\",\n      \"voiceover_text\": \"Sự im lặng... kéo dài vô tận.\"\n    },\n    {\n      \"panel_index\": 13,\n      \"ai_view\": \"Một người đứng, hướng mắt nhìn về phía xa, biểu cảm bình thản. Bóng tối bắt đầu len lỏi.\",\n      \"voiceover_text\": \"Một người nhìn xa... Bóng tối dần hiện lên.\"\n    },\n    {\n      \"panel_index\": 14,\n      \"ai_view\": \"Người đó vẫn đứng, mắt nhìn xa hơn. Bóng tối ngày càng dày đặc, bao phủ mọi thứ.\",\n      \"voiceover_text\": \"Bóng tối... ngày càng dày lên.\"\n    },\n    {\n      \"panel_index\": 15,\n      \"ai_view\": \"Cảnh quan vẫn yên bình, một khu vực ngoại cảnh. Mờ ảo phía trước, như có một điều gì đó đang chờ đợi.\",\n      \"voiceover_text\": \"Mờ ảo... một điều gì đó đang chờ đợi phía trước.\"\n    },\n    {\n      \"panel_index\": 16,\n      \"ai_view\": \"Người đó tiếp tục ngắm nhìn, một cảnh quan rộng lớn trải dài trước mắt. Bầu trời bắt đầu chuyển sang màu tối.\",\n      \"voiceover_text\": \"Bầu trời... bắt đầu tối xuống.\"\n    },\n    {\n      \"panel_index\": 17,\n      \"ai_view\": \"Người đó đứng trước một cánh cửa, biểu cảm tò mò và bí ẩn. Cánh cửa từ từ mở ra.\",\n      \"voiceover_text\": \"Cánh cửa... mở ra.\"\n    },\n    {\n      \"panel_index\": 18,\n      \"ai_view\": \"Người đó vẫn nhìn ra, bầu trời tối sầm xuống. Một cảm giác bất an bắt đầu lan tỏa.\",\n      \"voiceover_text\": \"Bầu trời... tối sầm hơn.\"\n    },\n    {\n      \"panel_index\": 19,\n      \"ai_view\": \"Người đó nhìn ra, biểu cảm trầm tư. Bóng tối bao phủ mọi thứ xung quanh, nhấn mạnh sự bí ẩn.\",\n      \"voiceover_text\": \"Trầm tư... bóng tối bao phủ mọi thứ.\"\n    },\n    {\n      \"panel_index\": 20,\n      \"ai_view\": \"Người đó nhìn ra, biểu cảm đầy suy tư. Bóng tối hoàn toàn bao phủ, nhấn mạnh sự nguy hiểm.\",\n      \"voiceover_text\": \"Sự đen tối... bao trùm mọi thứ.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"summary\": \"L? V?n T?m bước vào một không gian tĩnh lặng và tối tăm, nơi bóng tối ngày càng dày lên và một cánh cửa mở ra.\"\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 21,\n      \"ai_view\": \"Một người đàn ông đứng nhìn ra một cảnh quan xa xôi, bầu trời dần chuyển tối.\",\n      \"voiceover_text\": \"Bầu trời tối dần... một sự tĩnh lặng đáng sợ bắt đầu.\"\n    },\n    {\n      \"panel_index\": 22,\n      \"ai_view\": \"Người đó tiếp tục quan sát, cảnh quan rộng lớn hơn bao la trước mắt.\",\n      \"voiceover_text\": \"Bầu trời sầm tối hơn nữa, một cảm giác bất an len lỏi.\"\n    },\n    {\n      \"panel_index\": 23,\n      \"ai_view\": \"Một khu vực ngoại cảnh rộng lớn, có vẻ như một vùng đất chưa được khám phá.\",\n      \"voiceover_text\": \"Tiếp tục khám phá khu vực này... điều gì đang chờ đợi?\"\n    },\n    {\n      \"panel_index\": 24,\n      \"ai_view\": \"Một người phụ nữ nhìn xuống một vật thể nhỏ, biểu cảm tò mò.\",\n      \"voiceover_text\": \"Bất ngờ xuất hiện... một sự thật khó tin.\"\n    },\n    {\n      \"panel_index\": 25,\n      \"ai_view\": \"Một người đàn ông đứng nhìn ra, biểu cảm trầm tư, ánh mắt dò xét.\",\n      \"voiceover_text\": \"Trầm tư... có thể đây là một cạm bẫy?\"\n    },\n    {\n      \"panel_index\": 26,\n      \"ai_view\": \"Người đó quan sát một cảnh quan rộng lớn, một bóng hình mờ ảo xuất hiện phía sau.\",\n      \"voiceover_text\": \"Một bóng hình... ẩn mình trong bóng tối.\"\n    },\n    {\n      \"panel_index\": 27,\n      \"ai_view\": \"Người đó tiếp tục quan sát, bầu trời bắt đầu tối hơn, không gian trở nên lạnh lẽo.\",\n      \"voiceover_text\": \"Bầu trời tối xuống... sự lạnh lẽo tăng lên.\"\n    },\n    {\n      \"panel_index\": 28,\n      \"ai_view\": \"Một người đứng trong một căn phòng tối, không rõ biểu cảm.\",\n      \"voiceover_text\": \"Tiếp theo... nơi này là gì?\"\n    },\n    {\n      \"panel_index\": 29,\n      \"ai_view\": \"Người đó đứng trước một cánh cổng lớn, biểu cảm tò mò và cẩn trọng.\",\n      \"voiceover_text\": \"Cửa cổng mở ra... một thế giới mới?\"\n    },\n    {\n      \"panel_index\": 30,\n      \"ai_view\": \"Người đó đứng trước một cánh cửa, biểu cảm lo lắng và tò mò.\",\n      \"voiceover_text\": \"Cửa mở ra... nguy hiểm đang đến gần.\"\n    }\n  ]\n}\n\n---\n\n{\n\"summary\": \"L? V?n T?m tiếp tục khám phá khu vực bí ẩn, nơi bầu trời tối sầm và cảm giác bất an tăng lên, dẫn đến việc phát hiện ra một thế giới mới và nguy hiểm tiềm tàng.\"\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 31,\n      \"ai_view\": \"Một người đàn ông đứng lặng nhìn ra một cảnh quan tối tăm, bầu trời bắt đầu chuyển màu đen. Bóng tối bao phủ mọi thứ, ẩn chứa điều gì?\",\n      \"voiceover_text\": \"Bầu trời tối sầm xuống, một cảm giác bất an lan tỏa...\"\n    },\n    {\n      \"panel_index\": 32,\n      \"ai_view\": \"Người đó tiếp tục quan sát, một cảnh quan rộng lớn hiện ra trong bóng tối. Bầu trời vẫn tiếp tục tối sầm xuống, một sự thay đổi đáng lo ngại.\",\n      \"voiceover_text\": \"Bầu trời bắt đầu tối sầm xuống, một sự thay đổi không tự nhiên.\"\n    },\n    {\n      \"panel_index\": 33,\n      \"ai_view\": \"Người đàn ông nhìn xa hơn, bóng tối ngày càng hiện lên rõ ràng hơn. Sự tĩnh lặng bao trùm mọi thứ.\",\n      \"voiceover_text\": \"Bóng tối dần hiện lên, một sự thật đáng sợ.\"\n    },\n    {\n      \"panel_index\": 34,\n      \"ai_view\": \"Người đó vẫn đứng nhìn, vẻ mặt tập trung vào cảnh quan rộng lớn đang dần biến mất trong bóng tối. Bầu trời tối sầm xuống nhanh chóng.\",\n      \"voiceover_text\": \"Bầu trời tối sầm xuống, tốc độ chóng mặt.\"\n    },\n    {\n      \"panel_index\": 35,\n      \"ai_view\": \"Người đàn ông đứng im lặng, nhìn ra xa, vẻ mặt trầm tư. Bầu trời tối sầm xuống, không còn dấu vết của ánh sáng.\",\n      \"voiceover_text\": \"Bầu trời tối sầm xuống, không còn hy vọng.\"\n    },\n    {\n      \"panel_index\": 36,\n      \"ai_view\": \"Người đó nhìn xa hơn nữa, vẻ mặt vẫn giữ nguyên sự tĩnh lặng. Bầu trời tối sầm xuống, một sự thật đáng sợ.\",\n      \"voiceover_text\": \"Bầu trời tối sầm xuống, một sự thật đáng sợ.\"\n    },\n    {\n      \"panel_index\": 37,\n      \"ai_view\": \"Người đàn ông đứng nhìn xa, vẻ mặt trầm tư sâu sắc. Sự im lặng bao trùm mọi thứ, không có dấu hiệu nào của sự sống.\",\n      \"voiceover_text\": \"Trầm tư... điều gì đang xảy ra?\"\n    },\n    {\n      \"panel_index\": 38,\n      \"ai_view\": \"Người đó tiếp tục nhìn ra xa, bóng tối ngày càng dày lên. Một cảm giác nguy hiểm bao trùm.\",\n      \"voiceover_text\": \"Bóng tối ẩn hiện phía trước, một mối nguy hiểm tiềm tàng.\"\n    },\n    {\n      \"panel_index\": 39,\n      \"ai_view\": \"Người đàn ông nhìn ra xa, vẻ mặt vẫn giữ nguyên sự tĩnh lặng. Bóng tối dần dày lên, che khuất mọi thứ.\",\n      \"voiceover_text\": \"Bóng tối ẩn hiện, không còn lối thoát.\"\n    },\n    {\n      \"panel_index\": 40,\n      \"ai_view\": \"Người đó đứng nhìn ra, vẻ mặt trầm tư, bóng tối dần dày lên, bao trùm mọi thứ. Một sự thật đáng sợ đang đến gần.\",\n      \"voiceover_text\": \"Bóng tối dần dày lên... nguy hiểm đang đến!\"\n    }\n  ]\n}\n\n---\n\n{\n\"summary\": \"Bầu trời đang dần tối đen, mang theo một cảm giác bất an và sự thật đáng sợ, báo hiệu nguy hiểm đang đến gần.\"\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 41,\n      \"ai_view\": \"Một người phụ nữ, vẻ mặt tò mò và nghiêm túc, đang nhìn xuống một vật thể nhỏ. Một tiếng động lạ vang lên trong không gian tĩnh mịch.\",\n      \"voiceover_text\": \"Một tiếng động lạ! Bất chợt, một cảm giác bất an len lỏi.\"\n    },\n    {\n      \"panel_index\": 42,\n      \"ai_view\": \"Một người đàn ông đứng nhìn xa, vẻ mặt tĩnh lặng. Bóng tối bắt đầu ẩn hiện trên đường chân trời.\",\n      \"voiceover_text\": \"Bóng tối... Nó đang đến gần hơn.\"\n    },\n    {\n      \"panel_index\": 43,\n      \"ai_view\": \"Người phụ nữ tiếp tục nhìn xuống vật thể, biểu cảm tò mò vẫn không thay đổi. Điều gì đang xảy ra?\",\n      \"voiceover_text\": \"Điều gì đang xảy ra? Sự tò mò này... nó nguy hiểm.\"\n    },\n    {\n      \"panel_index\": 44,\n      \"ai_view\": \"Một người đứng nhìn ra, vẻ mặt trầm tư. Bóng tối dần bao phủ mọi thứ xung quanh.\",\n      \"voiceover_text\": \"Bóng tối bao phủ... Sự thật đáng sợ đang lộ diện.\"\n    },\n    {\n      \"panel_index\": 45,\n      \"ai_view\": \"Người đàn ông vẫn nhìn ra, biểu cảm trầm tư sâu sắc. Không có dấu hiệu nào của sự sống.\",\n      \"voiceover_text\": \"Không có gì cả... Chỉ có bóng tối và sự im lặng.\"\n    },\n    {\n      \"panel_index\": 46,\n      \"ai_view\": \"Cảnh vật tĩnh lặng, không có nhân vật nào xuất hiện. Một không gian rộng lớn, trống rỗng.\",\n      \"voiceover_text\": \"Im lặng... Một sự im lặng chết chóc.\"\n    },\n    {\n      \"panel_index\": 47,\n      \"ai_view\": \"Một người phụ nữ đứng nhìn ra ngoài, vẻ mặt trầm tư, suy nghĩ về điều gì đó. Bầu trời đã chuyển sang màu đen.\",\n      \"voiceover_text\": \"Bầu trời tối đen... Một dấu hiệu báo trước nguy hiểm.\"\n    },\n    {\n      \"panel_index\": 48,\n      \"ai_view\": \"Một người đàn ông nhìn xa, vẻ mặt tĩnh lặng và trầm tư. Bóng tối ẩn chứa điều gì?\",\n      \"voiceover_text\": \"Bóng tối ẩn chứa điều gì? Một bí mật đen tối.\"\n    },\n    {\n      \"panel_index\": 49,\n      \"ai_view\": \"Người đàn ông tiếp tục quan sát, bóng tối dần hiện lên, bao trùm mọi thứ. Sự căng thẳng tăng lên.\",\n      \"voiceover_text\": \"Bóng tối dần hiện lên... Sự thật kinh hoàng.\"\n    },\n    {\n      \"panel_index\": 50,\n      \"ai_view\": \"Một người đứng nhìn ra xa, vẻ mặt tĩnh lặng, không thay đổi. Bóng tối bao trùm hoàn toàn.\",\n      \"voiceover_text\": \"Bóng tối bao phủ... Không còn hy vọng.\"\n    }\n  ]\n}\n\n---\n\n{\n\"summary\": \"L? V?n T?m cảm nhận được sự bất an và bóng tối đang dần bao trùm, báo hiệu một sự thật đáng sợ và nguy hiểm sắp lộ diện.\"\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 51,\n      \"ai_view\": \"Một người đàn ông đứng lặng nhìn về phía trước, bóng tối bao phủ tầm nhìn của anh ta. Không gian xung quanh có vẻ mờ ảo và đầy rẫy những điều không rõ.\",\n      \"voiceover_text\": \"Bóng tối bao trùm... một cảm giác bất an lan tỏa.\"\n    },\n    {\n      \"panel_index\": 52,\n      \"ai_view\": \"Người đàn ông vẫn đứng nhìn ra, biểu cảm trầm tư. Ánh mắt anh ta tập trung vào một điểm nào đó phía xa, không rõ mục đích.\",\n      \"voiceover_text\": \"Không rõ mục đích... một sự thật đáng sợ sắp lộ diện.\"\n    }\n  ]\n}\n\n---\n\n{\n\"summary\": \"Một bầu không khí u ám và đáng sợ đang bao trùm, báo hiệu một sự thật nguy hiểm sắp được hé lộ.\"\n}"
+  },
+  "metrics": {
+    "panelCount": 52,
+    "totalMs": 212876,
+    "captionMs": 153325,
+    "scriptMs": 59549
+  }
+}

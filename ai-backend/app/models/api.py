@@ -55,6 +55,8 @@ class ProvidersResponse(BaseModel):
     textModel: str
     visionProvider: str
     visionModel: str
+    ocrEnabled: bool
+    ocrProvider: str
 
 
 class HealthResponse(BaseModel):

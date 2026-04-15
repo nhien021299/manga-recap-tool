@@ -18,14 +18,28 @@ class Settings(BaseSettings):
     cors_origins_raw: str = Field(default="http://localhost:5173", alias="AI_BACKEND_CORS_ORIGINS")
     temp_root_raw: str = Field(default=".temp/jobs", alias="AI_BACKEND_TEMP_ROOT")
     text_provider: str = Field(default="ollama", alias="AI_BACKEND_TEXT_PROVIDER")
-    text_model: str = Field(default="llama3", alias="AI_BACKEND_TEXT_MODEL")
+    text_model: str = Field(default="gemma3", alias="AI_BACKEND_TEXT_MODEL")
     text_base_url: str = Field(default="http://localhost:11434", alias="AI_BACKEND_TEXT_BASE_URL")
     vision_provider: str = Field(default="ollama_vision", alias="AI_BACKEND_VISION_PROVIDER")
-    vision_model: str = Field(default="gemma3", alias="AI_BACKEND_VISION_MODEL")
+    vision_model: str = Field(default="qwen2.5vl:7b", alias="AI_BACKEND_VISION_MODEL")
     vision_base_url: str = Field(default="http://localhost:11434", alias="AI_BACKEND_VISION_BASE_URL")
+    vision_timeout_seconds: int = Field(default=120, alias="AI_BACKEND_VISION_TIMEOUT_SECONDS")
+    vision_timeout_retries: int = Field(default=2, alias="AI_BACKEND_VISION_TIMEOUT_RETRIES")
+    vision_retry_delay_seconds: int = Field(default=5, alias="AI_BACKEND_VISION_RETRY_DELAY_SECONDS")
+    vision_max_width: int = Field(default=768, alias="AI_BACKEND_VISION_MAX_WIDTH")
+    vision_max_height: int = Field(default=1536, alias="AI_BACKEND_VISION_MAX_HEIGHT")
+    ocr_enabled: bool = Field(default=False, alias="AI_BACKEND_OCR_ENABLED")
+    ocr_provider: str = Field(default="rapidocr", alias="AI_BACKEND_OCR_PROVIDER")
+    ocr_min_confidence: float = Field(default=0.55, alias="AI_BACKEND_OCR_MIN_CONFIDENCE")
+    ocr_max_text_lines: int = Field(default=20, alias="AI_BACKEND_OCR_MAX_TEXT_LINES")
+    ocr_prefer_sfx: bool = Field(default=True, alias="AI_BACKEND_OCR_PREFER_SFX")
+    ocr_debug_save_json: bool = Field(default=False, alias="AI_BACKEND_OCR_DEBUG_SAVE_JSON")
     llama_cpp_base_url: str = Field(default="http://127.0.0.1:8080/v1", alias="AI_BACKEND_LLAMA_CPP_BASE_URL")
-    caption_chunk_size: int = Field(default=4, alias="AI_BACKEND_CAPTION_CHUNK_SIZE")
+    caption_chunk_size: int = Field(default=1, alias="AI_BACKEND_CAPTION_CHUNK_SIZE")
+    caption_max_tokens: int = Field(default=512, alias="AI_BACKEND_CAPTION_MAX_TOKENS")
     script_chunk_size: int = Field(default=10, alias="AI_BACKEND_SCRIPT_CHUNK_SIZE")
+    script_generation_retries: int = Field(default=2, alias="AI_BACKEND_SCRIPT_GENERATION_RETRIES")
+    script_retry_delay_seconds: int = Field(default=3, alias="AI_BACKEND_SCRIPT_RETRY_DELAY_SECONDS")
 
     @property
     def cors_origins(self) -> list[str]:
@@ -34,6 +48,10 @@ class Settings(BaseSettings):
     @property
     def temp_root(self) -> Path:
         return Path(self.temp_root_raw).resolve()
+
+    @property
+    def ocr_debug_root(self) -> Path:
+        return self.temp_root.parent / "ocr-debug"
 
 
 @lru_cache(maxsize=1)

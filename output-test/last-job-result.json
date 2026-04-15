@@ -1,0 +1,911 @@
+{
+  "understandings": [
+    {
+      "panelId": "scene-001.png",
+      "orderIndex": 0,
+      "summary": "L? V?n T?m đứng nhìn một chiếc thuyền gỗ.",
+      "action": "Quan sát",
+      "emotion": "Tò mò, trầm ngâm",
+      "dialogue": "",
+      "sfx": [
+        "Tiếng nước chảy",
+        "Tiếng gió"
+      ],
+      "cliffhanger": ""
+    },
+    {
+      "panelId": "scene-002.png",
+      "orderIndex": 1,
+      "summary": "L? V?n T?m nhìn xuống một khu vực tối.",
+      "action": "Nhìn xuống",
+      "emotion": "Tò mò, lo lắng",
+      "dialogue": "",
+      "sfx": [
+        "Tiếng bước chân"
+      ],
+      "cliffhanger": "Một bóng đen xuất hiện phía trước."
+    },
+    {
+      "panelId": "scene-003.png",
+      "orderIndex": 2,
+      "summary": "L? V?n T?m nhìn xuống, vẻ mặt lạnh lùng.",
+      "action": "Nhìn xuống",
+      "emotion": "Lạnh lùng, nghiêm túc",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện phía sau."
+    },
+    {
+      "panelId": "scene-004.png",
+      "orderIndex": 3,
+      "summary": "L? V?n T?m ngã xuống trên sàn nhà.",
+      "action": "Fall",
+      "emotion": "Shocked, Painful",
+      "dialogue": "",
+      "sfx": [
+        "thud",
+        "impact"
+      ],
+      "cliffhanger": "M?t bóng tối hiện ra."
+    },
+    {
+      "panelId": "scene-005.png",
+      "orderIndex": 4,
+      "summary": "L? V?n T?m nhìn xuống một xác chết trên sàn.",
+      "action": "Nhìn xuống",
+      "emotion": "Lo lắng, kinh hãi",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện trong góc tối."
+    },
+    {
+      "panelId": "scene-006.png",
+      "orderIndex": 5,
+      "summary": "L? V?n T?m nhìn xuống một con đường tối tăm, đáng lo ngại.",
+      "action": "Nhìn xuống",
+      "emotion": "Lo lắng, Cẩn trọng",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện phía sau."
+    },
+    {
+      "panelId": "scene-007.png",
+      "orderIndex": 6,
+      "summary": "Một cảnh đổ nát, mưa lớn, không rõ bối cảnh.",
+      "action": "Mưa lớn, đổ nát",
+      "emotion": "U ám, cô đơn",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Mờ ảo, không rõ ràng."
+    },
+    {
+      "panelId": "scene-008.png",
+      "orderIndex": 7,
+      "summary": "Một học sinh trung học sử dụng năng lực đặc biệt để thao túng người khác.",
+      "action": "Sử dụng năng lực",
+      "emotion": "Tập trung, nghiêm trọng",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Sự thao túng có tác dụng gì?"
+    },
+    {
+      "panelId": "scene-009.png",
+      "orderIndex": 8,
+      "summary": "L? V?n T?m nhìn xuống, vẻ mặt trầm ngâm, suy nghĩ.",
+      "action": "Nhìn xuống",
+      "emotion": "Trầm ngâm, suy tư",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện phía sau..."
+    },
+    {
+      "panelId": "scene-010.png",
+      "orderIndex": 9,
+      "summary": "L? V?n T?m nhìn xuống một khu vực tối.",
+      "action": "Nhìn xuống",
+      "emotion": "Tò mò, Cẩn trọng",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện phía sau."
+    },
+    {
+      "panelId": "scene-011.png",
+      "orderIndex": 10,
+      "summary": "L? V?n T?m nhìn xuống dòng người đông đúc, vẻ mặt trầm tư.",
+      "action": "Nhìn xuống",
+      "emotion": "Trầm tư, quan sát",
+      "dialogue": "",
+      "sfx": [
+        "tieng_dan_dan"
+      ],
+      "cliffhanger": "Một bóng hình lạ xuất hiện trong đám đông."
+    },
+    {
+      "panelId": "scene-012.png",
+      "orderIndex": 11,
+      "summary": "L? V?n T?m nhìn xuống, vẻ mặt trầm ngâm, suy nghĩ.",
+      "action": "Nhìn xuống",
+      "emotion": "Trầm ngâm, suy tư",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện phía sau..."
+    },
+    {
+      "panelId": "scene-013.png",
+      "orderIndex": 12,
+      "summary": "L? V?n T?m t?t đ?p v?i m?t ??u ??m t?t.",
+      "action": "t?t đ?p",
+      "emotion": "t?t t?t",
+      "dialogue": "",
+      "sfx": [
+        "tieng-cam-lai"
+      ],
+      "cliffhanger": "C?n t?n d?i v?i t?n th?n."
+    },
+    {
+      "panelId": "scene-014.png",
+      "orderIndex": 13,
+      "summary": "Một học sinh đang nhìn chằm chằm vào một cuốn sách.",
+      "action": "Đọc sách",
+      "emotion": "Tò mò, tập trung",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện phía sau lưng cậu."
+    },
+    {
+      "panelId": "scene-015.png",
+      "orderIndex": 14,
+      "summary": "Một học sinh đang nhìn vào một cuốn sách.",
+      "action": "Đọc sách",
+      "emotion": "Tò mò, tập trung",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện phía sau..."
+    },
+    {
+      "panelId": "scene-016.png",
+      "orderIndex": 15,
+      "summary": "L? V?n T?m nhìn thấy một người đàn ông.",
+      "action": "Nhìn",
+      "emotion": "Tò mò, Nghi ngờ",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Người đàn ông tiến lại gần."
+    },
+    {
+      "panelId": "scene-017.png",
+      "orderIndex": 16,
+      "summary": "L? V?n T?m nhìn thấy một người phụ nữ.",
+      "action": "Nhìn",
+      "emotion": "Tò mò, Bất ngờ",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Cô ta có thể là mục tiêu tiếp theo?"
+    },
+    {
+      "panelId": "scene-018.png",
+      "orderIndex": 17,
+      "summary": "L? V?n T?m ng?i b?ng t?t, nhìn xung quanh khu v?c.",
+      "action": "Ng?i b?ng t?t",
+      "emotion": "T?t t?t, t?m t?m",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện từ phía sau."
+    },
+    {
+      "panelId": "scene-019.png",
+      "orderIndex": 18,
+      "summary": "L? V?n T?m ngã xuống trên sàn nhà.",
+      "action": "Fall",
+      "emotion": "Confused, Hurt",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện phía sau..."
+    },
+    {
+      "panelId": "scene-020.png",
+      "orderIndex": 19,
+      "summary": "L? V?n T?m nhìn xuống, vẻ mặt trầm ngâm.",
+      "action": "Nhìn xuống",
+      "emotion": "Trầm ngâm, bí ẩn",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng hình hiện ra phía sau."
+    },
+    {
+      "panelId": "scene-021.png",
+      "orderIndex": 20,
+      "summary": "L? V?n T?m nhìn thấy một bóng ma.",
+      "action": "Nhìn",
+      "emotion": "Tò mò, lo lắng",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Bóng ma tiến lại gần."
+    },
+    {
+      "panelId": "scene-022.png",
+      "orderIndex": 21,
+      "summary": "L? V?n T?m nhìn xuống, vẻ mặt nghiêm túc và tập trung.",
+      "action": "Nhìn xuống",
+      "emotion": "Nghiêm túc, tập trung",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện phía sau..."
+    },
+    {
+      "panelId": "scene-023.png",
+      "orderIndex": 22,
+      "summary": "L? V?n T?m nhìn xuống một khu vực tối.",
+      "action": "Nhìn xuống",
+      "emotion": "Tò mò, Cẩn trọng",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen ẩn hiện phía trước."
+    },
+    {
+      "panelId": "scene-024.png",
+      "orderIndex": 23,
+      "summary": "Một học sinh đang đứng trước một người đàn ông.",
+      "action": "Đứng",
+      "emotion": "Tò mò",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Người đàn ông nhìn cậu ta."
+    },
+    {
+      "panelId": "scene-025.png",
+      "orderIndex": 24,
+      "summary": "L? V?n T?m nhìn xuống, vẻ mặt trầm ngâm.",
+      "action": "Nhìn xuống",
+      "emotion": "Trầm ngâm",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": ""
+    },
+    {
+      "panelId": "scene-026.png",
+      "orderIndex": 25,
+      "summary": "L? V?n T?m đứng trong phòng, vẻ mặt nghiêm trang.",
+      "action": "Đứng",
+      "emotion": "Nghiêm trang, tập trung",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện từ cửa."
+    },
+    {
+      "panelId": "scene-027.png",
+      "orderIndex": 26,
+      "summary": "L? V?n T?m v?i ??m t?n, d?ng thanh k?n.",
+      "action": "Standing",
+      "emotion": "Serious",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện phía sau."
+    },
+    {
+      "panelId": "scene-028.png",
+      "orderIndex": 27,
+      "summary": "L? V?n T?m nhìn xuống, vẻ mặt trầm ngâm.",
+      "action": "Nhìn xuống",
+      "emotion": "Trầm ngâm, nghiêm túc",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện phía sau."
+    },
+    {
+      "panelId": "scene-029.png",
+      "orderIndex": 28,
+      "summary": "L? V?n T?m nhìn xuống một con người đang bị thao túng.",
+      "action": "Nhìn xuống",
+      "emotion": "Tò mò, lo lắng",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Con người đó đột nhiên chuyển hướng..."
+    },
+    {
+      "panelId": "scene-030.png",
+      "orderIndex": 29,
+      "summary": "L? V?n T?m nhìn xuống một khu vực tối, có vẻ nguy hiểm.",
+      "action": "Nhìn xuống",
+      "emotion": "Tò mò, lo lắng",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện phía sau."
+    },
+    {
+      "panelId": "scene-031.png",
+      "orderIndex": 30,
+      "summary": "L? V?n T?m nhìn xuống một con đường tối tăm.",
+      "action": "Nhìn xuống",
+      "emotion": "Tò mò, lo lắng",
+      "dialogue": "",
+      "sfx": [
+        "Tiếng bước chân",
+        "Tiếng gió"
+      ],
+      "cliffhanger": ""
+    },
+    {
+      "panelId": "scene-032.png",
+      "orderIndex": 31,
+      "summary": "L? V?n T?m nhìn xuống khu vực xung quanh, vẻ mặt nghiêm trang.",
+      "action": "Nhìn xuống",
+      "emotion": "Nghiêm trang, cảnh giác",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện từ trong bóng tối."
+    },
+    {
+      "panelId": "scene-033.png",
+      "orderIndex": 32,
+      "summary": "L? V?n T?m nhìn xuống, vẻ mặt trầm ngâm.",
+      "action": "Nhìn xuống",
+      "emotion": "Trầm ngâm, tập trung",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện phía sau."
+    },
+    {
+      "panelId": "scene-034.png",
+      "orderIndex": 33,
+      "summary": "L? V?n T?m nhìn xuống khu vực xung quanh.",
+      "action": "Nhìn xuống",
+      "emotion": "Tò mò, Cẩn trọng",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện phía sau."
+    },
+    {
+      "panelId": "scene-035.png",
+      "orderIndex": 34,
+      "summary": "Bước chân dồn dập trên nền đá xám.",
+      "action": "Đi bộ",
+      "emotion": "Tập trung, nghiêm túc",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Tiếng bước chân vang vọng..."
+    },
+    {
+      "panelId": "scene-036.png",
+      "orderIndex": 35,
+      "summary": "Một học sinh đang nhìn chằm chằm vào một cuốn sách.",
+      "action": "Đọc sách",
+      "emotion": "Tò mò, tập trung",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": ""
+    },
+    {
+      "panelId": "scene-037.png",
+      "orderIndex": 36,
+      "summary": "Một học sinh hóa học đặc biệt đang tìm cách thao túng người khác.",
+      "action": "Tìm kiếm",
+      "emotion": "Tập trung, bí ẩn",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Sự thật sẽ được phơi bày?"
+    },
+    {
+      "panelId": "scene-038.png",
+      "orderIndex": 37,
+      "summary": "Một học giả trẻ nhìn thẳng vào ống kính.",
+      "action": "Nhìn",
+      "emotion": "Tập trung, nghiêm túc",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Mờ ảo phía trước..."
+    },
+    {
+      "panelId": "scene-039.png",
+      "orderIndex": 38,
+      "summary": "L? V?n T?m nhìn xuống một con đường tối.",
+      "action": "Nhìn xuống",
+      "emotion": "Tẻ nhạt, bí ẩn",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện phía sau."
+    },
+    {
+      "panelId": "scene-040.png",
+      "orderIndex": 39,
+      "summary": "L? V?n T?m nhìn xuống, vẻ mặt trầm ngâm.",
+      "action": "Nhìn xuống",
+      "emotion": "Trầm ngâm, tập trung",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện phía sau."
+    },
+    {
+      "panelId": "scene-041.png",
+      "orderIndex": 40,
+      "summary": "L? V?n T?m nhìn xuống khu vực xung quanh, vẻ mặt trầm ng?m.",
+      "action": "Nhìn xuống",
+      "emotion": "Trầm ng?m, Nghiêm túc",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện phía sau."
+    },
+    {
+      "panelId": "scene-042.png",
+      "orderIndex": 41,
+      "summary": "Một học sinh đang nhìn xuống, vẻ mặt trầm tư.",
+      "action": "Nhìn xuống",
+      "emotion": "Trầm tư",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Sự thật đang chờ đợi..."
+    },
+    {
+      "panelId": "scene-043.png",
+      "orderIndex": 42,
+      "summary": "Một học sinh hóa học đang nghiên cứu các thí nghiệm.",
+      "action": "Thí nghiệm",
+      "emotion": "Tập trung, nghiêm túc",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện trong phòng thí nghiệm."
+    },
+    {
+      "panelId": "scene-044.png",
+      "orderIndex": 43,
+      "summary": "Một học sinh đang nhìn vào một cuốn sách.",
+      "action": "Đọc sách",
+      "emotion": "Tò mò, tập trung",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện phía sau..."
+    },
+    {
+      "panelId": "scene-045.png",
+      "orderIndex": 44,
+      "summary": "L? V?n T?m nhìn xuống, vẻ mặt lạnh lùng.",
+      "action": "Nhìn xuống",
+      "emotion": "Lạnh lùng",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện phía sau."
+    },
+    {
+      "panelId": "scene-046.png",
+      "orderIndex": 45,
+      "summary": "L? V?n T?m b?o ng? trong m?t ph?ng kh?ch.",
+      "action": "B?o ng?",
+      "emotion": "B?t ng?t",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "C?n c?n gì?"
+    },
+    {
+      "panelId": "scene-047.png",
+      "orderIndex": 46,
+      "summary": "Một học sinh đang nhìn vào một cuốn sách.",
+      "action": "Đọc sách",
+      "emotion": "Tò mò",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": ""
+    },
+    {
+      "panelId": "scene-048.png",
+      "orderIndex": 47,
+      "summary": "Một học giả nhìn xuống, vẻ mặt trầm tư.",
+      "action": "Nhìn xuống",
+      "emotion": "Trầm tư, bí ẩn",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện phía sau."
+    },
+    {
+      "panelId": "scene-049.png",
+      "orderIndex": 48,
+      "summary": "Một học viên sử dụng năng lực đặc biệt để thao túng người khác.",
+      "action": "Thao túng",
+      "emotion": "Tập trung",
+      "dialogue": "",
+      "sfx": [
+        "Tiếng niệm",
+        "Âm thanh thao túng"
+      ],
+      "cliffhanger": ""
+    },
+    {
+      "panelId": "scene-050.png",
+      "orderIndex": 49,
+      "summary": "L? V?n T?m, một hóa sát thủ đạo, tìm kiếm năng lực đặc biệt.",
+      "action": "Tìm kiếm",
+      "emotion": "Tập trung, nghiêm túc",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bí mật đen tối đang chờ đợi."
+    },
+    {
+      "panelId": "scene-051.png",
+      "orderIndex": 50,
+      "summary": "Một học sinh hóa học đang nghiên cứu một con người.",
+      "action": "Nghiên cứu",
+      "emotion": "Tò mò, Tập trung",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": ""
+    },
+    {
+      "panelId": "scene-052.png",
+      "orderIndex": 51,
+      "summary": "L? V?n T?m nhìn xuống một con đường tối.",
+      "action": "Nhìn xuống",
+      "emotion": "Tò mò, Nghiêm túc",
+      "dialogue": "",
+      "sfx": [],
+      "cliffhanger": "Một bóng đen xuất hiện phía sau."
+    }
+  ],
+  "generatedItems": [
+    {
+      "panel_index": 1,
+      "ai_view": "Lý Vân Tâm đứng lặng nhìn một chiếc thuyền gỗ trôi trên mặt nước. Gió thổi nhẹ, tiếng nước chảy róc rách.",
+      "voiceover_text": "Một nơi xa lạ. Một khởi đầu bí ẩn.",
+      "sfx": [
+        "Tiếng nước chảy",
+        "Tiếng gió"
+      ]
+    },
+    {
+      "panel_index": 2,
+      "ai_view": "Người này nhìn xuống một khu vực tối, ánh mắt đầy tò mò nhưng cũng có chút lo lắng. Một bóng đen thoáng qua phía trước.",
+      "voiceover_text": "Tò mò... nhưng điều gì đang ẩn nấp?",
+      "sfx": [
+        "Tiếng bước chân"
+      ]
+    },
+    {
+      "panel_index": 3,
+      "ai_view": "Lý Vân Tâm nhìn xuống với vẻ mặt lạnh lùng, nghiêm túc. Một bóng đen xuất hiện phía sau, không rõ nguồn gốc.",
+      "voiceover_text": "Sự lạnh lẽo bao trùm. Một mối nguy hiểm tiềm tàng.",
+      "sfx": []
+    },
+    {
+      "panel_index": 4,
+      "ai_view": "Người này ngã xuống sàn nhà, biểu cảm đau đớn và sốc. Một bóng tối bao trùm xung quanh.",
+      "voiceover_text": "Sốc! Một sự kiện bất ngờ, nguy hiểm.",
+      "sfx": [
+        "thud",
+        "impact"
+      ]
+    },
+    {
+      "panel_index": 5,
+      "ai_view": "Người này nhìn xuống một xác chết trên sàn, biểu cảm lo lắng và kinh hãi. Một bóng đen hiện ra trong góc tối.",
+      "voiceover_text": "Kinh hoàng! Một cảnh tượng ghê tởm, một lời cảnh báo.",
+      "sfx": []
+    },
+    {
+      "panel_index": 6,
+      "ai_view": "Người này nhìn xuống một con đường tối tăm, đáng lo ngại. Một bóng đen xuất hiện phía sau, ẩn mình trong bóng tối.",
+      "voiceover_text": "Con đường này... dẫn đến đâu? Một mối đe dọa?",
+      "sfx": []
+    },
+    {
+      "panel_index": 7,
+      "ai_view": "Một cảnh đổ nát, mưa lớn, không rõ bối cảnh. Mưa rơi liên tục, tạo nên một bầu không khí u ám và cô đơn.",
+      "voiceover_text": "Một nơi chết chóc. Một quá khứ đen tối.",
+      "sfx": []
+    },
+    {
+      "panel_index": 8,
+      "ai_view": "Một học sinh trung học sử dụng năng lực đặc biệt để thao túng người khác. Năng lượng tỏa ra, biểu cảm tập trung và nghiêm trọng.",
+      "voiceover_text": "Thao túng... sức mạnh vô hình.",
+      "sfx": []
+    },
+    {
+      "panel_index": 9,
+      "ai_view": "Lý Vân Tâm nhìn xuống, vẻ mặt trầm ngâm, suy tư. Một bóng đen xuất hiện phía sau, không rõ hình dạng.",
+      "voiceover_text": "Suy nghĩ... một kế hoạch? Một lời cảnh báo?",
+      "sfx": []
+    },
+    {
+      "panel_index": 10,
+      "ai_view": "Người này nhìn xuống một khu vực tối. Một bóng đen xuất hiện phía sau, ẩn mình trong bóng tối, tạo cảm giác căng thẳng.",
+      "voiceover_text": "Bóng tối... nó đang đến gần.",
+      "sfx": []
+    },
+    {
+      "panel_index": 11,
+      "ai_view": "Lý Vân Tâm đứng giữa dòng người đông đúc, ánh mắt trầm tư, quan sát xung quanh. Một bóng hình lạ thoáng hiện trong đám đông, gây ra sự chú ý.",
+      "voiceover_text": "Một bóng hình lạ xuất hiện, ẩn mình trong đám đông. Tâm trí hắn đang suy ngẫm điều gì?",
+      "sfx": [
+        "tieng_dan_dan"
+      ]
+    },
+    {
+      "panel_index": 12,
+      "ai_view": "Hắn nhìn xuống, vẻ mặt trầm ngâm, suy tư về một điều gì đó. Một bóng đen xuất hiện phía sau, gần như hòa lẫn vào bóng tối.",
+      "voiceover_text": "Bóng tối ẩn hiện, một cảm giác bất an bắt đầu len lỏi.",
+      "sfx": []
+    },
+    {
+      "panel_index": 13,
+      "ai_view": "Hắn đột nhiên tát mạnh vào chính mình, vẻ mặt kinh ngạc. Tiếng đe đọa vang lên, một sát thủ xuất hiện.",
+      "voiceover_text": "Một cú tát bất ngờ! Một mối nguy hiểm cận kề.",
+      "sfx": [
+        "tieng-cam-lai"
+      ]
+    },
+    {
+      "panel_index": 14,
+      "ai_view": "Một học sinh đang tập trung đọc sách, vẻ mặt tò mò. Bất chợt, một bóng đen xuất hiện phía sau lưng cậu, khiến cậu giật mình.",
+      "voiceover_text": "Một học sinh, một mục tiêu tiềm năng? Một bóng đen đang theo dõi.",
+      "sfx": []
+    },
+    {
+      "panel_index": 15,
+      "ai_view": "Tương tự như panel 14, một học sinh đang đọc sách, và một bóng đen xuất hiện phía sau lưng cậu.",
+      "voiceover_text": "Lặp lại! Bóng đen vẫn tiếp tục xuất hiện, sự nguy hiểm ngày càng tăng.",
+      "sfx": []
+    },
+    {
+      "panel_index": 16,
+      "ai_view": "Hắn nhìn thấy một người đàn ông tiến lại gần, vẻ mặt đầy ẩn ý. Sự căng thẳng tăng lên.",
+      "voiceover_text": "Một người đàn ông đến gần, mang theo những bí mật đen tối.",
+      "sfx": []
+    },
+    {
+      "panel_index": 17,
+      "ai_view": "Hắn nhìn thấy một người phụ nữ, vẻ mặt tò mò, bất ngờ. Cô ta có thể là mục tiêu tiếp theo?",
+      "voiceover_text": "Một cô gái... có thể là một con mồi?",
+      "sfx": []
+    },
+    {
+      "panel_index": 18,
+      "ai_view": "Hắn ngã xuống trên sàn nhà, vẻ mặt hoảng hốt. Một bóng đen xuất hiện từ phía sau, đe dọa đến tính mạng.",
+      "voiceover_text": "Hắn ngã xuống! Một bóng đen xuất hiện, một cuộc chiến sinh tử bắt đầu.",
+      "sfx": []
+    },
+    {
+      "panel_index": 19,
+      "ai_view": "Hắn nằm bất động trên sàn nhà, vẻ mặt đau đớn, bối rối. Một bóng đen vẫn tiếp tục xuất hiện phía sau.",
+      "voiceover_text": "Hắn bị tấn công! Bóng đen không ngừng xuất hiện, hắn đang dần suy yếu.",
+      "sfx": []
+    },
+    {
+      "panel_index": 20,
+      "ai_view": "Hắn nhìn xuống, vẻ mặt trầm ngâm, bí ẩn. Một bóng hình hiện ra phía sau, ẩn mình trong bóng tối.",
+      "voiceover_text": "Bóng hình hiện ra... một sự thật kinh hoàng đang chờ đợi.",
+      "sfx": []
+    },
+    {
+      "panel_index": 21,
+      "ai_view": "Lý Vân Tâm đột nhiên nhìn thấy một bóng ma, hình dáng mờ ảo, đang tiến lại gần.",
+      "voiceover_text": "Một bóng đen xuất hiện! Nó tiến lại gần, mang theo một nỗi ám ảnh không thể đoán trước.",
+      "sfx": []
+    },
+    {
+      "panel_index": 22,
+      "ai_view": "Nhân vật nhìn xuống, ánh mắt tập trung, vẻ mặt nghiêm túc. Một bóng đen lớn hơn xuất hiện phía sau, che khuất mục đích thật.",
+      "voiceover_text": "Nhưng điều đó không phải là tất cả. Một bóng đen khác xuất hiện, ẩn mình phía sau...",
+      "sfx": []
+    },
+    {
+      "panel_index": 23,
+      "ai_view": "Nhân vật quan sát một khu vực tối, ánh mắt đầy tò mò và cảnh giác. Không khí ngột ngạt, đáng sợ.",
+      "voiceover_text": "Khu vực tối này... nó che giấu điều gì? Sự tò mò và nỗi sợ hãi bắt đầu hòa lẫn.",
+      "sfx": []
+    },
+    {
+      "panel_index": 24,
+      "ai_view": "Một học sinh đứng trước một người đàn ông, biểu cảm tò mò. Người đàn ông đang nhìn cậu ta với ánh mắt đầy ẩn ý.",
+      "voiceover_text": "Một học sinh đang đứng trước một người đàn ông. Lời nói của hắn có thể là một lời hứa, hoặc một lời nguyền.",
+      "sfx": []
+    },
+    {
+      "panel_index": 25,
+      "ai_view": "Nhân vật trầm ngâm, đứng trong phòng, ánh mắt suy tư. Không có hiệu ứng âm thanh đặc biệt.",
+      "voiceover_text": "Trầm ngâm... một khoảnh khắc suy nghĩ. Nhưng có vẻ như, mọi thứ đang trở nên phức tạp hơn.",
+      "sfx": []
+    },
+    {
+      "panel_index": 26,
+      "ai_view": "Nhân vật đứng trong phòng, vẻ mặt nghiêm trang, ánh mắt sắc bén. Một bóng đen xuất hiện từ cửa, gây ra một sự căng thẳng lớn.",
+      "voiceover_text": "Một bóng đen xuất hiện từ cửa! Sự nguy hiểm đang đến gần, không còn đường lui.",
+      "sfx": []
+    },
+    {
+      "panel_index": 27,
+      "ai_view": "Nhân vật đứng, biểu cảm nghiêm túc, giọng nói lạnh lùng. Một bóng đen xuất hiện phía sau, tăng thêm sự bí ẩn.",
+      "voiceover_text": "Một bóng đen xuất hiện phía sau! Sự thật đang dần được hé lộ, nhưng nó có thể là một lời nguyền?",
+      "sfx": []
+    },
+    {
+      "panel_index": 28,
+      "ai_view": "Nhân vật nhìn xuống, vẻ mặt trầm ngâm, ánh mắt đầy suy tư. Một bóng đen xuất hiện phía sau, không có hiệu ứng âm thanh đặc biệt.",
+      "voiceover_text": "Một bóng đen xuất hiện phía sau... Sự thật có thể nằm ở đó, nhưng liệu có thể đối mặt được không?",
+      "sfx": []
+    },
+    {
+      "panel_index": 29,
+      "ai_view": "Nhân vật nhìn xuống một con người đang bị thao túng, biểu cảm tò mò và lo lắng. Con người đó đột nhiên chuyển hướng, khiến mọi thứ trở nên khó lường.",
+      "voiceover_text": "Con người đó đột nhiên chuyển hướng... Lòng người có thể bị thao túng như thế nào? Liệu có thể kiểm soát được?",
+      "sfx": []
+    },
+    {
+      "panel_index": 30,
+      "ai_view": "Nhân vật nhìn xuống một khu vực tối, có vẻ nguy hiểm. Một bóng đen xuất hiện phía sau, tăng thêm sự căng thẳng.",
+      "voiceover_text": "Một bóng đen xuất hiện phía sau... Sự nguy hiểm đang bao trùm, không lối thoát.",
+      "sfx": []
+    },
+    {
+      "panel_index": 31,
+      "ai_view": "Một con đường tối tăm, những bóng đổ dài. Nhân vật nhìn xuống, vẻ mặt pha lẫn tò mò và lo lắng.",
+      "voiceover_text": "Những bóng đen len lỏi, ẩn chứa nguy hiểm. Một sự tò mò không yên.",
+      "sfx": [
+        "Tiếng bước chân",
+        "Tiếng gió"
+      ]
+    },
+    {
+      "panel_index": 32,
+      "ai_view": "Nhân vật quan sát khu vực xung quanh, ánh mắt nghiêm trang, cảnh giác. Một bóng đen đột ngột xuất hiện từ trong bóng tối.",
+      "voiceover_text": "Cảnh giác tăng lên. Một bóng đen... xuất hiện.",
+      "sfx": []
+    },
+    {
+      "panel_index": 33,
+      "ai_view": "Nhân vật trầm ngâm, nhìn xuống một cách tập trung. Một bóng đen khác hiện ra phía sau, ẩn mình trong bóng tối.",
+      "voiceover_text": "Tập trung... một bóng đen khác. Sự thật đang dần hé lộ.",
+      "sfx": []
+    },
+    {
+      "panel_index": 34,
+      "ai_view": "Nhân vật quan sát kỹ lưỡng khu vực xung quanh, biểu cảm tò mò và cẩn trọng. Một bóng đen xuất hiện lần nữa, phía sau.",
+      "voiceover_text": "Cẩn trọng... bóng đen tiếp tục xuất hiện.",
+      "sfx": []
+    },
+    {
+      "panel_index": 35,
+      "ai_view": "Bước chân dồn dập trên nền đá xám, tạo nên âm thanh vang vọng. Nhân vật đi bộ với sự tập trung cao độ.",
+      "voiceover_text": "Bước chân dồn dập... một sự tập trung không hề nao núng.",
+      "sfx": []
+    },
+    {
+      "panel_index": 36,
+      "ai_view": "Một học sinh đang chăm chú đọc một cuốn sách, biểu cảm tò mò và tập trung. Không có âm thanh nào khác.",
+      "voiceover_text": "Một học sinh... đang tìm kiếm điều gì đó.",
+      "sfx": []
+    },
+    {
+      "panel_index": 37,
+      "ai_view": "Một học sinh hóa học đang cố gắng thao túng người khác, vẻ mặt bí ẩn và tập trung. Sự thật sẽ được phơi bày?",
+      "voiceover_text": "Thao túng... sự thật sẽ được phơi bày?",
+      "sfx": []
+    },
+    {
+      "panel_index": 38,
+      "ai_view": "Một học giả trẻ nhìn thẳng vào ống kính, biểu cảm tập trung và nghiêm túc. Mờ ảo phía trước...",
+      "voiceover_text": "Mờ ảo phía trước... một cái nhìn sâu sắc.",
+      "sfx": []
+    },
+    {
+      "panel_index": 39,
+      "ai_view": "L? V?n T?m nhìn xuống một con đường tối, vẻ mặt tẻ nhạt và bí ẩn. Một bóng đen xuất hiện phía sau.",
+      "voiceover_text": "Một bóng đen... lại xuất hiện phía sau.",
+      "sfx": []
+    },
+    {
+      "panel_index": 40,
+      "ai_view": "L? V?n T?m nhìn xuống, vẻ mặt trầm ngâm, tập trung. Một bóng đen xuất hiện phía sau.",
+      "voiceover_text": "Trầm ngâm... một bóng đen khác lại xuất hiện.",
+      "sfx": []
+    },
+    {
+      "panel_index": 41,
+      "ai_view": "Lý Vân Tâm nhìn xuống khu vực xung quanh, ánh mắt trầm ngâm, một bóng đen thoáng hiện phía sau.",
+      "voiceover_text": "Một chuỗi bóng đen bí ẩn... hắn đang theo dõi.",
+      "sfx": []
+    },
+    {
+      "panel_index": 42,
+      "ai_view": "Một học sinh nhìn xuống, vẻ mặt trầm tư, ánh mắt hướng về một điều gì đó không rõ.",
+      "voiceover_text": "Sự thật đang chờ đợi... một dấu hiệu.",
+      "sfx": []
+    },
+    {
+      "panel_index": 43,
+      "ai_view": "Một học sinh hóa học tập trung nghiên cứu thí nghiệm, bất ngờ một bóng đen xuất hiện trong phòng thí nghiệm.",
+      "voiceover_text": "Một sự xuất hiện bất ngờ... nguy hiểm tiềm tàng.",
+      "sfx": []
+    },
+    {
+      "panel_index": 44,
+      "ai_view": "Một học sinh đọc sách, vẻ mặt tò mò, một bóng đen hiện ra sau lưng.",
+      "voiceover_text": "Tò mò... nhưng cái nhìn này có vấn đề.",
+      "sfx": []
+    },
+    {
+      "panel_index": 45,
+      "ai_view": "Lý Vân Tâm nhìn xuống, ánh mắt lạnh lùng, một bóng đen xuất hiện phía sau.",
+      "voiceover_text": "Lạnh lùng... hắn nhận ra điều gì đó.",
+      "sfx": []
+    },
+    {
+      "panel_index": 46,
+      "ai_view": "Lý Vân Tâm bế ngùi trong một phòng khách tối, bầu không khí căng thẳng.",
+      "voiceover_text": "Bế ngùi... hắn đã bị truy sao?",
+      "sfx": []
+    },
+    {
+      "panel_index": 47,
+      "ai_view": "Một học sinh tiếp tục đọc sách, vẻ mặt tò mò.",
+      "voiceover_text": "Tò mò... nhưng tại sao lại có cảm giác bất an?",
+      "sfx": []
+    },
+    {
+      "panel_index": 48,
+      "ai_view": "Một học giả nhìn xuống, vẻ mặt trầm tư, một bóng đen xuất hiện phía sau.",
+      "voiceover_text": "Trầm tư... một sự thật đen tối đang lộ diện.",
+      "sfx": []
+    },
+    {
+      "panel_index": 49,
+      "ai_view": "Một học viên sử dụng năng lực đặc biệt để thao túng người khác, âm thanh thao túng vang lên.",
+      "voiceover_text": "Thao túng... một kỹ thuật nguy hiểm.",
+      "sfx": [
+        "Tiếng niệm",
+        "Âm thanh thao túng"
+      ]
+    },
+    {
+      "panel_index": 50,
+      "ai_view": "Lý Vân Tâm, một hóa sát thủ đạo, tìm kiếm năng lực đặc biệt trong bóng tối, một bí mật đen tối đang chờ đợi.",
+      "voiceover_text": "Tìm kiếm... hắn đang đi theo con đường nào?",
+      "sfx": []
+    },
+    {
+      "panel_index": 51,
+      "ai_view": "Một học sinh hóa học đang miêu tả một người một cách tỉ mỉ, vẻ mặt tò mò và tập trung cao độ.",
+      "voiceover_text": "Một học sinh đang nghiên cứu một người một cách kỹ lưỡng. Sự tò mò dâng lên.",
+      "sfx": []
+    },
+    {
+      "panel_index": 52,
+      "ai_view": "Lý Vân Tâm nhìn xuống một con đường tối tăm, một bóng đen thoáng xuất hiện phía sau, tạo cảm giác căng thẳng.",
+      "voiceover_text": "Một bóng đen ẩn sau, một nguy hiểm tiềm tàng lộ rõ.",
+      "sfx": []
+    }
+  ],
+  "storyMemories": [
+    {
+      "chunkIndex": 0,
+      "summary": "L? V?n T?m xuất hiện trong một bối cảnh xa lạ và bí ẩn, nơi anh ta đối mặt với nguy hiểm, một quá khứ đen tối và một thế lực đang dần tiến gần."
+    },
+    {
+      "chunkIndex": 1,
+      "summary": "L? V?n T?m đối mặt với những bóng đen bí ẩn và mối nguy hiểm ngày càng tăng, bao gồm cả một học sinh mục tiêu và một người đàn ông mang bí mật, dẫn đến một cuộc chiến sinh tử."
+    },
+    {
+      "chunkIndex": 2,
+      "summary": "Những bóng đen liên tục xuất hiện, mang theo nguy hiểm và sự phức tạp, cùng với những lời hứa hẹn và lời nguyền đang dần hé lộ."
+    },
+    {
+      "chunkIndex": 3,
+      "summary": "L? V?n T?m đang theo dõi một chuỗi bóng đen bí ẩn, với sự xuất hiện liên tục của chúng và một học sinh đang tìm kiếm điều gì đó."
+    },
+    {
+      "chunkIndex": 4,
+      "summary": "L? V?n T?m đang bị theo dõi và phát hiện ra một nguy hiểm tiềm tàng, đồng thời nhận ra một sự thật đen tối đang dần hé lộ."
+    },
+    {
+      "chunkIndex": 5,
+      "summary": "L? V?n T?m đang theo dõi một người bí ẩn với sự tò mò, đồng thời một mối nguy hiểm tiềm ẩn đang ẩn nấp."
+    }
+  ],
+  "panelSignature": "d26d43cbdad2aed1cee145422549bebb7804ede410085081e3bcf15802d32db7",
+  "rawOutputs": {
+    "understanding": "{\"items\": [\n  {\n    \"panel_index\": 1,\n    \"summary\": \"L? V?n T?m đứng nhìn một chiếc thuyền gỗ.\",\n    \"action\": \"Quan sát\",\n    \"emotion\": \"Tò mò, trầm ngâm\",\n    \"dialogue\": \"\",\n    \"sfx\": [\"Tiếng nước chảy\", \"Tiếng gió\"]\n  }\n]}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 2,\n    \"summary\": \"L? V?n T?m nhìn xuống một khu vực tối.\",\n    \"action\": \"Nhìn xuống\",\n    \"emotion\": \"Tò mò, lo lắng\",\n    \"dialogue\": \"\",\n    \"sfx\": [\"Tiếng bước chân\"],\n    \"cliffhanger\": \"Một bóng đen xuất hiện phía trước.\"\n  }\n]}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 3,\n    \"summary\": \"L? V?n T?m nhìn xuống, vẻ mặt lạnh lùng.\",\n    \"action\": \"Nhìn xuống\",\n    \"emotion\": \"Lạnh lùng, nghiêm túc\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Một bóng đen xuất hiện phía sau.\"\n  }\n]}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 4,\n    \"summary\": \"L? V?n T?m ngã xuống trên sàn nhà.\",\n    \"action\": \"Fall\",\n    \"emotion\": \"Shocked, Painful\",\n    \"dialogue\": \"\",\n    \"sfx\": [\"thud\", \"impact\"],\n    \"cliffhanger\": \"M?t bóng tối hiện ra.\"\n  }\n]}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 5,\n      \"summary\": \"L? V?n T?m nhìn xuống một xác chết trên sàn.\",\n      \"action\": \"Nhìn xuống\",\n      \"emotion\": \"Lo lắng, kinh hãi\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Một bóng đen xuất hiện trong góc tối.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 6,\n      \"summary\": \"L? V?n T?m nhìn xuống một con đường tối tăm, đáng lo ngại.\",\n      \"action\": \"Nhìn xuống\",\n      \"emotion\": \"Lo lắng, Cẩn trọng\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Một bóng đen xuất hiện phía sau.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 7,\n      \"summary\": \"Một cảnh đổ nát, mưa lớn, không rõ bối cảnh.\",\n      \"action\": \"Mưa lớn, đổ nát\",\n      \"emotion\": \"U ám, cô đơn\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Mờ ảo, không rõ ràng.\"\n    }\n  ]\n}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 8,\n    \"summary\": \"Một học sinh trung học sử dụng năng lực đặc biệt để thao túng người khác.\",\n    \"action\": \"Sử dụng năng lực\",\n    \"emotion\": \"Tập trung, nghiêm trọng\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Sự thao túng có tác dụng gì?\"\n  }\n]}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 9,\n      \"summary\": \"L? V?n T?m nhìn xuống, vẻ mặt trầm ngâm, suy nghĩ.\",\n      \"action\": \"Nhìn xuống\",\n      \"emotion\": \"Trầm ngâm, suy tư\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Một bóng đen xuất hiện phía sau...\"\n    }\n  ]\n}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 10,\n    \"summary\": \"L? V?n T?m nhìn xuống một khu vực tối.\",\n    \"action\": \"Nhìn xuống\",\n    \"emotion\": \"Tò mò, Cẩn trọng\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Một bóng đen xuất hiện phía sau.\"\n  }\n]}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 11,\n    \"summary\": \"L? V?n T?m nhìn xuống dòng người đông đúc, vẻ mặt trầm tư.\",\n    \"action\": \"Nhìn xuống\",\n    \"emotion\": \"Trầm tư, quan sát\",\n    \"dialogue\": \"\",\n    \"sfx\": [\"tieng_dan_dan\"],\n    \"cliffhanger\": \"Một bóng hình lạ xuất hiện trong đám đông.\"\n  }\n]}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 12,\n      \"summary\": \"L? V?n T?m nhìn xuống, vẻ mặt trầm ngâm, suy nghĩ.\",\n      \"action\": \"Nhìn xuống\",\n      \"emotion\": \"Trầm ngâm, suy tư\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Một bóng đen xuất hiện phía sau...\"\n    }\n  ]\n}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 13,\n    \"summary\": \"L? V?n T?m t?t đ?p v?i m?t ??u ??m t?t.\",\n    \"action\": \"t?t đ?p\",\n    \"emotion\": \"t?t t?t\",\n    \"dialogue\": \"\",\n    \"sfx\": [\"tieng-cam-lai\"],\n    \"cliffhanger\": \"C?n t?n d?i v?i t?n th?n.\"\n  }\n]}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 14,\n      \"summary\": \"Một học sinh đang nhìn chằm chằm vào một cuốn sách.\",\n      \"action\": \"Đọc sách\",\n      \"emotion\": \"Tò mò, tập trung\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Một bóng đen xuất hiện phía sau lưng cậu.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 15,\n      \"summary\": \"Một học sinh đang nhìn vào một cuốn sách.\",\n      \"action\": \"Đọc sách\",\n      \"emotion\": \"Tò mò, tập trung\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Một bóng đen xuất hiện phía sau...\"\n    }\n  ]\n}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 16,\n    \"summary\": \"L? V?n T?m nhìn thấy một người đàn ông.\",\n    \"action\": \"Nhìn\",\n    \"emotion\": \"Tò mò, Nghi ngờ\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Người đàn ông tiến lại gần.\"\n  }\n]}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 17,\n    \"summary\": \"L? V?n T?m nhìn thấy một người phụ nữ.\",\n    \"action\": \"Nhìn\",\n    \"emotion\": \"Tò mò, Bất ngờ\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Cô ta có thể là mục tiêu tiếp theo?\"\n  }\n]}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 18,\n    \"summary\": \"L? V?n T?m ng?i b?ng t?t, nhìn xung quanh khu v?c.\",\n    \"action\": \"Ng?i b?ng t?t\",\n    \"emotion\": \"T?t t?t, t?m t?m\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Một bóng đen xuất hiện từ phía sau.\"\n  }\n]}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 19,\n      \"summary\": \"L? V?n T?m ngã xuống trên sàn nhà.\",\n      \"action\": \"Fall\",\n      \"emotion\": \"Confused, Hurt\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Một bóng đen xuất hiện phía sau...\"\n    }\n  ]\n}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 20,\n    \"summary\": \"L? V?n T?m nhìn xuống, vẻ mặt trầm ngâm.\",\n    \"action\": \"Nhìn xuống\",\n    \"emotion\": \"Trầm ngâm, bí ẩn\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Một bóng hình hiện ra phía sau.\"\n  }\n]}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 21,\n      \"summary\": \"L? V?n T?m nhìn thấy một bóng ma.\",\n      \"action\": \"Nhìn\",\n      \"emotion\": \"Tò mò, lo lắng\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Bóng ma tiến lại gần.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 22,\n      \"summary\": \"L? V?n T?m nhìn xuống, vẻ mặt nghiêm túc và tập trung.\",\n      \"action\": \"Nhìn xuống\",\n      \"emotion\": \"Nghiêm túc, tập trung\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Một bóng đen xuất hiện phía sau...\"\n    }\n  ]\n}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 23,\n    \"summary\": \"L? V?n T?m nhìn xuống một khu vực tối.\",\n    \"action\": \"Nhìn xuống\",\n    \"emotion\": \"Tò mò, Cẩn trọng\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Một bóng đen ẩn hiện phía trước.\"\n  }\n]}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 24,\n    \"summary\": \"Một học sinh đang đứng trước một người đàn ông.\",\n    \"action\": \"Đứng\",\n    \"emotion\": \"Tò mò\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Người đàn ông nhìn cậu ta.\"\n  }\n]}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 25,\n    \"summary\": \"L? V?n T?m nhìn xuống, vẻ mặt trầm ngâm.\",\n    \"action\": \"Nhìn xuống\",\n    \"emotion\": \"Trầm ngâm\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"\"\n  }\n]}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 26,\n      \"summary\": \"L? V?n T?m đứng trong phòng, vẻ mặt nghiêm trang.\",\n      \"action\": \"Đứng\",\n      \"emotion\": \"Nghiêm trang, tập trung\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Một bóng đen xuất hiện từ cửa.\"\n    }\n  ]\n}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 27,\n    \"summary\": \"L? V?n T?m v?i ??m t?n, d?ng thanh k?n.\",\n    \"action\": \"Standing\",\n    \"emotion\": \"Serious\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Một bóng đen xuất hiện phía sau.\"\n  }\n]}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 28,\n      \"summary\": \"L? V?n T?m nhìn xuống, vẻ mặt trầm ngâm.\",\n      \"action\": \"Nhìn xuống\",\n      \"emotion\": \"Trầm ngâm, nghiêm túc\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Một bóng đen xuất hiện phía sau.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 29,\n      \"summary\": \"L? V?n T?m nhìn xuống một con người đang bị thao túng.\",\n      \"action\": \"Nhìn xuống\",\n      \"emotion\": \"Tò mò, lo lắng\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Con người đó đột nhiên chuyển hướng...\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 30,\n      \"summary\": \"L? V?n T?m nhìn xuống một khu vực tối, có vẻ nguy hiểm.\",\n      \"action\": \"Nhìn xuống\",\n      \"emotion\": \"Tò mò, lo lắng\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Một bóng đen xuất hiện phía sau.\"\n    }\n  ]\n}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 31,\n    \"summary\": \"L? V?n T?m nhìn xuống một con đường tối tăm.\",\n    \"action\": \"Nhìn xuống\",\n    \"emotion\": \"Tò mò, lo lắng\",\n    \"dialogue\": \"\",\n    \"sfx\": [\"Tiếng bước chân\", \"Tiếng gió\"]\n  }\n]}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 32,\n      \"summary\": \"L? V?n T?m nhìn xuống khu vực xung quanh, vẻ mặt nghiêm trang.\",\n      \"action\": \"Nhìn xuống\",\n      \"emotion\": \"Nghiêm trang, cảnh giác\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Một bóng đen xuất hiện từ trong bóng tối.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 33,\n      \"summary\": \"L? V?n T?m nhìn xuống, vẻ mặt trầm ngâm.\",\n      \"action\": \"Nhìn xuống\",\n      \"emotion\": \"Trầm ngâm, tập trung\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Một bóng đen xuất hiện phía sau.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 34,\n      \"summary\": \"L? V?n T?m nhìn xuống khu vực xung quanh.\",\n      \"action\": \"Nhìn xuống\",\n      \"emotion\": \"Tò mò, Cẩn trọng\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Một bóng đen xuất hiện phía sau.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 35,\n      \"summary\": \"Bước chân dồn dập trên nền đá xám.\",\n      \"action\": \"Đi bộ\",\n      \"emotion\": \"Tập trung, nghiêm túc\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Tiếng bước chân vang vọng...\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 36,\n      \"summary\": \"Một học sinh đang nhìn chằm chằm vào một cuốn sách.\",\n      \"action\": \"Đọc sách\",\n      \"emotion\": \"Tò mò, tập trung\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"\"\n    }\n  ]\n}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 37,\n    \"summary\": \"Một học sinh hóa học đặc biệt đang tìm cách thao túng người khác.\",\n    \"action\": \"Tìm kiếm\",\n    \"emotion\": \"Tập trung, bí ẩn\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Sự thật sẽ được phơi bày?\"\n  }\n]}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 38,\n    \"summary\": \"Một học giả trẻ nhìn thẳng vào ống kính.\",\n    \"action\": \"Nhìn\",\n    \"emotion\": \"Tập trung, nghiêm túc\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Mờ ảo phía trước...\"\n  }\n]}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 39,\n    \"summary\": \"L? V?n T?m nhìn xuống một con đường tối.\",\n    \"action\": \"Nhìn xuống\",\n    \"emotion\": \"Tẻ nhạt, bí ẩn\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Một bóng đen xuất hiện phía sau.\"\n  }\n]}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 40,\n    \"summary\": \"L? V?n T?m nhìn xuống, vẻ mặt trầm ngâm.\",\n    \"action\": \"Nhìn xuống\",\n    \"emotion\": \"Trầm ngâm, tập trung\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Một bóng đen xuất hiện phía sau.\"\n  }\n]}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 41,\n      \"summary\": \"L? V?n T?m nhìn xuống khu vực xung quanh, vẻ mặt trầm ng?m.\",\n      \"action\": \"Nhìn xuống\",\n      \"emotion\": \"Trầm ng?m, Nghiêm túc\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Một bóng đen xuất hiện phía sau.\"\n    }\n  ]\n}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 42,\n    \"summary\": \"Một học sinh đang nhìn xuống, vẻ mặt trầm tư.\",\n    \"action\": \"Nhìn xuống\",\n    \"emotion\": \"Trầm tư\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Sự thật đang chờ đợi...\"\n  }\n]}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 43,\n      \"summary\": \"Một học sinh hóa học đang nghiên cứu các thí nghiệm.\",\n      \"action\": \"Thí nghiệm\",\n      \"emotion\": \"Tập trung, nghiêm túc\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Một bóng đen xuất hiện trong phòng thí nghiệm.\"\n    }\n  ]\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 44,\n      \"summary\": \"Một học sinh đang nhìn vào một cuốn sách.\",\n      \"action\": \"Đọc sách\",\n      \"emotion\": \"Tò mò, tập trung\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Một bóng đen xuất hiện phía sau...\"\n    }\n  ]\n}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 45,\n    \"summary\": \"L? V?n T?m nhìn xuống, vẻ mặt lạnh lùng.\",\n    \"action\": \"Nhìn xuống\",\n    \"emotion\": \"Lạnh lùng\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Một bóng đen xuất hiện phía sau.\"\n  }\n]}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 46,\n    \"summary\": \"L? V?n T?m b?o ng? trong m?t ph?ng kh?ch.\",\n    \"action\": \"B?o ng?\",\n    \"emotion\": \"B?t ng?t\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"C?n c?n gì?\"\n  }\n]}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 47,\n    \"summary\": \"Một học sinh đang nhìn vào một cuốn sách.\",\n    \"action\": \"Đọc sách\",\n    \"emotion\": \"Tò mò\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"\"\n  }\n]}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 48,\n    \"summary\": \"Một học giả nhìn xuống, vẻ mặt trầm tư.\",\n    \"action\": \"Nhìn xuống\",\n    \"emotion\": \"Trầm tư, bí ẩn\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Một bóng đen xuất hiện phía sau.\"\n  }\n]}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 49,\n    \"summary\": \"Một học viên sử dụng năng lực đặc biệt để thao túng người khác.\",\n    \"action\": \"Thao túng\",\n    \"emotion\": \"Tập trung\",\n    \"dialogue\": \"\",\n    \"sfx\": [\"Tiếng niệm\", \"Âm thanh thao túng\"]\n  }\n]}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 50,\n    \"summary\": \"L? V?n T?m, một hóa sát thủ đạo, tìm kiếm năng lực đặc biệt.\",\n    \"action\": \"Tìm kiếm\",\n    \"emotion\": \"Tập trung, nghiêm túc\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"Một bí mật đen tối đang chờ đợi.\"\n  }\n]}\n\n---\n\n{\"items\": [\n  {\n    \"panel_index\": 51,\n    \"summary\": \"Một học sinh hóa học đang nghiên cứu một con người.\",\n    \"action\": \"Nghiên cứu\",\n    \"emotion\": \"Tò mò, Tập trung\",\n    \"dialogue\": \"\",\n    \"sfx\": [],\n    \"cliffhanger\": \"\"\n  }\n]}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 52,\n      \"summary\": \"L? V?n T?m nhìn xuống một con đường tối.\",\n      \"action\": \"Nhìn xuống\",\n      \"emotion\": \"Tò mò, Nghiêm túc\",\n      \"dialogue\": \"\",\n      \"sfx\": [],\n      \"cliffhanger\": \"Một bóng đen xuất hiện phía sau.\"\n    }\n  ]\n}",
+    "script": "{\n  \"items\": [\n    {\n      \"panel_index\": 1,\n      \"ai_view\": \"Lý Vân Tâm đứng lặng nhìn một chiếc thuyền gỗ trôi trên mặt nước. Gió thổi nhẹ, tiếng nước chảy róc rách.\",\n      \"voiceover_text\": \"Một nơi xa lạ. Một khởi đầu bí ẩn.\"\n    },\n    {\n      \"panel_index\": 2,\n      \"ai_view\": \"Người này nhìn xuống một khu vực tối, ánh mắt đầy tò mò nhưng cũng có chút lo lắng. Một bóng đen thoáng qua phía trước.\",\n      \"voiceover_text\": \"Tò mò... nhưng điều gì đang ẩn nấp?\"\n    },\n    {\n      \"panel_index\": 3,\n      \"ai_view\": \"Lý Vân Tâm nhìn xuống với vẻ mặt lạnh lùng, nghiêm túc. Một bóng đen xuất hiện phía sau, không rõ nguồn gốc.\",\n      \"voiceover_text\": \"Sự lạnh lẽo bao trùm. Một mối nguy hiểm tiềm tàng.\"\n    },\n    {\n      \"panel_index\": 4,\n      \"ai_view\": \"Người này ngã xuống sàn nhà, biểu cảm đau đớn và sốc. Một bóng tối bao trùm xung quanh.\",\n      \"voiceover_text\": \"Sốc! Một sự kiện bất ngờ, nguy hiểm.\"\n    },\n    {\n      \"panel_index\": 5,\n      \"ai_view\": \"Người này nhìn xuống một xác chết trên sàn, biểu cảm lo lắng và kinh hãi. Một bóng đen hiện ra trong góc tối.\",\n      \"voiceover_text\": \"Kinh hoàng! Một cảnh tượng ghê tởm, một lời cảnh báo.\"\n    },\n    {\n      \"panel_index\": 6,\n      \"ai_view\": \"Người này nhìn xuống một con đường tối tăm, đáng lo ngại. Một bóng đen xuất hiện phía sau, ẩn mình trong bóng tối.\",\n      \"voiceover_text\": \"Con đường này... dẫn đến đâu? Một mối đe dọa?\"\n    },\n    {\n      \"panel_index\": 7,\n      \"ai_view\": \"Một cảnh đổ nát, mưa lớn, không rõ bối cảnh. Mưa rơi liên tục, tạo nên một bầu không khí u ám và cô đơn.\",\n      \"voiceover_text\": \"Một nơi chết chóc. Một quá khứ đen tối.\"\n    },\n    {\n      \"panel_index\": 8,\n      \"ai_view\": \"Một học sinh trung học sử dụng năng lực đặc biệt để thao túng người khác. Năng lượng tỏa ra, biểu cảm tập trung và nghiêm trọng.\",\n      \"voiceover_text\": \"Thao túng... sức mạnh vô hình.\"\n    },\n    {\n      \"panel_index\": 9,\n      \"ai_view\": \"Lý Vân Tâm nhìn xuống, vẻ mặt trầm ngâm, suy tư. Một bóng đen xuất hiện phía sau, không rõ hình dạng.\",\n      \"voiceover_text\": \"Suy nghĩ... một kế hoạch? Một lời cảnh báo?\"\n    },\n    {\n      \"panel_index\": 10,\n      \"ai_view\": \"Người này nhìn xuống một khu vực tối. Một bóng đen xuất hiện phía sau, ẩn mình trong bóng tối, tạo cảm giác căng thẳng.\",\n      \"voiceover_text\": \"Bóng tối... nó đang đến gần.\"\n    }\n  ]\n}\n\n---\n\n{\n\"summary\": \"L? V?n T?m xuất hiện trong một bối cảnh xa lạ và bí ẩn, nơi anh ta đối mặt với nguy hiểm, một quá khứ đen tối và một thế lực đang dần tiến gần.\"\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 11,\n      \"ai_view\": \"Lý Vân Tâm đứng giữa dòng người đông đúc, ánh mắt trầm tư, quan sát xung quanh. Một bóng hình lạ thoáng hiện trong đám đông, gây ra sự chú ý.\",\n      \"voiceover_text\": \"Một bóng hình lạ xuất hiện, ẩn mình trong đám đông. Tâm trí hắn đang suy ngẫm điều gì?\"\n    },\n    {\n      \"panel_index\": 12,\n      \"ai_view\": \"Hắn nhìn xuống, vẻ mặt trầm ngâm, suy tư về một điều gì đó. Một bóng đen xuất hiện phía sau, gần như hòa lẫn vào bóng tối.\",\n      \"voiceover_text\": \"Bóng tối ẩn hiện, một cảm giác bất an bắt đầu len lỏi.\"\n    },\n    {\n      \"panel_index\": 13,\n      \"ai_view\": \"Hắn đột nhiên tát mạnh vào chính mình, vẻ mặt kinh ngạc. Tiếng đe đọa vang lên, một sát thủ xuất hiện.\",\n      \"voiceover_text\": \"Một cú tát bất ngờ! Một mối nguy hiểm cận kề.\"\n    },\n    {\n      \"panel_index\": 14,\n      \"ai_view\": \"Một học sinh đang tập trung đọc sách, vẻ mặt tò mò. Bất chợt, một bóng đen xuất hiện phía sau lưng cậu, khiến cậu giật mình.\",\n      \"voiceover_text\": \"Một học sinh, một mục tiêu tiềm năng? Một bóng đen đang theo dõi.\"\n    },\n    {\n      \"panel_index\": 15,\n      \"ai_view\": \"Tương tự như panel 14, một học sinh đang đọc sách, và một bóng đen xuất hiện phía sau lưng cậu.\",\n      \"voiceover_text\": \"Lặp lại! Bóng đen vẫn tiếp tục xuất hiện, sự nguy hiểm ngày càng tăng.\"\n    },\n    {\n      \"panel_index\": 16,\n      \"ai_view\": \"Hắn nhìn thấy một người đàn ông tiến lại gần, vẻ mặt đầy ẩn ý. Sự căng thẳng tăng lên.\",\n      \"voiceover_text\": \"Một người đàn ông đến gần, mang theo những bí mật đen tối.\"\n    },\n    {\n      \"panel_index\": 17,\n      \"ai_view\": \"Hắn nhìn thấy một người phụ nữ, vẻ mặt tò mò, bất ngờ. Cô ta có thể là mục tiêu tiếp theo?\",\n      \"voiceover_text\": \"Một cô gái... có thể là một con mồi?\"\n    },\n    {\n      \"panel_index\": 18,\n      \"ai_view\": \"Hắn ngã xuống trên sàn nhà, vẻ mặt hoảng hốt. Một bóng đen xuất hiện từ phía sau, đe dọa đến tính mạng.\",\n      \"voiceover_text\": \"Hắn ngã xuống! Một bóng đen xuất hiện, một cuộc chiến sinh tử bắt đầu.\"\n    },\n    {\n      \"panel_index\": 19,\n      \"ai_view\": \"Hắn nằm bất động trên sàn nhà, vẻ mặt đau đớn, bối rối. Một bóng đen vẫn tiếp tục xuất hiện phía sau.\",\n      \"voiceover_text\": \"Hắn bị tấn công! Bóng đen không ngừng xuất hiện, hắn đang dần suy yếu.\"\n    },\n    {\n      \"panel_index\": 20,\n      \"ai_view\": \"Hắn nhìn xuống, vẻ mặt trầm ngâm, bí ẩn. Một bóng hình hiện ra phía sau, ẩn mình trong bóng tối.\",\n      \"voiceover_text\": \"Bóng hình hiện ra... một sự thật kinh hoàng đang chờ đợi.\"\n    }\n  ]\n}\n\n---\n\n{\n\"summary\": \"L? V?n T?m đối mặt với những bóng đen bí ẩn và mối nguy hiểm ngày càng tăng, bao gồm cả một học sinh mục tiêu và một người đàn ông mang bí mật, dẫn đến một cuộc chiến sinh tử.\"\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 21,\n      \"ai_view\": \"Lý Vân Tâm đột nhiên nhìn thấy một bóng ma, hình dáng mờ ảo, đang tiến lại gần.\",\n      \"voiceover_text\": \"Một bóng đen xuất hiện! Nó tiến lại gần, mang theo một nỗi ám ảnh không thể đoán trước.\"\n    },\n    {\n      \"panel_index\": 22,\n      \"ai_view\": \"Nhân vật nhìn xuống, ánh mắt tập trung, vẻ mặt nghiêm túc. Một bóng đen lớn hơn xuất hiện phía sau, che khuất mục đích thật.\",\n      \"voiceover_text\": \"Nhưng điều đó không phải là tất cả. Một bóng đen khác xuất hiện, ẩn mình phía sau...\"\n    },\n    {\n      \"panel_index\": 23,\n      \"ai_view\": \"Nhân vật quan sát một khu vực tối, ánh mắt đầy tò mò và cảnh giác. Không khí ngột ngạt, đáng sợ.\",\n      \"voiceover_text\": \"Khu vực tối này... nó che giấu điều gì? Sự tò mò và nỗi sợ hãi bắt đầu hòa lẫn.\"\n    },\n    {\n      \"panel_index\": 24,\n      \"ai_view\": \"Một học sinh đứng trước một người đàn ông, biểu cảm tò mò. Người đàn ông đang nhìn cậu ta với ánh mắt đầy ẩn ý.\",\n      \"voiceover_text\": \"Một học sinh đang đứng trước một người đàn ông. Lời nói của hắn có thể là một lời hứa, hoặc một lời nguyền.\"\n    },\n    {\n      \"panel_index\": 25,\n      \"ai_view\": \"Nhân vật trầm ngâm, đứng trong phòng, ánh mắt suy tư. Không có hiệu ứng âm thanh đặc biệt.\",\n      \"voiceover_text\": \"Trầm ngâm... một khoảnh khắc suy nghĩ. Nhưng có vẻ như, mọi thứ đang trở nên phức tạp hơn.\"\n    },\n    {\n      \"panel_index\": 26,\n      \"ai_view\": \"Nhân vật đứng trong phòng, vẻ mặt nghiêm trang, ánh mắt sắc bén. Một bóng đen xuất hiện từ cửa, gây ra một sự căng thẳng lớn.\",\n      \"voiceover_text\": \"Một bóng đen xuất hiện từ cửa! Sự nguy hiểm đang đến gần, không còn đường lui.\"\n    },\n    {\n      \"panel_index\": 27,\n      \"ai_view\": \"Nhân vật đứng, biểu cảm nghiêm túc, giọng nói lạnh lùng. Một bóng đen xuất hiện phía sau, tăng thêm sự bí ẩn.\",\n      \"voiceover_text\": \"Một bóng đen xuất hiện phía sau! Sự thật đang dần được hé lộ, nhưng nó có thể là một lời nguyền?\"\n    },\n    {\n      \"panel_index\": 28,\n      \"ai_view\": \"Nhân vật nhìn xuống, vẻ mặt trầm ngâm, ánh mắt đầy suy tư. Một bóng đen xuất hiện phía sau, không có hiệu ứng âm thanh đặc biệt.\",\n      \"voiceover_text\": \"Một bóng đen xuất hiện phía sau... Sự thật có thể nằm ở đó, nhưng liệu có thể đối mặt được không?\"\n    },\n    {\n      \"panel_index\": 29,\n      \"ai_view\": \"Nhân vật nhìn xuống một con người đang bị thao túng, biểu cảm tò mò và lo lắng. Con người đó đột nhiên chuyển hướng, khiến mọi thứ trở nên khó lường.\",\n      \"voiceover_text\": \"Con người đó đột nhiên chuyển hướng... Lòng người có thể bị thao túng như thế nào? Liệu có thể kiểm soát được?\"\n    },\n    {\n      \"panel_index\": 30,\n      \"ai_view\": \"Nhân vật nhìn xuống một khu vực tối, có vẻ nguy hiểm. Một bóng đen xuất hiện phía sau, tăng thêm sự căng thẳng.\",\n      \"voiceover_text\": \"Một bóng đen xuất hiện phía sau... Sự nguy hiểm đang bao trùm, không lối thoát.\"\n    }\n  ]\n}\n\n---\n\n{\n\"summary\": \"Những bóng đen liên tục xuất hiện, mang theo nguy hiểm và sự phức tạp, cùng với những lời hứa hẹn và lời nguyền đang dần hé lộ.\"\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 31,\n      \"ai_view\": \"Một con đường tối tăm, những bóng đổ dài. Nhân vật nhìn xuống, vẻ mặt pha lẫn tò mò và lo lắng.\",\n      \"voiceover_text\": \"Những bóng đen len lỏi, ẩn chứa nguy hiểm. Một sự tò mò không yên.\"\n    },\n    {\n      \"panel_index\": 32,\n      \"ai_view\": \"Nhân vật quan sát khu vực xung quanh, ánh mắt nghiêm trang, cảnh giác. Một bóng đen đột ngột xuất hiện từ trong bóng tối.\",\n      \"voiceover_text\": \"Cảnh giác tăng lên. Một bóng đen... xuất hiện.\"\n    },\n    {\n      \"panel_index\": 33,\n      \"ai_view\": \"Nhân vật trầm ngâm, nhìn xuống một cách tập trung. Một bóng đen khác hiện ra phía sau, ẩn mình trong bóng tối.\",\n      \"voiceover_text\": \"Tập trung... một bóng đen khác. Sự thật đang dần hé lộ.\"\n    },\n    {\n      \"panel_index\": 34,\n      \"ai_view\": \"Nhân vật quan sát kỹ lưỡng khu vực xung quanh, biểu cảm tò mò và cẩn trọng. Một bóng đen xuất hiện lần nữa, phía sau.\",\n      \"voiceover_text\": \"Cẩn trọng... bóng đen tiếp tục xuất hiện.\"\n    },\n    {\n      \"panel_index\": 35,\n      \"ai_view\": \"Bước chân dồn dập trên nền đá xám, tạo nên âm thanh vang vọng. Nhân vật đi bộ với sự tập trung cao độ.\",\n      \"voiceover_text\": \"Bước chân dồn dập... một sự tập trung không hề nao núng.\"\n    },\n    {\n      \"panel_index\": 36,\n      \"ai_view\": \"Một học sinh đang chăm chú đọc một cuốn sách, biểu cảm tò mò và tập trung. Không có âm thanh nào khác.\",\n      \"voiceover_text\": \"Một học sinh... đang tìm kiếm điều gì đó.\"\n    },\n    {\n      \"panel_index\": 37,\n      \"ai_view\": \"Một học sinh hóa học đang cố gắng thao túng người khác, vẻ mặt bí ẩn và tập trung. Sự thật sẽ được phơi bày?\",\n      \"voiceover_text\": \"Thao túng... sự thật sẽ được phơi bày?\"\n    },\n    {\n      \"panel_index\": 38,\n      \"ai_view\": \"Một học giả trẻ nhìn thẳng vào ống kính, biểu cảm tập trung và nghiêm túc. Mờ ảo phía trước...\",\n      \"voiceover_text\": \"Mờ ảo phía trước... một cái nhìn sâu sắc.\"\n    },\n    {\n      \"panel_index\": 39,\n      \"ai_view\": \"L? V?n T?m nhìn xuống một con đường tối, vẻ mặt tẻ nhạt và bí ẩn. Một bóng đen xuất hiện phía sau.\",\n      \"voiceover_text\": \"Một bóng đen... lại xuất hiện phía sau.\"\n    },\n    {\n      \"panel_index\": 40,\n      \"ai_view\": \"L? V?n T?m nhìn xuống, vẻ mặt trầm ngâm, tập trung. Một bóng đen xuất hiện phía sau.\",\n      \"voiceover_text\": \"Trầm ngâm... một bóng đen khác lại xuất hiện.\"\n    }\n  ]\n}\n\n---\n\n{\n\"summary\": \"L? V?n T?m đang theo dõi một chuỗi bóng đen bí ẩn, với sự xuất hiện liên tục của chúng và một học sinh đang tìm kiếm điều gì đó.\"\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 41,\n      \"ai_view\": \"Lý Vân Tâm nhìn xuống khu vực xung quanh, ánh mắt trầm ngâm, một bóng đen thoáng hiện phía sau.\",\n      \"voiceover_text\": \"Một chuỗi bóng đen bí ẩn... hắn đang theo dõi.\"\n    },\n    {\n      \"panel_index\": 42,\n      \"ai_view\": \"Một học sinh nhìn xuống, vẻ mặt trầm tư, ánh mắt hướng về một điều gì đó không rõ.\",\n      \"voiceover_text\": \"Sự thật đang chờ đợi... một dấu hiệu.\"\n    },\n    {\n      \"panel_index\": 43,\n      \"ai_view\": \"Một học sinh hóa học tập trung nghiên cứu thí nghiệm, bất ngờ một bóng đen xuất hiện trong phòng thí nghiệm.\",\n      \"voiceover_text\": \"Một sự xuất hiện bất ngờ... nguy hiểm tiềm tàng.\"\n    },\n    {\n      \"panel_index\": 44,\n      \"ai_view\": \"Một học sinh đọc sách, vẻ mặt tò mò, một bóng đen hiện ra sau lưng.\",\n      \"voiceover_text\": \"Tò mò... nhưng cái nhìn này có vấn đề.\"\n    },\n    {\n      \"panel_index\": 45,\n      \"ai_view\": \"Lý Vân Tâm nhìn xuống, ánh mắt lạnh lùng, một bóng đen xuất hiện phía sau.\",\n      \"voiceover_text\": \"Lạnh lùng... hắn nhận ra điều gì đó.\"\n    },\n    {\n      \"panel_index\": 46,\n      \"ai_view\": \"Lý Vân Tâm bế ngùi trong một phòng khách tối, bầu không khí căng thẳng.\",\n      \"voiceover_text\": \"Bế ngùi... hắn đã bị truy sao?\"\n    },\n    {\n      \"panel_index\": 47,\n      \"ai_view\": \"Một học sinh tiếp tục đọc sách, vẻ mặt tò mò.\",\n      \"voiceover_text\": \"Tò mò... nhưng tại sao lại có cảm giác bất an?\"\n    },\n    {\n      \"panel_index\": 48,\n      \"ai_view\": \"Một học giả nhìn xuống, vẻ mặt trầm tư, một bóng đen xuất hiện phía sau.\",\n      \"voiceover_text\": \"Trầm tư... một sự thật đen tối đang lộ diện.\"\n    },\n    {\n      \"panel_index\": 49,\n      \"ai_view\": \"Một học viên sử dụng năng lực đặc biệt để thao túng người khác, âm thanh thao túng vang lên.\",\n      \"voiceover_text\": \"Thao túng... một kỹ thuật nguy hiểm.\"\n    },\n    {\n      \"panel_index\": 50,\n      \"ai_view\": \"Lý Vân Tâm, một hóa sát thủ đạo, tìm kiếm năng lực đặc biệt trong bóng tối, một bí mật đen tối đang chờ đợi.\",\n      \"voiceover_text\": \"Tìm kiếm... hắn đang đi theo con đường nào?\"\n    }\n  ]\n}\n\n---\n\n{\n\"summary\": \"L? V?n T?m đang bị theo dõi và phát hiện ra một nguy hiểm tiềm tàng, đồng thời nhận ra một sự thật đen tối đang dần hé lộ.\"\n}\n\n---\n\n{\n  \"items\": [\n    {\n      \"panel_index\": 51,\n      \"ai_view\": \"Một học sinh hóa học đang miêu tả một người một cách tỉ mỉ, vẻ mặt tò mò và tập trung cao độ.\",\n      \"voiceover_text\": \"Một học sinh đang nghiên cứu một người một cách kỹ lưỡng. Sự tò mò dâng lên.\"\n    },\n    {\n      \"panel_index\": 52,\n      \"ai_view\": \"Lý Vân Tâm nhìn xuống một con đường tối tăm, một bóng đen thoáng xuất hiện phía sau, tạo cảm giác căng thẳng.\",\n      \"voiceover_text\": \"Một bóng đen ẩn sau, một nguy hiểm tiềm tàng lộ rõ.\"\n    }\n  ]\n}\n\n---\n\n{\n\"summary\": \"L? V?n T?m đang theo dõi một người bí ẩn với sự tò mò, đồng thời một mối nguy hiểm tiềm ẩn đang ẩn nấp.\"\n}"
+  },
+  "metrics": {
+    "panelCount": 52,
+    "totalMs": 221210,
+    "captionMs": 157661,
+    "scriptMs": 63547
+  }
+}

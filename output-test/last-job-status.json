@@ -1,0 +1,876 @@
+{
+  "jobId": "82515596-5f56-4f8f-a578-031439b26984",
+  "status": "completed",
+  "progress": 100,
+  "error": null,
+  "logs": [
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-1",
+      "type": "request",
+      "message": "Queued script job for 52 panels",
+      "timestamp": "07:29:54",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-2",
+      "type": "request",
+      "message": "Starting backend script pipeline",
+      "timestamp": "07:29:54",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-3",
+      "type": "request",
+      "message": "Caption batch 1 with 1 panels",
+      "timestamp": "07:29:54",
+      "details": "{\n  \"panelIds\": [\n    \"scene-001.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-4",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:30:00",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-5",
+      "type": "request",
+      "message": "Caption batch 2 with 1 panels",
+      "timestamp": "07:30:00",
+      "details": "{\n  \"panelIds\": [\n    \"scene-002.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-6",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:30:03",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-7",
+      "type": "request",
+      "message": "Caption batch 3 with 1 panels",
+      "timestamp": "07:30:03",
+      "details": "{\n  \"panelIds\": [\n    \"scene-003.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-8",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:30:06",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-9",
+      "type": "request",
+      "message": "Caption batch 4 with 1 panels",
+      "timestamp": "07:30:06",
+      "details": "{\n  \"panelIds\": [\n    \"scene-004.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-10",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:30:09",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-11",
+      "type": "request",
+      "message": "Caption batch 5 with 1 panels",
+      "timestamp": "07:30:09",
+      "details": "{\n  \"panelIds\": [\n    \"scene-005.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-12",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:30:12",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-13",
+      "type": "request",
+      "message": "Caption batch 6 with 1 panels",
+      "timestamp": "07:30:12",
+      "details": "{\n  \"panelIds\": [\n    \"scene-006.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-14",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:30:15",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-15",
+      "type": "request",
+      "message": "Caption batch 7 with 1 panels",
+      "timestamp": "07:30:15",
+      "details": "{\n  \"panelIds\": [\n    \"scene-007.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-16",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:30:18",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-17",
+      "type": "request",
+      "message": "Caption batch 8 with 1 panels",
+      "timestamp": "07:30:18",
+      "details": "{\n  \"panelIds\": [\n    \"scene-008.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-18",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:30:21",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-19",
+      "type": "request",
+      "message": "Caption batch 9 with 1 panels",
+      "timestamp": "07:30:21",
+      "details": "{\n  \"panelIds\": [\n    \"scene-009.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-20",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:30:24",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-21",
+      "type": "request",
+      "message": "Caption batch 10 with 1 panels",
+      "timestamp": "07:30:24",
+      "details": "{\n  \"panelIds\": [\n    \"scene-010.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-22",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:30:27",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-23",
+      "type": "request",
+      "message": "Caption batch 11 with 1 panels",
+      "timestamp": "07:30:27",
+      "details": "{\n  \"panelIds\": [\n    \"scene-011.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-24",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:30:30",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-25",
+      "type": "request",
+      "message": "Caption batch 12 with 1 panels",
+      "timestamp": "07:30:30",
+      "details": "{\n  \"panelIds\": [\n    \"scene-012.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-26",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:30:33",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-27",
+      "type": "request",
+      "message": "Caption batch 13 with 1 panels",
+      "timestamp": "07:30:33",
+      "details": "{\n  \"panelIds\": [\n    \"scene-013.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-28",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:30:37",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-29",
+      "type": "request",
+      "message": "Caption batch 14 with 1 panels",
+      "timestamp": "07:30:37",
+      "details": "{\n  \"panelIds\": [\n    \"scene-014.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-30",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:30:40",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-31",
+      "type": "request",
+      "message": "Caption batch 15 with 1 panels",
+      "timestamp": "07:30:40",
+      "details": "{\n  \"panelIds\": [\n    \"scene-015.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-32",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:30:42",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-33",
+      "type": "request",
+      "message": "Caption batch 16 with 1 panels",
+      "timestamp": "07:30:42",
+      "details": "{\n  \"panelIds\": [\n    \"scene-016.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-34",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:30:45",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-35",
+      "type": "request",
+      "message": "Caption batch 17 with 1 panels",
+      "timestamp": "07:30:45",
+      "details": "{\n  \"panelIds\": [\n    \"scene-017.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-36",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:30:48",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-37",
+      "type": "request",
+      "message": "Caption batch 18 with 1 panels",
+      "timestamp": "07:30:48",
+      "details": "{\n  \"panelIds\": [\n    \"scene-018.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-38",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:30:51",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-39",
+      "type": "request",
+      "message": "Caption batch 19 with 1 panels",
+      "timestamp": "07:30:51",
+      "details": "{\n  \"panelIds\": [\n    \"scene-019.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-40",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:30:54",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-41",
+      "type": "request",
+      "message": "Caption batch 20 with 1 panels",
+      "timestamp": "07:30:54",
+      "details": "{\n  \"panelIds\": [\n    \"scene-020.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-42",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:30:57",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-43",
+      "type": "request",
+      "message": "Caption batch 21 with 1 panels",
+      "timestamp": "07:30:57",
+      "details": "{\n  \"panelIds\": [\n    \"scene-021.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-44",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:31:00",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-45",
+      "type": "request",
+      "message": "Caption batch 22 with 1 panels",
+      "timestamp": "07:31:00",
+      "details": "{\n  \"panelIds\": [\n    \"scene-022.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-46",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:31:03",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-47",
+      "type": "request",
+      "message": "Caption batch 23 with 1 panels",
+      "timestamp": "07:31:03",
+      "details": "{\n  \"panelIds\": [\n    \"scene-023.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-48",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:31:06",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-49",
+      "type": "request",
+      "message": "Caption batch 24 with 1 panels",
+      "timestamp": "07:31:06",
+      "details": "{\n  \"panelIds\": [\n    \"scene-024.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-50",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:31:09",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-51",
+      "type": "request",
+      "message": "Caption batch 25 with 1 panels",
+      "timestamp": "07:31:09",
+      "details": "{\n  \"panelIds\": [\n    \"scene-025.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-52",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:31:12",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-53",
+      "type": "request",
+      "message": "Caption batch 26 with 1 panels",
+      "timestamp": "07:31:12",
+      "details": "{\n  \"panelIds\": [\n    \"scene-026.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-54",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:31:15",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-55",
+      "type": "request",
+      "message": "Caption batch 27 with 1 panels",
+      "timestamp": "07:31:15",
+      "details": "{\n  \"panelIds\": [\n    \"scene-027.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-56",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:31:18",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-57",
+      "type": "request",
+      "message": "Caption batch 28 with 1 panels",
+      "timestamp": "07:31:18",
+      "details": "{\n  \"panelIds\": [\n    \"scene-028.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-58",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:31:21",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-59",
+      "type": "request",
+      "message": "Caption batch 29 with 1 panels",
+      "timestamp": "07:31:21",
+      "details": "{\n  \"panelIds\": [\n    \"scene-029.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-60",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:31:24",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-61",
+      "type": "request",
+      "message": "Caption batch 30 with 1 panels",
+      "timestamp": "07:31:24",
+      "details": "{\n  \"panelIds\": [\n    \"scene-030.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-62",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:31:27",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-63",
+      "type": "request",
+      "message": "Caption batch 31 with 1 panels",
+      "timestamp": "07:31:27",
+      "details": "{\n  \"panelIds\": [\n    \"scene-031.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-64",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:31:30",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-65",
+      "type": "request",
+      "message": "Caption batch 32 with 1 panels",
+      "timestamp": "07:31:30",
+      "details": "{\n  \"panelIds\": [\n    \"scene-032.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-66",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:31:33",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-67",
+      "type": "request",
+      "message": "Caption batch 33 with 1 panels",
+      "timestamp": "07:31:33",
+      "details": "{\n  \"panelIds\": [\n    \"scene-033.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-68",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:31:36",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-69",
+      "type": "request",
+      "message": "Caption batch 34 with 1 panels",
+      "timestamp": "07:31:36",
+      "details": "{\n  \"panelIds\": [\n    \"scene-034.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-70",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:31:39",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-71",
+      "type": "request",
+      "message": "Caption batch 35 with 1 panels",
+      "timestamp": "07:31:39",
+      "details": "{\n  \"panelIds\": [\n    \"scene-035.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-72",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:31:42",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-73",
+      "type": "request",
+      "message": "Caption batch 36 with 1 panels",
+      "timestamp": "07:31:42",
+      "details": "{\n  \"panelIds\": [\n    \"scene-036.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-74",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:31:44",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-75",
+      "type": "request",
+      "message": "Caption batch 37 with 1 panels",
+      "timestamp": "07:31:44",
+      "details": "{\n  \"panelIds\": [\n    \"scene-037.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-76",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:31:47",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-77",
+      "type": "request",
+      "message": "Caption batch 38 with 1 panels",
+      "timestamp": "07:31:47",
+      "details": "{\n  \"panelIds\": [\n    \"scene-038.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-78",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:31:50",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-79",
+      "type": "request",
+      "message": "Caption batch 39 with 1 panels",
+      "timestamp": "07:31:50",
+      "details": "{\n  \"panelIds\": [\n    \"scene-039.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-80",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:31:53",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-81",
+      "type": "request",
+      "message": "Caption batch 40 with 1 panels",
+      "timestamp": "07:31:53",
+      "details": "{\n  \"panelIds\": [\n    \"scene-040.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-82",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:31:56",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-83",
+      "type": "request",
+      "message": "Caption batch 41 with 1 panels",
+      "timestamp": "07:31:56",
+      "details": "{\n  \"panelIds\": [\n    \"scene-041.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-84",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:31:59",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-85",
+      "type": "request",
+      "message": "Caption batch 42 with 1 panels",
+      "timestamp": "07:31:59",
+      "details": "{\n  \"panelIds\": [\n    \"scene-042.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-86",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:32:02",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-87",
+      "type": "request",
+      "message": "Caption batch 43 with 1 panels",
+      "timestamp": "07:32:02",
+      "details": "{\n  \"panelIds\": [\n    \"scene-043.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-88",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:32:05",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-89",
+      "type": "request",
+      "message": "Caption batch 44 with 1 panels",
+      "timestamp": "07:32:05",
+      "details": "{\n  \"panelIds\": [\n    \"scene-044.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-90",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:32:08",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-91",
+      "type": "request",
+      "message": "Caption batch 45 with 1 panels",
+      "timestamp": "07:32:08",
+      "details": "{\n  \"panelIds\": [\n    \"scene-045.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-92",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:32:11",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-93",
+      "type": "request",
+      "message": "Caption batch 46 with 1 panels",
+      "timestamp": "07:32:11",
+      "details": "{\n  \"panelIds\": [\n    \"scene-046.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-94",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:32:14",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-95",
+      "type": "request",
+      "message": "Caption batch 47 with 1 panels",
+      "timestamp": "07:32:14",
+      "details": "{\n  \"panelIds\": [\n    \"scene-047.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-96",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:32:17",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-97",
+      "type": "request",
+      "message": "Caption batch 48 with 1 panels",
+      "timestamp": "07:32:17",
+      "details": "{\n  \"panelIds\": [\n    \"scene-048.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-98",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:32:19",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-99",
+      "type": "request",
+      "message": "Caption batch 49 with 1 panels",
+      "timestamp": "07:32:19",
+      "details": "{\n  \"panelIds\": [\n    \"scene-049.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-100",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:32:22",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-101",
+      "type": "request",
+      "message": "Caption batch 50 with 1 panels",
+      "timestamp": "07:32:22",
+      "details": "{\n  \"panelIds\": [\n    \"scene-050.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-102",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:32:25",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-103",
+      "type": "request",
+      "message": "Caption batch 51 with 1 panels",
+      "timestamp": "07:32:25",
+      "details": "{\n  \"panelIds\": [\n    \"scene-051.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-104",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:32:28",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-105",
+      "type": "request",
+      "message": "Caption batch 52 with 1 panels",
+      "timestamp": "07:32:28",
+      "details": "{\n  \"panelIds\": [\n    \"scene-052.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-106",
+      "type": "result",
+      "message": "Structured caption ready for 1 panels",
+      "timestamp": "07:32:31",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-107",
+      "type": "request",
+      "message": "Script batch 1 with 10 panels",
+      "timestamp": "07:32:31",
+      "details": "{\n  \"panelIds\": [\n    \"scene-001.png\",\n    \"scene-002.png\",\n    \"scene-003.png\",\n    \"scene-004.png\",\n    \"scene-005.png\",\n    \"scene-006.png\",\n    \"scene-007.png\",\n    \"scene-008.png\",\n    \"scene-009.png\",\n    \"scene-010.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-108",
+      "type": "result",
+      "message": "Generated narration for batch 1",
+      "timestamp": "07:32:41",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-109",
+      "type": "result",
+      "message": "Generated memory for batch 1",
+      "timestamp": "07:32:43",
+      "details": "L? V?n T?m xuất hiện trong một bối cảnh xa lạ và bí ẩn, nơi anh ta đối mặt với nguy hiểm, một quá khứ đen tối và một thế lực đang dần tiến gần."
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-110",
+      "type": "request",
+      "message": "Script batch 2 with 10 panels",
+      "timestamp": "07:32:43",
+      "details": "{\n  \"panelIds\": [\n    \"scene-011.png\",\n    \"scene-012.png\",\n    \"scene-013.png\",\n    \"scene-014.png\",\n    \"scene-015.png\",\n    \"scene-016.png\",\n    \"scene-017.png\",\n    \"scene-018.png\",\n    \"scene-019.png\",\n    \"scene-020.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-111",
+      "type": "result",
+      "message": "Generated narration for batch 2",
+      "timestamp": "07:32:53",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-112",
+      "type": "result",
+      "message": "Generated memory for batch 2",
+      "timestamp": "07:32:55",
+      "details": "L? V?n T?m đối mặt với những bóng đen bí ẩn và mối nguy hiểm ngày càng tăng, bao gồm cả một học sinh mục tiêu và một người đàn ông mang bí mật, dẫn đến một cuộc chiến sinh tử."
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-113",
+      "type": "request",
+      "message": "Script batch 3 with 10 panels",
+      "timestamp": "07:32:55",
+      "details": "{\n  \"panelIds\": [\n    \"scene-021.png\",\n    \"scene-022.png\",\n    \"scene-023.png\",\n    \"scene-024.png\",\n    \"scene-025.png\",\n    \"scene-026.png\",\n    \"scene-027.png\",\n    \"scene-028.png\",\n    \"scene-029.png\",\n    \"scene-030.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-114",
+      "type": "result",
+      "message": "Generated narration for batch 3",
+      "timestamp": "07:33:06",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-115",
+      "type": "result",
+      "message": "Generated memory for batch 3",
+      "timestamp": "07:33:08",
+      "details": "Những bóng đen liên tục xuất hiện, mang theo nguy hiểm và sự phức tạp, cùng với những lời hứa hẹn và lời nguyền đang dần hé lộ."
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-116",
+      "type": "request",
+      "message": "Script batch 4 with 10 panels",
+      "timestamp": "07:33:08",
+      "details": "{\n  \"panelIds\": [\n    \"scene-031.png\",\n    \"scene-032.png\",\n    \"scene-033.png\",\n    \"scene-034.png\",\n    \"scene-035.png\",\n    \"scene-036.png\",\n    \"scene-037.png\",\n    \"scene-038.png\",\n    \"scene-039.png\",\n    \"scene-040.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-117",
+      "type": "result",
+      "message": "Generated narration for batch 4",
+      "timestamp": "07:33:18",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-118",
+      "type": "result",
+      "message": "Generated memory for batch 4",
+      "timestamp": "07:33:20",
+      "details": "L? V?n T?m đang theo dõi một chuỗi bóng đen bí ẩn, với sự xuất hiện liên tục của chúng và một học sinh đang tìm kiếm điều gì đó."
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-119",
+      "type": "request",
+      "message": "Script batch 5 with 10 panels",
+      "timestamp": "07:33:20",
+      "details": "{\n  \"panelIds\": [\n    \"scene-041.png\",\n    \"scene-042.png\",\n    \"scene-043.png\",\n    \"scene-044.png\",\n    \"scene-045.png\",\n    \"scene-046.png\",\n    \"scene-047.png\",\n    \"scene-048.png\",\n    \"scene-049.png\",\n    \"scene-050.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-120",
+      "type": "result",
+      "message": "Generated narration for batch 5",
+      "timestamp": "07:33:29",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-121",
+      "type": "result",
+      "message": "Generated memory for batch 5",
+      "timestamp": "07:33:30",
+      "details": "L? V?n T?m đang bị theo dõi và phát hiện ra một nguy hiểm tiềm tàng, đồng thời nhận ra một sự thật đen tối đang dần hé lộ."
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-122",
+      "type": "request",
+      "message": "Script batch 6 with 2 panels",
+      "timestamp": "07:33:30",
+      "details": "{\n  \"panelIds\": [\n    \"scene-051.png\",\n    \"scene-052.png\"\n  ]\n}"
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-123",
+      "type": "result",
+      "message": "Generated narration for batch 6",
+      "timestamp": "07:33:33",
+      "details": null
+    },
+    {
+      "id": "82515596-5f56-4f8f-a578-031439b26984-124",
+      "type": "result",
+      "message": "Generated memory for batch 6",
+      "timestamp": "07:33:35",
+      "details": "L? V?n T?m đang theo dõi một người bí ẩn với sự tò mò, đồng thời một mối nguy hiểm tiềm ẩn đang ẩn nấp."
+    }
+  ]
+}

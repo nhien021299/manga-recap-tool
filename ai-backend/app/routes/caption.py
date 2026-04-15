@@ -26,7 +26,7 @@ async def caption_batch(
 
     temp_dir, saved_paths = await save_uploads(settings.temp_root, "caption-preview", files)
     try:
-        understandings, raw_output, elapsed_ms = await caption_service.generate_understandings(
+        result = await caption_service.generate_understandings(
             context=request.context,
             panels=request.panels,
             file_paths=saved_paths,
@@ -34,9 +34,13 @@ async def caption_batch(
             check_cancel=lambda: None,
         )
         return {
-            "understandings": [item.model_dump() for item in understandings],
-            "rawOutput": raw_output,
-            "elapsedMs": elapsed_ms,
+            "understandings": [item.model_dump() for item in result.understandings],
+            "rawOutput": result.raw_output,
+            "elapsedMs": result.caption_ms,
+            "ocrMs": result.ocr_ms,
+            "mergeMs": result.merge_ms,
+            "avgPanelMs": result.avg_panel_ms,
+            "captionSource": result.caption_source,
         }
     finally:
         cleanup_temp_dir(temp_dir)

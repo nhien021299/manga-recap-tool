@@ -26,6 +26,7 @@ import { useRecapStore } from "@/shared/storage/useRecapStore";
 
 export function StepScript() {
   const {
+    logs,
     timeline,
     panels,
     virtualStrip,
@@ -62,6 +63,16 @@ export function StepScript() {
     () => timeline.filter((item) => item.scriptStatus === "edited").length,
     [timeline]
   );
+
+  const latestErrorDetails = useMemo(() => {
+    for (let index = logs.length - 1; index >= 0; index -= 1) {
+      const log = logs[index];
+      if (log.type === "error" && log.details) {
+        return log.details;
+      }
+    }
+    return null;
+  }, [logs]);
 
   const handleReplaceCharacter = (placeholder: string) => {
     if (!replacementName) return;
@@ -254,9 +265,16 @@ export function StepScript() {
             )}
 
             {error && (
-              <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/20 p-4 text-sm text-white shadow-inner">
-                <AlertCircle className="h-4 w-4 shrink-0 text-[#ff4d4d]" />
-                <span>{error}</span>
+              <div className="space-y-3 rounded-xl border border-destructive/30 bg-destructive/20 p-4 text-sm text-white shadow-inner">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-[#ff4d4d]" />
+                  <span>{error}</span>
+                </div>
+                {latestErrorDetails && (
+                  <pre className="overflow-x-auto rounded-lg border border-white/10 bg-black/30 p-3 font-mono text-[10px] leading-5 text-white/85">
+                    <code>{latestErrorDetails}</code>
+                  </pre>
+                )}
               </div>
             )}
           </Card>

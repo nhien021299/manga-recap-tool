@@ -1,0 +1,21 @@
+model,mode,workload,ocrProvider,panel_id,review_bucket,visual_fidelity,action_clarity,text_sfx_grounding,structure_awareness,script_usefulness,error_tags
+qwen3-vl:4b,vision_only,10,disabled,scene-001.png,text-sfx-heavy,2.83,2.5,3.0,4.0,3.73,"['generic_caption', 'wrong_action']"
+qwen3-vl:4b,vision_only,10,disabled,scene-002.png,text-sfx-heavy,3.23,2.5,3.0,4.0,3.5,['wrong_action']
+qwen3-vl:4b,vision_only,10,disabled,scene-003.png,text-sfx-heavy,2.83,2.5,3.0,4.0,3.47,"['generic_caption', 'wrong_action']"
+qwen3-vl:4b,vision_only,10,disabled,scene-004.png,text-sfx-heavy,3.23,2.5,3.0,4.0,3.58,['wrong_action']
+qwen3-vl:4b,vision_only,10,disabled,scene-005.png,text-sfx-heavy,3.23,2.5,3.0,4.0,3.5,['wrong_action']
+qwen3-vl:4b,vision_only,10,disabled,scene-006.png,text-sfx-heavy,2.83,2.5,3.0,4.0,3.37,"['generic_caption', 'wrong_action']"
+qwen3-vl:4b,vision_only,10,disabled,scene-007.png,text-sfx-heavy,3.23,2.5,3.0,4.0,3.58,['wrong_action']
+qwen3-vl:4b,vision_only,10,disabled,scene-008.png,text-sfx-heavy,2.83,2.5,3.0,4.0,3.37,"['generic_caption', 'wrong_action']"
+qwen3-vl:4b,vision_only,10,disabled,scene-009.png,text-sfx-heavy,2.83,2.5,3.0,4.0,3.37,"['generic_caption', 'wrong_action']"
+qwen3-vl:4b,vision_only,10,disabled,scene-010.png,text-sfx-heavy,2.83,2.5,3.0,4.0,3.37,"['generic_caption', 'wrong_action']"
+qwen3-vl:4b,vision_ocr,10,rapidocr,scene-001.png,text-sfx-heavy,2.83,2.5,3.0,4.0,3.98,"['generic_caption', 'wrong_action']"
+qwen3-vl:4b,vision_ocr,10,rapidocr,scene-002.png,text-sfx-heavy,2.83,2.5,3.5,4.0,4.0,"['generic_caption', 'wrong_action']"
+qwen3-vl:4b,vision_ocr,10,rapidocr,scene-003.png,text-sfx-heavy,2.83,2.5,3.0,4.0,3.6,"['generic_caption', 'wrong_action']"
+qwen3-vl:4b,vision_ocr,10,rapidocr,scene-004.png,text-sfx-heavy,3.17,3.7,3.5,4.0,3.13,['generic_caption']
+qwen3-vl:4b,vision_ocr,10,rapidocr,scene-005.png,text-sfx-heavy,2.83,2.5,3.0,4.0,3.43,"['generic_caption', 'wrong_action']"
+qwen3-vl:4b,vision_ocr,10,rapidocr,scene-006.png,text-sfx-heavy,3.17,3.7,3.5,4.0,3.37,['generic_caption']
+qwen3-vl:4b,vision_ocr,10,rapidocr,scene-007.png,text-sfx-heavy,2.83,2.5,3.5,4.0,4.28,"['generic_caption', 'wrong_action']"
+qwen3-vl:4b,vision_ocr,10,rapidocr,scene-008.png,text-sfx-heavy,2.83,2.5,5.0,4.0,4.25,"['generic_caption', 'wrong_action']"
+qwen3-vl:4b,vision_ocr,10,rapidocr,scene-009.png,text-sfx-heavy,2.83,2.5,3.5,4.0,3.9,"['generic_caption', 'wrong_action']"
+qwen3-vl:4b,vision_ocr,10,rapidocr,scene-010.png,text-sfx-heavy,2.83,2.5,3.5,4.0,4.22,"['generic_caption', 'wrong_action']"

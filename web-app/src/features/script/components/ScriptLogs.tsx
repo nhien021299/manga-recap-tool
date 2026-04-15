@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useRecapStore } from "@/shared/storage/useRecapStore";
 
 export function ScriptLogs() {
-  const { logs, clearLogs } = useRecapStore();
+  const { logs, clearLogs, scriptJob } = useRecapStore();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export function ScriptLogs() {
       >
         <div className="space-y-6">
           {logs.map((log) => (
-            <div key={log.id} className="animate-in fade-in slide-in-from-left-2 space-y-2 duration-300">
+            <div key={log.id} className="space-y-2">
               <div className="flex items-start gap-2">
                 <span className="shrink-0 select-none text-white/40">[{log.timestamp}]</span>
                 <span
@@ -60,7 +60,20 @@ export function ScriptLogs() {
                 >
                   {log.type}:
                 </span>
-                <span className="flex-1 break-words font-medium text-white">{log.message}</span>
+                <span className="flex flex-1 items-center gap-2 break-words font-medium text-white">
+                  <span>{log.message}</span>
+                  {scriptJob.status !== "completed" &&
+                    scriptJob.status !== "failed" &&
+                    scriptJob.status !== "cancelled" &&
+                    log.type === "request" &&
+                    log.id === logs[logs.length - 1]?.id && (
+                      <span className="inline-flex items-center gap-1 text-white/50" aria-label="Loading">
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.3s]" />
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.15s]" />
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current" />
+                      </span>
+                    )}
+                </span>
               </div>
 
               {log.details && (

@@ -40,7 +40,7 @@ interface RecapState {
 
   logs: GeminiLog[];
   addLog: (log: Omit<GeminiLog, "id" | "timestamp">) => void;
-  replaceLogs: (logs: Omit<GeminiLog, "id" | "timestamp">[]) => void;
+  replaceLogs: (logs: GeminiLog[]) => void;
   clearLogs: () => void;
 
   sfxDictionary: Record<string, SFXItem>;
@@ -185,10 +185,10 @@ const normalizeTimelineItem = (item: TimelineItem, index: number): TimelineItem 
   };
 };
 
-const hydrateLog = (log: Omit<GeminiLog, "id" | "timestamp">, index: number): GeminiLog => ({
+const hydrateLog = (log: Partial<GeminiLog> & Pick<GeminiLog, "type" | "message">, index: number): GeminiLog => ({
   ...log,
-  id: `log-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
-  timestamp: new Date().toLocaleTimeString(),
+  id: log.id || `log-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
+  timestamp: log.timestamp || new Date().toLocaleTimeString(),
 });
 
 export const useRecapStore = create<RecapState>()(
@@ -222,8 +222,19 @@ export const useRecapStore = create<RecapState>()(
           logs: [...state.logs, hydrateLog(log, state.logs.length)].slice(-100),
         })),
       replaceLogs: (logs) =>
-        set({
-          logs: logs.map((log, index) => hydrateLog(log, index)).slice(-100),
+        set((state) => {
+          const nextLogs = logs.map((log, index) => hydrateLog(log, index)).slice(-100);
+          const isSame =
+            state.logs.length === nextLogs.length &&
+            state.logs.every(
+              (log, index) =>
+                log.id === nextLogs[index]?.id &&
+                log.timestamp === nextLogs[index]?.timestamp &&
+                log.type === nextLogs[index]?.type &&
+                log.message === nextLogs[index]?.message &&
+                log.details === nextLogs[index]?.details
+            );
+          return isSame ? state : { logs: nextLogs };
         }),
       clearLogs: () => set({ logs: [] }),
 

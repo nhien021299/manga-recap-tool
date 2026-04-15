@@ -1,0 +1,36 @@
+[
+  {
+    "run_id": "qwen3-vl_4b-vision_only-10",
+    "model": "qwen3-vl:4b",
+    "mode": "vision_only",
+    "workload": 10,
+    "ocrProvider": "disabled",
+    "status": "failed",
+    "run_score": 0.0,
+    "panelCount": 10,
+    "totalMs": 0,
+    "captionMs": 0,
+    "ocrMs": 0,
+    "mergeMs": 0,
+    "scriptMs": 0,
+    "avgPanelMs": 0,
+    "error": "caption item count mismatch"
+  },
+  {
+    "run_id": "qwen3-vl_4b-vision_ocr-10",
+    "model": "qwen3-vl:4b",
+    "mode": "vision_ocr",
+    "workload": 10,
+    "ocrProvider": "rapidocr",
+    "status": "failed",
+    "run_score": 0.0,
+    "panelCount": 10,
+    "totalMs": 0,
+    "captionMs": 0,
+    "ocrMs": 0,
+    "mergeMs": 0,
+    "scriptMs": 0,
+    "avgPanelMs": 0,
+    "error": "caption item count mismatch"
+  }
+]

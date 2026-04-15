@@ -74,7 +74,13 @@ class JobQueue:
                 else:
                     job.status = JobStatus.failed
                     job.error = str(exc)
-                    job.add_log("error", "Backend script pipeline failed", str(exc))
+                    known_error_categories = {
+                        "caption raw provider error",
+                        "caption JSON validation failed",
+                        "caption repair failed",
+                    }
+                    if job.error not in known_error_categories:
+                        job.add_log("error", "Backend script pipeline failed", str(exc))
             finally:
                 cleanup_temp_dir(job.temp_dir)
                 job.touch()

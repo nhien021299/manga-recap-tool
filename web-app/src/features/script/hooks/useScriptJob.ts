@@ -159,13 +159,7 @@ export function useScriptJob() {
       syncInFlightRef.current = true;
       try {
         const status = await getScriptJobStatus(config.apiBaseUrl, jobId);
-        replaceLogs(
-          status.logs.map((log) => ({
-            type: log.type,
-            message: log.message,
-            details: log.details,
-          }))
-        );
+        replaceLogs(status.logs);
 
         const progress = Math.max(status.progress, scriptJob.progress || 0);
         setProgress(progress);

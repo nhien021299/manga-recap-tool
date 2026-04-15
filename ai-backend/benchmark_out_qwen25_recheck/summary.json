@@ -1,0 +1,19 @@
+[
+  {
+    "run_id": "qwen2.5vl_7b-vision_only-10",
+    "model": "qwen2.5vl:7b",
+    "mode": "vision_only",
+    "workload": 10,
+    "ocrProvider": "disabled",
+    "status": "failed",
+    "run_score": 0.0,
+    "panelCount": 10,
+    "totalMs": 0,
+    "captionMs": 0,
+    "ocrMs": 0,
+    "mergeMs": 0,
+    "scriptMs": 0,
+    "avgPanelMs": 0,
+    "error": "caption raw provider error"
+  }
+]

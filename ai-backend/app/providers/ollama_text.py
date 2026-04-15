@@ -34,10 +34,17 @@ class OllamaTextProvider:
             payload["format"] = schema
 
         async with httpx.AsyncClient(timeout=120.0) as client:
-            response = await client.post(f"{self.base_url}/api/chat", json=payload)
-            response.raise_for_status()
-            data = response.json()
-            return (data.get("message", {}) or {}).get("content", "").strip()
+            endpoint = f"{self.base_url}/api/chat"
+            try:
+                response = await client.post(endpoint, json=payload)
+                response.raise_for_status()
+                data = response.json()
+                return (data.get("message", {}) or {}).get("content", "").strip()
+            except Exception as exc:
+                raise RuntimeError(
+                    f"provider=ollama_text model={self.model} endpoint={endpoint} "
+                    f"exception_type={type(exc).__name__} error={exc}"
+                ) from exc
 
     async def repair_json(self, *, invalid_output: str, schema: dict) -> str:
         prompt = (

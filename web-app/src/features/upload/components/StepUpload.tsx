@@ -26,7 +26,6 @@ export function StepUpload() {
     setStoryMemories,
     setTimeline,
     setScriptMeta,
-    clearScriptJob,
     setCurrentStep,
     setIsLoading,
     isLoading,
@@ -72,8 +71,7 @@ export function StepUpload() {
     setPanelUnderstandingMeta({ panelSignature: "", rawOutput: "" });
     setStoryMemories([]);
     setTimeline([]);
-    setScriptMeta({ status: "idle", sourceUnits: [], rawOutput: "", pipeline: "backend-caption-memory" });
-    clearScriptJob();
+    setScriptMeta({ status: "idle", sourceUnits: [], rawOutput: "", pipeline: "backend-gemini" });
   };
 
   const buildPanelsFromFiles = async (panelFiles: File[]): Promise<Panel[]> => {
@@ -200,10 +198,10 @@ export function StepUpload() {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="space-y-2">
         <h2 className="bg-gradient-to-r from-white to-white/60 bg-clip-text text-3xl font-bold tracking-tight text-transparent">
-          Tai len manga/webtoon
+          Tải lên manga/webtoon
         </h2>
         <p className="text-muted-foreground">
-          Upload chap goc de tach panel, hoac import thang thu muc panel da crop de di thang sang buoc script.
+          Upload chap gốc để tách panel, hoặc import thẳng thư mục panel đã crop để đi thẳng sang bước script.
         </p>
       </div>
 
@@ -224,14 +222,14 @@ export function StepUpload() {
               )}
             </div>
             <div className="mt-4 text-center">
-              <p className="text-lg font-medium">Nhan de chon hoac keo tha chuong goc</p>
-              <p className="mt-1 text-sm text-muted-foreground">PNG, JPG hoac WebP</p>
+              <p className="text-lg font-medium">Nhấn để chọn hoặc kéo thả chương gốc</p>
+              <p className="mt-1 text-sm text-muted-foreground">PNG, JPG hoặc WebP</p>
             </div>
             {isLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-background/60 p-12 backdrop-blur-sm">
                 <div className="w-full space-y-4">
                   <div className="flex justify-between text-sm">
-                    <span>Dang xu ly hinh anh...</span>
+                    <span>Đang xử lý hình ảnh...</span>
                     <span>{progress}%</span>
                   </div>
                   <Progress value={progress} className="h-2" />
@@ -258,7 +256,7 @@ export function StepUpload() {
             className="h-12 w-full rounded-2xl border-white/15 bg-white/5 text-sm font-semibold text-white/85 hover:bg-white/10"
           >
             <FolderOpen className="mr-2 h-4 w-4" />
-            Import folder anh crop va vao thang buoc script
+            Import folder ảnh crop và vào thẳng bước script
           </Button>
 
           {files.length > 0 && !isLoading && (
@@ -267,19 +265,19 @@ export function StepUpload() {
               className="btn-pop h-16 w-full rounded-2xl border-none bg-primary text-xl font-black uppercase tracking-tighter text-primary-foreground ring-2 ring-white/10 shadow-glow transition-all hover:opacity-100 active:scale-[0.98]"
               onClick={processImages}
             >
-              Tien hanh tach panel ({fileCountLabel})
+              Tiến hành tách panel ({fileCountLabel})
             </Button>
           )}
         </div>
 
         <div className="glass min-h-[300px] rounded-3xl border-white/5 p-6">
           <h3 className="mb-4 flex items-center gap-2 text-sm font-medium uppercase tracking-wider text-muted-foreground">
-            <FileImage className="h-4 w-4" /> Danh sach tep ({fileCountLabel})
+            <FileImage className="h-4 w-4" /> Danh sách tệp ({fileCountLabel})
           </h3>
           <div className="custom-scrollbar max-h-[400px] space-y-2 overflow-y-auto pr-2">
             {files.length === 0 ? (
               <div className="flex h-32 flex-col items-center justify-center rounded-2xl border border-dashed border-white/5 text-muted-foreground">
-                <p className="text-sm italic">Chua co tep nao duoc chon</p>
+                <p className="text-sm italic">Chưa có tệp nào được chọn</p>
               </div>
             ) : (
               files.map((file, index) => (

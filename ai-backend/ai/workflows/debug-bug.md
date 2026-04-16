@@ -6,7 +6,7 @@ When debugging a backend bug:
    - providers -> provider-abstraction-engineer
    - caption stage -> vision-caption-pipeline
    - script stage -> script-generation-orchestrator
-   - queue/cancellation -> async-job-queue-specialist
+   - queue/cancellation -> async-job-queue-specialist only for explicitly queue-based paths
    - config/logging/temp files -> config-observability-guardian
 4. Produce:
    - root-cause summary

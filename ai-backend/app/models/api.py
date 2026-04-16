@@ -37,6 +37,11 @@ class ScriptJobResult(BaseModel):
     metrics: Metrics
 
 
+class ScriptGenerationResponse(BaseModel):
+    result: ScriptJobResult
+    logs: list[JobLogEntry] = Field(default_factory=list)
+
+
 class CreateJobResponse(BaseModel):
     jobId: str
     status: JobStatus

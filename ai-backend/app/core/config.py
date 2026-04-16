@@ -5,6 +5,34 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+def _normalize_secret(value: str | None) -> str:
+    if not value:
+        return ""
+    trimmed = value.strip()
+    if not trimmed:
+        return ""
+    if (
+        (trimmed.startswith('"') and trimmed.endswith('"'))
+        or (trimmed.startswith("'") and trimmed.endswith("'"))
+    ):
+        return trimmed[1:-1].strip()
+    return trimmed
+
+
+def _read_env_value(path: Path, key: str) -> str:
+    if not path.exists():
+        return ""
+
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        current_key, value = line.split("=", 1)
+        if current_key.strip() == key:
+            return _normalize_secret(value)
+    return ""
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -17,6 +45,8 @@ class Settings(BaseSettings):
     api_prefix: str = "/api/v1"
     cors_origins_raw: str = Field(default="http://localhost:5173", alias="AI_BACKEND_CORS_ORIGINS")
     temp_root_raw: str = Field(default=".temp/jobs", alias="AI_BACKEND_TEMP_ROOT")
+    gemini_api_key: str = Field(default="", alias="AI_BACKEND_GEMINI_API_KEY")
+    gemini_model: str = Field(default="gemini-2.5-flash", alias="AI_BACKEND_GEMINI_MODEL")
     text_provider: str = Field(default="ollama", alias="AI_BACKEND_TEXT_PROVIDER")
     text_model: str = Field(default="gemma3", alias="AI_BACKEND_TEXT_MODEL")
     text_base_url: str = Field(default="http://localhost:11434", alias="AI_BACKEND_TEXT_BASE_URL")
@@ -52,6 +82,16 @@ class Settings(BaseSettings):
     @property
     def ocr_debug_root(self) -> Path:
         return self.temp_root.parent / "ocr-debug"
+
+    @property
+    def effective_gemini_api_key(self) -> str:
+        direct_value = _normalize_secret(self.gemini_api_key)
+        if direct_value:
+            return direct_value
+
+        repo_root = Path(__file__).resolve().parents[3]
+        web_app_env = repo_root / "web-app" / ".env"
+        return _read_env_value(web_app_env, "VITE_GEMINI_API_KEY")
 
 
 @lru_cache(maxsize=1)

@@ -1,75 +1,108 @@
 # manga-recap-tool
 
-Monorepo layout:
+Frontend-backend manga recap editor.
 
-- `web-app/`: React + Vite editor, browser-first image workflow, IndexedDB session persistence.
-- `ai-backend/`: FastAPI job backend for local caption + script generation with pluggable providers.
-- `ai/`: project notes, roadmap, and internal planning docs.
+## Repo layout
 
-## Current M2 status
+- `web-app/`: React + Vite editor for upload, extract, script, voice, and render flow
+- `ai-backend/`: FastAPI service for Step Script generation
+- `ai/`: notes and internal references
 
-- Frontend and backend local flow is wired and working end-to-end.
-- Backend runtime for caption + script jobs is stable enough for real chapter runs after timeout / retry hardening.
-- Current quality bottleneck is the vision caption stage, not the queue / polling / runtime path.
-- Default local `gemma3` setup is usable for debugging and stability checks, but may be too weak for accurate manga-panel understanding on real chapters.
+## Current architecture
 
-## Web app
+- Upload and extract stay browser-side
+- Step Script sends extracted panel files from frontend to backend
+- Backend runs Gemini in 2 stages:
+  - panel understanding
+  - narration generation with chunk continuity
+- Frontend hydrates `panelUnderstandings`, `storyMemories`, `timeline`, raw outputs, and logs
+- Voice generation stays frontend-side with ElevenLabs
+
+Active Step Script entrypoint:
+
+```text
+POST /api/v1/script/generate
+```
+
+## Setup
+
+Frontend:
 
 ```bash
 cd web-app
 npm install
-npm run dev
+copy .env.example .env
 ```
 
-Default frontend API target: `http://localhost:8000`.
-
-From repo root you can also run:
+Backend:
 
 ```bash
+cd ai-backend
+python -m pip install -r requirements.txt
+copy .env.example .env
+```
+
+Preferred backend credential:
+
+```bash
+AI_BACKEND_GEMINI_API_KEY=
+```
+
+Temporary fallback also works:
+
+```bash
+VITE_GEMINI_API_KEY=
+```
+
+If `AI_BACKEND_GEMINI_API_KEY` is empty, backend can read `VITE_GEMINI_API_KEY` from `web-app/.env`.
+
+## Run
+
+From repo root:
+
+```bash
+npm run dev:be
 npm run dev:web
 ```
 
-## AI backend
+Or use:
 
-For first-time setup:
 ```bash
-cd ai-backend
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-copy .env.example .env
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+./start-dev.ps1
 ```
 
-For later runs:
+## Frontend env
+
+`web-app/.env`
+
 ```bash
-cd ai-backend
-.venv\Scripts\activate
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+VITE_API_BASE_URL=http://127.0.0.1:8000
+VITE_GEMINI_API_KEY=
+VITE_ELEVENLABS_API_KEY=
+VITE_TTS_VOICE_ID=pNInz6obpgmqS29pXo3W
+VITE_TTS_MODEL=eleven_multilingual_v2
 ```
 
-Health checks:
+## Backend env
 
-- `http://localhost:8000/api/v1/health`
-- `http://localhost:8000/api/v1/system/providers`
+`ai-backend/.env`
 
-## Backend config notes
+```bash
+AI_BACKEND_HOST=127.0.0.1
+AI_BACKEND_PORT=8000
+AI_BACKEND_GEMINI_API_KEY=
+AI_BACKEND_GEMINI_MODEL=gemini-2.5-flash
+```
 
-`ai-backend/.env.example` now includes the current local-debug defaults for M2:
+## Validation status
 
-- caption chunk size reduced to `1`
-- vision timeout / retry controls
-- image resize controls for vision preprocessing
-- script validation / retry controls
+Verified on `2026-04-16`:
+- `npm run build:web` passes
+- backend import passes after dependency install
+- backend Gemini smoke test passes through `POST /api/v1/script/generate`
 
-Important:
+## Open risks
 
-- The caption stage now uses a visual-only prompt to reduce lore leakage.
-- Story context is intended to influence the script stage, not the raw caption stage.
-- If output is still too generic, the next likely improvement is a stronger vision model rather than more timeout tuning.
-
-Suggested local vision models to benchmark next:
-
-- `qwen2.5vl`
-- `llama3.2-vision`
-- `gemma3:12b` if your hardware can handle it
+- Real chapter validation on `10` and `52` panel workloads is still pending
+- Backend Gemini route is synchronous and cannot be cancelled mid-request
+- Legacy local-AI backend modules still exist in the repo but are not part of the active product flow

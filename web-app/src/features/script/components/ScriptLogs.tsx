@@ -1,92 +1,89 @@
 import { useEffect, useRef } from "react";
-import { Terminal, Trash2 } from "lucide-react";
+import { CheckCircle2, Loader2, Terminal, Trash2, XCircle } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import { useRecapStore } from "@/shared/storage/useRecapStore";
 
+const formatTimestamp = (value: string) => {
+  const parsedDate = new Date(value);
+  if (!Number.isNaN(parsedDate.getTime())) {
+    return parsedDate.toLocaleTimeString();
+  }
+  return value;
+};
+
 export function ScriptLogs() {
-  const { logs, clearLogs, scriptJob } = useRecapStore();
+  const { logs, clearLogs, isLoading } = useRecapStore();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollIntoView({ behavior: "smooth" });
-    }
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
 
   if (logs.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center space-y-4 text-muted-foreground opacity-50">
         <Terminal className="h-12 w-12" />
-        <p className="text-sm font-medium uppercase tracking-widest text-white">
-          Ready to receive backend job logs
-        </p>
+        <p className="text-sm font-medium uppercase tracking-widest text-white">No generation logs yet</p>
       </div>
     );
   }
 
   return (
-    <div className="flex h-[600px] flex-col space-y-4">
-      <div className="flex shrink-0 items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Terminal className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-bold uppercase tracking-wider text-white">Backend Job Logs</h3>
+    <div className="flex flex-col space-y-4">
+      <div className="flex shrink-0 items-center justify-between border-b border-white/10 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="rounded-lg bg-primary/20 p-2 ring-1 ring-primary/50">
+            <Terminal className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-widest text-white">Backend Gemini Log</h3>
+            <p className="mt-0.5 text-xs text-white/50">
+              Stage 1 builds panel understanding. Stage 2 writes narration on the backend.
+            </p>
+          </div>
         </div>
         <button
           onClick={clearLogs}
-          className="rounded-lg p-1.5 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
-          title="Clear logs"
+          className="rounded-xl border border-red-500/30 bg-red-500/10 p-2.5 text-red-200 shadow-sm transition-all hover:bg-red-500/20"
+          title="Clear generation logs"
         >
           <Trash2 className="h-4 w-4" />
         </button>
       </div>
 
-      <div
-        className="custom-scrollbar flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-black/40 p-4 font-mono text-[11px] leading-relaxed"
-        style={{ scrollBehavior: "smooth" }}
-      >
-        <div className="space-y-6">
-          {logs.map((log) => (
-            <div key={log.id} className="space-y-2">
-              <div className="flex items-start gap-2">
-                <span className="shrink-0 select-none text-white/40">[{log.timestamp}]</span>
-                <span
-                  className={cn(
-                    "shrink-0 select-none font-bold uppercase",
-                    log.type === "request" && "text-white",
-                    log.type === "result" && "text-[#00ff9f]",
-                    log.type === "error" && "text-[#ff4d4d]"
-                  )}
-                >
-                  {log.type}:
-                </span>
-                <span className="flex flex-1 items-center gap-2 break-words font-medium text-white">
-                  <span>{log.message}</span>
-                  {scriptJob.status !== "completed" &&
-                    scriptJob.status !== "failed" &&
-                    scriptJob.status !== "cancelled" &&
-                    log.type === "request" &&
-                    log.id === logs[logs.length - 1]?.id && (
-                      <span className="inline-flex items-center gap-1 text-white/50" aria-label="Loading">
-                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.3s]" />
-                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.15s]" />
-                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current" />
-                      </span>
-                    )}
-                </span>
-              </div>
-
-              {log.details && (
-                <div className="custom-scrollbar mt-2 overflow-x-auto rounded-lg border border-white/10 bg-white/5 text-white/80">
-                  <pre className="break-all whitespace-pre-wrap p-3 font-mono text-[10px]">
-                    <code className="text-white/90">{log.details}</code>
-                  </pre>
-                </div>
+      <div className="max-h-[750px] space-y-3 overflow-y-auto pr-2">
+        {logs.map((log) => (
+          <div
+            key={log.id}
+            className="rounded-2xl border border-white/10 bg-black/20 p-4 shadow-inner transition-colors hover:border-white/15"
+          >
+            <div className="flex items-start gap-3">
+              {log.type === "request" && (
+                isLoading ? <Loader2 className="mt-0.5 h-4 w-4 animate-spin text-primary" /> : <Terminal className="mt-0.5 h-4 w-4 text-primary" />
               )}
+              {log.type === "result" && <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-500" />}
+              {log.type === "error" && <XCircle className="mt-0.5 h-4 w-4 text-red-500" />}
+
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/40">
+                    {log.type}
+                  </span>
+                  <span className="text-[10px] text-white/30">{formatTimestamp(log.timestamp)}</span>
+                </div>
+                <p className="mt-1 break-words text-sm font-medium text-white/85">{log.message}</p>
+                {log.details && (
+                  <div className="custom-scrollbar mt-3 overflow-x-auto rounded-xl border border-white/10 bg-white/5">
+                    <pre className="whitespace-pre-wrap break-all p-3 text-[11px] leading-relaxed text-white/65">
+                      {log.details}
+                    </pre>
+                  </div>
+                )}
+              </div>
             </div>
-          ))}
-          <div ref={scrollRef} className="h-1" />
-        </div>
+          </div>
+        ))}
+        <div ref={scrollRef} className="h-2" />
       </div>
     </div>
   );

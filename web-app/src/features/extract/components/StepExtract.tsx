@@ -582,7 +582,7 @@ export function StepExtract() {
           </Button>
           <Button onClick={exportScenes} disabled={isExporting || isSavingExport} size="sm" className="rounded-xl bg-primary text-primary-foreground px-6 h-10 shadow-glow font-black border-none relative overflow-hidden group">
             {isExporting ? (
-              <span className="flex items-center"><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Xuat ({exportProgress}%)</span>
+              <span className="flex items-center"><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Xuất ({exportProgress}%)</span>
             ) : (
               <span className="flex items-center">Tiếp tục<ChevronRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" /></span>
             )}

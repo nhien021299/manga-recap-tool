@@ -12,6 +12,7 @@ from app.routes.health import router as health_router
 from app.routes.script import router as script_router
 from app.routes.system import router as system_router
 from app.services.caption_service import CaptionService
+from app.services.gemini_script_service import GeminiScriptService
 from app.services.job_queue import JobQueue
 from app.services.llm_service import LLMService
 from app.services.provider_registry import ProviderRegistry
@@ -27,10 +28,12 @@ def build_services(settings: Settings) -> dict[str, object]:
     llm_service = LLMService(settings, text_provider)
     script_pipeline = ScriptPipeline(provider_registry, caption_service, llm_service)
     job_queue = JobQueue(script_pipeline)
+    gemini_script_service = GeminiScriptService(settings)
     return {
         "provider_registry": provider_registry,
         "caption_service": caption_service,
         "job_queue": job_queue,
+        "gemini_script_service": gemini_script_service,
     }
 
 

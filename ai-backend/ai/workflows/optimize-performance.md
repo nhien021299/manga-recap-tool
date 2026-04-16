@@ -4,7 +4,7 @@ When optimizing backend performance:
    - provider calls -> provider-abstraction-engineer
    - caption/image work -> vision-caption-pipeline
    - script generation/parsing -> script-generation-orchestrator
-   - queue throughput/cancellation -> async-job-queue-specialist
+   - queue throughput/cancellation -> async-job-queue-specialist only for explicitly queue-based paths
 3. Ask fastapi-service-architect to verify that the optimization does not break service boundaries.
 4. Ask config-observability-guardian if new metrics, logs, or settings are needed to validate the change.
 5. Produce:

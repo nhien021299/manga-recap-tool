@@ -15,3 +15,7 @@ def get_job_queue(request: Request):
 
 def get_app_settings(request: Request):
     return request.app.state.settings
+
+
+def get_gemini_script_service(request: Request):
+    return request.app.state.gemini_script_service

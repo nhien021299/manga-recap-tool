@@ -1,16 +1,20 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 
-import {
-  cancelScriptJob,
-  createScriptJob,
-  getScriptJobResult,
-  getScriptJobStatus,
-} from "@/features/script/api/scriptApi";
+import { generateScriptViaBackend } from "@/features/script/api/scriptApi";
 import { useRecapStore } from "@/shared/storage/useRecapStore";
 import type { Panel, ScriptItem, StoryMemory, TimelineItem } from "@/shared/types";
 
-const POLL_INTERVAL_MS = 1500;
-const SCRIPT_CHUNK_SIZE = 10;
+const SCRIPT_CHUNK_SIZE = 20;
+
+const buildPanelSignature = (panels: Panel[]): string =>
+  JSON.stringify(
+    panels.map((panel) => ({
+      id: panel.id,
+      width: panel.width,
+      height: panel.height,
+      order: panel.order,
+    }))
+  );
 
 const mergeTimelineWithExisting = (
   panels: Panel[],
@@ -82,35 +86,84 @@ export function useScriptJob() {
     addSFXToDictionary,
     addLog,
     replaceLogs,
-    scriptJob,
-    setScriptJob,
   } = useRecapStore();
   const [error, setError] = useState<string | null>(null);
-  const pollingRef = useRef<number | null>(null);
-  const syncInFlightRef = useRef(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  const stopPolling = useCallback(() => {
-    if (pollingRef.current !== null) {
-      window.clearInterval(pollingRef.current);
-      pollingRef.current = null;
+  const log = useCallback(
+    (type: "request" | "result" | "error", message: string, details?: string) => {
+      addLog({ type, message, details });
+    },
+    [addLog]
+  );
+
+  const generateScript = useCallback(async () => {
+    if (panels.length === 0) {
+      const message = "No extracted panels available. Return to Extract before generating script.";
+      setError(message);
+      log("error", message);
+      return;
     }
-  }, []);
+    if (!config.apiBaseUrl) {
+      const message = "Missing backend API base URL. Open Settings and enter a valid backend URL.";
+      setError(message);
+      log("error", message);
+      return;
+    }
+    if (!scriptContext.mangaName || !scriptContext.mainCharacter) {
+      const message = "Please provide manga name and main character before generating script.";
+      setError(message);
+      log("error", message);
+      return;
+    }
 
-  const applyCompletedResult = useCallback(
-    async (jobId: string) => {
-      const result = await getScriptJobResult(config.apiBaseUrl, jobId);
+    setError(null);
+    setIsGenerating(true);
+    setIsLoading(true);
+    setProgress(5);
+    replaceLogs([]);
+    log(
+      "request",
+      `Starting backend Gemini script generation for ${panels.length} panels`,
+      JSON.stringify(
+        {
+          panelCount: panels.length,
+          language: config.language,
+          apiBaseUrl: config.apiBaseUrl,
+        },
+        null,
+        2
+      )
+    );
 
-      setPanelUnderstandings(result.understandings);
+    try {
+      const context = {
+        ...scriptContext,
+        language: config.language,
+      } as const;
+      const response = await generateScriptViaBackend(config.apiBaseUrl, panels, context, {
+        reuseCache: true,
+        returnRawOutputs: true,
+      });
+      replaceLogs(response.logs);
+
+      setPanelUnderstandings(response.result.understandings);
       setPanelUnderstandingMeta({
         generatedAt: new Date().toISOString(),
-        panelSignature: result.panelSignature,
-        rawOutput: result.rawOutputs?.understanding || "",
+        panelSignature: buildPanelSignature(panels),
+        rawOutput: response.result.rawOutputs?.understanding || "",
       });
-      setStoryMemories(result.storyMemories);
+      setProgress(60);
+      setStoryMemories(response.result.storyMemories);
 
-      const nextTimeline = mergeTimelineWithExisting(panels, result.generatedItems, timeline, result.storyMemories);
+      const nextTimeline = mergeTimelineWithExisting(
+        panels,
+        response.result.generatedItems,
+        timeline,
+        response.result.storyMemories
+      );
       const allSfx = new Set<string>();
-      result.generatedItems.forEach((item) => {
+      response.result.generatedItems.forEach((item) => {
         (item.sfx || []).forEach((tag) => allSfx.add(tag));
       });
       if (allSfx.size > 0) {
@@ -125,193 +178,52 @@ export function useScriptJob() {
           orderIndex: index,
         })),
         generatedAt: new Date().toISOString(),
-        rawOutput: result.rawOutputs?.script || "",
-        pipeline: "backend-caption-memory",
+        rawOutput: response.result.rawOutputs?.script || "",
+        pipeline: "backend-gemini",
       });
       setProgress(100);
       setCurrentStep("script");
-      setScriptJob({
-        status: "completed",
-        progress: 100,
-        resultReady: true,
-        error: undefined,
-      });
-    },
-    [
-      addSFXToDictionary,
-      config.apiBaseUrl,
-      panels,
-      setCurrentStep,
-      setPanelUnderstandingMeta,
-      setPanelUnderstandings,
-      setProgress,
-      setScriptJob,
-      setScriptMeta,
-      setStoryMemories,
-      setTimeline,
-      timeline,
-    ]
-  );
-
-  const syncJob = useCallback(
-    async (jobId: string) => {
-      if (syncInFlightRef.current) return;
-      syncInFlightRef.current = true;
-      try {
-        const status = await getScriptJobStatus(config.apiBaseUrl, jobId);
-        replaceLogs(status.logs);
-
-        const progress = Math.max(status.progress, scriptJob.progress || 0);
-        setProgress(progress);
-        setScriptJob({
-          jobId: status.jobId,
-          status: status.status,
-          progress,
-          error: status.error || undefined,
-          resultReady: status.status === "completed",
-        });
-
-        if (status.status === "completed") {
-          stopPolling();
-          await applyCompletedResult(jobId);
-          setIsLoading(false);
-        } else if (status.status === "failed" || status.status === "cancelled") {
-          stopPolling();
-          setError(status.error || "Script job failed.");
-          setIsLoading(false);
-        }
-      } catch (jobError) {
-        stopPolling();
-        setError(jobError instanceof Error ? jobError.message : "Unknown backend error.");
-        setIsLoading(false);
-      } finally {
-        syncInFlightRef.current = false;
-      }
-    },
-    [
-      applyCompletedResult,
-      config.apiBaseUrl,
-      replaceLogs,
-      scriptJob.progress,
-      setIsLoading,
-      setProgress,
-      setScriptJob,
-      stopPolling,
-    ]
-  );
-
-  const startPolling = useCallback(
-    (jobId: string) => {
-      stopPolling();
-      pollingRef.current = window.setInterval(() => {
-        void syncJob(jobId);
-      }, POLL_INTERVAL_MS);
-      void syncJob(jobId);
-    },
-    [stopPolling, syncJob]
-  );
-
-  const generateScript = useCallback(async () => {
-    if (panels.length === 0) {
-      const message = "No extracted panels available. Return to Extract before generating script.";
+      log(
+        "result",
+        "Backend Gemini script generation completed",
+        JSON.stringify(response.result.metrics, null, 2)
+      );
+    } catch (generationError) {
+      const message = generationError instanceof Error ? generationError.message : "Unknown backend Gemini error.";
       setError(message);
-      addLog({ type: "error", message });
-      return;
-    }
-    if (!config.apiBaseUrl) {
-      const message = "Missing ai-backend URL. Check Settings.";
-      setError(message);
-      addLog({ type: "error", message });
-      return;
-    }
-    if (!scriptContext.mangaName || !scriptContext.mainCharacter) {
-      const message = "Please provide manga name and main character before generating script.";
-      setError(message);
-      addLog({ type: "error", message });
-      return;
-    }
-
-    setError(null);
-    setIsLoading(true);
-    setProgress(5);
-    replaceLogs([]);
-    addLog({
-      type: "request",
-      message: `Submitting backend script job for ${panels.length} panels`,
-      details: JSON.stringify(
-        {
-          apiBaseUrl: config.apiBaseUrl,
-          panelCount: panels.length,
-          language: config.language,
-        },
-        null,
-        2
-      ),
-    });
-
-    try {
-      const created = await createScriptJob(config.apiBaseUrl, panels, {
-        ...scriptContext,
-        language: config.language,
-      });
-      setScriptJob({
-        jobId: created.jobId,
-        status: created.status as "queued",
-        progress: 10,
-        error: undefined,
-        resultReady: false,
-      });
-      startPolling(created.jobId);
-    } catch (jobError) {
+      log("error", "Backend Gemini script generation failed", message);
+    } finally {
+      setIsGenerating(false);
       setIsLoading(false);
-      const message = jobError instanceof Error ? jobError.message : "Unknown backend error.";
-      setError(message);
-      addLog({ type: "error", message: "Failed to create script job", details: message });
     }
   }, [
-    addLog,
+    addSFXToDictionary,
     config.apiBaseUrl,
     config.language,
+    log,
     panels,
     replaceLogs,
     scriptContext,
+    setCurrentStep,
     setIsLoading,
+    setPanelUnderstandings,
+    setPanelUnderstandingMeta,
     setProgress,
-    setScriptJob,
-    startPolling,
+    setScriptMeta,
+    setStoryMemories,
+    setTimeline,
+    timeline,
   ]);
 
-  const cancelActiveScriptJob = useCallback(async () => {
-    if (!scriptJob.jobId) return;
-    try {
-      const status = await cancelScriptJob(config.apiBaseUrl, scriptJob.jobId);
-      stopPolling();
-      setScriptJob({
-        jobId: status.jobId,
-        status: status.status,
-        progress: status.progress,
-        error: status.error || undefined,
-      });
-      setIsLoading(false);
-    } catch (jobError) {
-      setError(jobError instanceof Error ? jobError.message : "Unknown cancellation error.");
-    }
-  }, [config.apiBaseUrl, scriptJob.jobId, setIsLoading, setScriptJob, stopPolling]);
-
-  useEffect(() => {
-    if (scriptJob.jobId && (scriptJob.status === "queued" || scriptJob.status === "running")) {
-      setIsLoading(true);
-      startPolling(scriptJob.jobId);
-    }
-    return () => {
-      stopPolling();
-    };
-  }, [scriptJob.jobId, scriptJob.status, setIsLoading, startPolling, stopPolling]);
+  const cancelActiveScriptJob = useCallback(() => {
+    setError("Synchronous backend Gemini generation cannot be cancelled mid-request yet.");
+  }, []);
 
   return {
     generateScript,
     cancelActiveScriptJob,
-    isGenerating: scriptJob.status === "queued" || scriptJob.status === "running",
+    isGenerating,
+    canCancel: false,
     error,
   };
 }

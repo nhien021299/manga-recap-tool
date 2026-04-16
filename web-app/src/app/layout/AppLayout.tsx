@@ -102,7 +102,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </header>
 
         <div className="custom-scrollbar flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-5">
-          <div className="mx-auto max-w-[1400px] animate-in fade-in slide-in-from-bottom-2 duration-500">
+          <div className="mx-auto max-w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
             {children}
           </div>
         </div>

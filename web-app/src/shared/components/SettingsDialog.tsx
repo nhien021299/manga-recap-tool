@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRecapStore } from "@/shared/storage/useRecapStore";
 
-const normalizeSecret = (value: string): string => {
+const normalizeConfigValue = (value: string): string => {
   const trimmed = value.trim();
   if (!trimmed) return "";
   if (
@@ -40,11 +40,11 @@ export function SettingsDialog() {
   const handleSave = () => {
     setConfig({
       ...localConfig,
-      apiBaseUrl: normalizeSecret(localConfig.apiBaseUrl),
+      apiBaseUrl: normalizeConfigValue(localConfig.apiBaseUrl),
     });
     setVoiceConfig({
       ...localVoiceConfig,
-      elevenLabsApiKey: normalizeSecret(localVoiceConfig.elevenLabsApiKey),
+      elevenLabsApiKey: normalizeConfigValue(localVoiceConfig.elevenLabsApiKey),
       ttsVoiceId: localVoiceConfig.ttsVoiceId.trim(),
       ttsModel: localVoiceConfig.ttsModel.trim(),
     });
@@ -63,16 +63,16 @@ export function SettingsDialog() {
         <DialogHeader>
           <DialogTitle>System Settings</DialogTitle>
           <DialogDescription>
-            Configure the local AI backend endpoint. Voice settings remain frontend-side for now.
+            Configure backend connection for script generation. Voice settings remain frontend-side.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="apiBaseUrl">AI Backend URL</Label>
+            <Label htmlFor="apiBaseUrl">Backend API Base URL</Label>
             <Input
               id="apiBaseUrl"
-              placeholder="http://localhost:8000"
+              placeholder="http://127.0.0.1:8000"
               value={localConfig.apiBaseUrl}
               onChange={(e) => setLocalConfig({ ...localConfig, apiBaseUrl: e.target.value })}
               className="border-white/10 bg-white/5"

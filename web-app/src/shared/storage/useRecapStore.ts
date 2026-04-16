@@ -13,7 +13,6 @@ import {
   type SFXItem,
   type Scene,
   type ScriptContext,
-  type ScriptJobState,
   type ScriptMeta,
   type Step,
   type StoryMemory,
@@ -78,10 +77,6 @@ interface RecapState {
   markScriptOutdated: (reason: string) => void;
   clearScriptData: () => void;
 
-  scriptJob: ScriptJobState;
-  setScriptJob: (next: Partial<ScriptJobState>) => void;
-  clearScriptJob: () => void;
-
   init: () => Promise<void>;
   reset: () => void;
 }
@@ -108,7 +103,7 @@ const normalizeSecret = (value: string | undefined | null): string => {
 };
 
 const normalizeAppConfig = (config?: Partial<AppConfig> | null): AppConfig => ({
-  apiBaseUrl: normalizeSecret(config?.apiBaseUrl || import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"),
+  apiBaseUrl: (config?.apiBaseUrl || import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000").trim(),
   language: config?.language === "en" ? "en" : "vi",
 });
 
@@ -122,17 +117,12 @@ const EMPTY_SCRIPT_META: ScriptMeta = {
   status: "idle",
   sourceUnits: [],
   rawOutput: "",
-  pipeline: "backend-caption-memory",
+  pipeline: "backend-gemini",
 };
 
 const EMPTY_PANEL_UNDERSTANDING_META: PanelUnderstandingMeta = {
   panelSignature: "",
   rawOutput: "",
-};
-
-const EMPTY_SCRIPT_JOB: ScriptJobState = {
-  status: "idle",
-  progress: 0,
 };
 
 const normalizeSceneRect = (scene: Scene, stripWidth: number): Scene => {
@@ -188,7 +178,7 @@ const normalizeTimelineItem = (item: TimelineItem, index: number): TimelineItem 
 const hydrateLog = (log: Partial<GeminiLog> & Pick<GeminiLog, "type" | "message">, index: number): GeminiLog => ({
   ...log,
   id: log.id || `log-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
-  timestamp: log.timestamp || new Date().toLocaleTimeString(),
+  timestamp: log.timestamp || new Date().toISOString(),
 });
 
 export const useRecapStore = create<RecapState>()(
@@ -312,7 +302,6 @@ export const useRecapStore = create<RecapState>()(
             panelUnderstandings: signatureChanged ? [] : state.panelUnderstandings,
             panelUnderstandingMeta: signatureChanged ? EMPTY_PANEL_UNDERSTANDING_META : state.panelUnderstandingMeta,
             storyMemories: signatureChanged ? [] : state.storyMemories,
-            scriptJob: signatureChanged ? EMPTY_SCRIPT_JOB : state.scriptJob,
             scriptMeta:
               state.timeline.length > 0 && signatureChanged
                 ? {
@@ -411,21 +400,9 @@ export const useRecapStore = create<RecapState>()(
           storyMemories: [],
           timeline: [],
           scriptMeta: EMPTY_SCRIPT_META,
-          scriptJob: EMPTY_SCRIPT_JOB,
         });
         void idbSet("recap-timeline-data", []);
       },
-
-      scriptJob: EMPTY_SCRIPT_JOB,
-      setScriptJob: (next) =>
-        set((state) => ({
-          scriptJob: {
-            ...state.scriptJob,
-            ...next,
-            lastSyncAt: new Date().toISOString(),
-          },
-        })),
-      clearScriptJob: () => set({ scriptJob: EMPTY_SCRIPT_JOB }),
 
       init: async () => {
         set((state) => ({
@@ -481,7 +458,6 @@ export const useRecapStore = create<RecapState>()(
           storyMemories: [],
           timeline: [],
           scriptMeta: EMPTY_SCRIPT_META,
-          scriptJob: EMPTY_SCRIPT_JOB,
           scriptContext: { mangaName: "", mainCharacter: "", summary: "", language: "vi" },
           progress: 0,
           isLoading: false,
@@ -493,7 +469,7 @@ export const useRecapStore = create<RecapState>()(
       },
     }),
     {
-      name: "manga-recap-storage-v8",
+      name: "manga-recap-storage-v9",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         config: normalizeAppConfig(state.config),
@@ -506,7 +482,6 @@ export const useRecapStore = create<RecapState>()(
         storyMemories: state.storyMemories,
         scriptMeta: state.scriptMeta,
         scriptContext: state.scriptContext,
-        scriptJob: state.scriptJob,
         logs: state.logs,
         sfxDictionary: state.sfxDictionary,
         aspectRatio: state.aspectRatio,

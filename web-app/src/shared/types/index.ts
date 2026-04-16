@@ -87,8 +87,7 @@ export interface ScriptSegment {
 }
 
 export type ScriptDraftStatus = "idle" | "generated" | "edited" | "outdated";
-export type ScriptPipeline = "two-stage" | "local-caption-memory" | "backend-caption-memory";
-export type ScriptJobStatus = "idle" | "queued" | "running" | "completed" | "failed" | "cancelled";
+export type ScriptPipeline = "backend-gemini";
 
 export interface StoryMemory {
   chunkIndex: number;
@@ -138,38 +137,20 @@ export interface GeminiLog {
   details?: string;
 }
 
-export interface ScriptJobState {
-  jobId?: string;
-  status: ScriptJobStatus;
-  progress: number;
-  error?: string;
-  resultReady?: boolean;
-  lastSyncAt?: string;
+export interface RawOutputs {
+  understanding?: string;
+  script?: string;
 }
 
-export interface ScriptJobRequest {
-  context: {
-    mangaName: string;
-    mainCharacter: string;
-    summary?: string;
-    language: "vi" | "en";
-  };
-  panels: Array<{
-    panelId: string;
-    orderIndex: number;
-  }>;
-  files: File[];
-  options?: {
-    reuseCache?: boolean;
-    returnRawOutputs?: boolean;
-  };
-}
-
-export interface ScriptJobMetrics {
+export interface Metrics {
   panelCount: number;
   totalMs: number;
   captionMs: number;
+  ocrMs: number;
+  mergeMs: number;
   scriptMs: number;
+  avgPanelMs: number;
+  captionSource: string;
 }
 
 export interface ScriptJobResult {
@@ -177,17 +158,11 @@ export interface ScriptJobResult {
   generatedItems: ScriptItem[];
   storyMemories: StoryMemory[];
   panelSignature: string;
-  rawOutputs?: {
-    understanding: string;
-    script: string;
-  };
-  metrics: ScriptJobMetrics;
+  rawOutputs?: RawOutputs | null;
+  metrics: Metrics;
 }
 
-export interface ScriptJobStatusResponse {
-  jobId: string;
-  status: Exclude<ScriptJobStatus, "idle">;
-  progress: number;
-  error?: string | null;
+export interface ScriptGenerationResponse {
+  result: ScriptJobResult;
   logs: GeminiLog[];
 }

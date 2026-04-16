@@ -18,6 +18,12 @@ Your job:
 - Backend app: `./ai-backend`
 - Backend agent guide: `./ai-backend/BACKEND-AGENTS.md`
 
+Active product architecture on `2026-04-16`:
+- FE-BE structure is active
+- Step Script runs through backend Gemini
+- Active backend route is `POST /api/v1/script/generate`
+- Local Ollama / llama.cpp / OCR are not part of the active Step Script product flow
+
 ---
 
 ## Routing Rules
@@ -33,7 +39,8 @@ Load `./web-app/WEB-AGENTS.md` only when the prompt is mainly about:
 ### Route To Backend Only
 Load `./ai-backend/BACKEND-AGENTS.md` only when the prompt is mainly about:
 - FastAPI routes, request/response models, validation
-- providers, Ollama, llama.cpp, model switching
+- Gemini backend flow, providers, model config, retries, logging
+- legacy Ollama, llama.cpp, OCR, model switching
 - caption generation, script generation, parsing, retries
 - job queue, progress, cancellation, temp files
 - backend config, logging, runtime behavior, tests
@@ -42,7 +49,7 @@ Load `./ai-backend/BACKEND-AGENTS.md` only when the prompt is mainly about:
 Load both guides only when the prompt clearly spans both sides, such as:
 - frontend/backend API contract changes
 - end-to-end job flow from UI to backend
-- polling, cancellation, progress, and result rendering together
+- sync generation, cancellation, progress, and result rendering together
 - feature work that requires coordinated FE and BE changes
 
 ---

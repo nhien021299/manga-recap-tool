@@ -1,5 +1,9 @@
 ROLE: vision-caption-pipeline
 
+Status:
+- Active for backend Gemini panel-understanding work
+- Legacy references to local vision providers or OCR only apply when the task explicitly targets those paths
+
 You specialize in the panel understanding stage of the backend pipeline.
 
 Focus:

@@ -1,9 +1,4 @@
-import type {
-  Panel,
-  ScriptContext,
-  ScriptJobResult,
-  ScriptJobStatusResponse,
-} from "@/shared/types";
+import type { Panel, ScriptContext, ScriptGenerationResponse } from "@/shared/types";
 
 const normalizeBaseUrl = (value: string): string => value.trim().replace(/\/+$/, "");
 
@@ -54,53 +49,20 @@ const buildFormData = (
   return formData;
 };
 
-export async function createScriptJob(
+export async function generateScriptViaBackend(
   apiBaseUrl: string,
   panels: Panel[],
   context: ScriptContext,
   options?: { reuseCache?: boolean; returnRawOutputs?: boolean }
-): Promise<{ jobId: string; status: string }> {
-  const response = await fetch(`${normalizeBaseUrl(apiBaseUrl)}/api/v1/script/jobs`, {
+): Promise<ScriptGenerationResponse> {
+  const response = await fetch(`${normalizeBaseUrl(apiBaseUrl)}/api/v1/script/generate`, {
     method: "POST",
     body: buildFormData(panels, context, options),
   });
-  if (!response.ok) {
-    throw new Error(await parseResponseError(response));
-  }
-  return response.json();
-}
 
-export async function getScriptJobStatus(
-  apiBaseUrl: string,
-  jobId: string
-): Promise<ScriptJobStatusResponse> {
-  const response = await fetch(`${normalizeBaseUrl(apiBaseUrl)}/api/v1/script/jobs/${jobId}`);
   if (!response.ok) {
     throw new Error(await parseResponseError(response));
   }
-  return response.json();
-}
 
-export async function getScriptJobResult(
-  apiBaseUrl: string,
-  jobId: string
-): Promise<ScriptJobResult> {
-  const response = await fetch(`${normalizeBaseUrl(apiBaseUrl)}/api/v1/script/jobs/${jobId}/result`);
-  if (!response.ok) {
-    throw new Error(await parseResponseError(response));
-  }
-  return response.json();
-}
-
-export async function cancelScriptJob(
-  apiBaseUrl: string,
-  jobId: string
-): Promise<ScriptJobStatusResponse> {
-  const response = await fetch(`${normalizeBaseUrl(apiBaseUrl)}/api/v1/script/jobs/${jobId}/cancel`, {
-    method: "POST",
-  });
-  if (!response.ok) {
-    throw new Error(await parseResponseError(response));
-  }
   return response.json();
 }

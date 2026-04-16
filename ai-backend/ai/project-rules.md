@@ -1,5 +1,7 @@
 Project rules:
 - This is the AI backend for a full-web manga recap tool.
+- Active Step Script flow currently runs through backend Gemini at `POST /api/v1/script/generate`.
+- Treat legacy local-AI and job-queue code as non-active product paths unless the task explicitly targets them.
 - Keep FastAPI entrypoints thin and service-oriented.
 - Separate routes, models, services, providers, utils, and core infrastructure concerns.
 - API schemas are the canonical contract between frontend and backend.
@@ -7,8 +9,8 @@ Project rules:
 - Prefer explicit Pydantic models over loose dictionaries at system boundaries.
 - Keep provider-specific behavior behind provider adapters or registries.
 - Do not leak provider transport details into routes.
-- Long-running work must execute through the job pipeline, not directly inside request handlers.
-- Cancellation must be checked at meaningful boundaries in long-running jobs.
+- Long-running work may execute synchronously or through a job pipeline depending on the active route contract.
+- Cancellation must be checked when the route or job model supports it.
 - Temp files must always be cleaned up on success, failure, and cancellation.
 - Logging should capture lifecycle milestones and actionable failures.
 - Prefer deterministic, incremental transformations over opaque chained side effects.

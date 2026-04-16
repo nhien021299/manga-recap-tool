@@ -1,14 +1,72 @@
 import json
 import uuid
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
-from app.deps import get_app_settings, get_job_queue
-from app.models.api import CreateJobResponse, JobStatusResponse, ScriptJobRequest
-from app.models.jobs import JobRecord, JobStatus
-from app.utils.temp_files import save_uploads
+from app.deps import get_app_settings, get_gemini_script_service, get_job_queue
+from app.models.api import CreateJobResponse, JobStatusResponse, ScriptGenerationResponse, ScriptJobRequest
+from app.models.jobs import JobLogEntry, JobRecord, JobStatus
+from app.utils.temp_files import cleanup_temp_dir, save_uploads
 
 router = APIRouter(prefix="/script", tags=["script"])
+
+
+@router.post("/generate", response_model=ScriptGenerationResponse)
+async def generate_script(
+    context: str = Form(...),
+    panels: str = Form(...),
+    options: str | None = Form(default=None),
+    files: list[UploadFile] = File(...),
+    settings=Depends(get_app_settings),
+    gemini_script_service=Depends(get_gemini_script_service),
+) -> ScriptGenerationResponse:
+    request = ScriptJobRequest(
+        context=json.loads(context),
+        panels=json.loads(panels),
+        options=json.loads(options) if options else {},
+    )
+    if len(request.panels) != len(files):
+        raise HTTPException(status_code=400, detail="Panel metadata count must match uploaded files.")
+    if not settings.effective_gemini_api_key:
+        raise HTTPException(
+            status_code=500,
+            detail="Gemini API key is not configured on the backend. Set AI_BACKEND_GEMINI_API_KEY or keep VITE_GEMINI_API_KEY in web-app/.env.",
+        )
+
+    request_id = f"gemini-{uuid.uuid4()}"
+    logs: list[JobLogEntry] = []
+
+    def add_log(log_type: str, message: str, details: str | None = None) -> None:
+        logs.append(
+            JobLogEntry(
+                id=f"{request_id}-{len(logs) + 1}",
+                type=log_type,
+                message=message,
+                timestamp=datetime.now().isoformat(),
+                details=details,
+            )
+        )
+
+    temp_dir, saved_paths = await save_uploads(settings.temp_root, request_id, files)
+    add_log("request", f"Accepted Gemini script request for {len(request.panels)} panels")
+    try:
+        result = await gemini_script_service.generate_script(
+            context=request.context,
+            panels=request.panels,
+            file_paths=saved_paths,
+            options=request.options,
+            on_log=add_log,
+        )
+        add_log("result", "Gemini backend generation completed")
+        return ScriptGenerationResponse(result=result, logs=logs)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        add_log("error", "Gemini backend generation failed", str(exc))
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    finally:
+        cleanup_temp_dir(temp_dir)
 
 
 @router.post("/jobs", response_model=CreateJobResponse)

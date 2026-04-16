@@ -1,5 +1,9 @@
 # Backend Runtime Rules
 
+Current active runtime on `2026-04-16`:
+- Step Script is a synchronous backend Gemini route
+- Async job queue and local-AI runtime remain legacy/reference paths unless explicitly requested
+
 ## Service Design
 - Keep route handlers focused on validation, dependency access, and HTTP response mapping.
 - Put orchestration logic in services, not in route modules.
@@ -10,7 +14,7 @@
 - Preserve stable request and response contracts.
 - Validate inputs early and fail with actionable errors.
 - Keep async endpoints non-blocking where possible.
-- Expose progress and job state in a predictable way.
+- Expose progress and job state in a predictable way when the active contract includes jobs.
 
 ## Pipeline Rules
 - Treat caption understanding and script generation as separate stages.
@@ -19,6 +23,7 @@
 - Convert provider responses into domain models before downstream use.
 
 ## Queue Rules
+- Apply this section only when the task explicitly targets job-based execution.
 - Queue state transitions must be explicit and auditable.
 - Cancellation checks must exist before and after expensive stages.
 - Cleanup must run in `finally` paths.

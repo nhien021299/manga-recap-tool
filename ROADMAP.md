@@ -16,10 +16,11 @@ manga-recap-tool/
 - `ai-backend/`: FastAPI service for Step Script generation
 - `ai/`: notes and internal references
 
-Verified on `2026-04-16`:
+Verified on `2026-04-20`:
 - `npm run build:web` passes
-- backend import passes after dependency install
-- backend Gemini smoke test passes through `POST /api/v1/script/generate`
+- `pytest` in `ai-backend` passes
+- `python -m compileall app tests test_score.py` passes
+- backend Gemini Step Script path remains active at `POST /api/v1/script/generate`
 
 ## Checkpoint: Backend Gemini Reintegration (2026-04-16)
 
@@ -207,13 +208,72 @@ Added regression coverage in [ai-backend/tests/test_gemini_script_service.py](./
 - Continuity survives across adjacent batches without re-feeding large prior context.
 - FE and BE contract now supports script generation even when title or character hints are missing.
 
+## Checkpoint: M2 Prompt Upgrade, Benchmark UI & PaddleOCR Activation (2026-04-20)
+
+### Product direction
+
+- Keep M2 as the active Gemini backend script path.
+- Improve narration quality primarily through prompt design, not API or schema changes.
+- Add user-visible benchmark capture and comparison in the frontend.
+- Turn identity OCR on by default and standardize on PaddleOCR.
+
+### Backend implementation
+
+- Upgraded [ai-backend/app/services/gemini_script_service.py](./ai-backend/app/services/gemini_script_service.py) to a stronger `update 2.1` prompt:
+  - added batch-level narration mode inference (`horror`, `combat`, `escape`, `investigation`, `aftermath`, `mystery`)
+  - added retention-oriented style rules, lexical anti-generic rules, and batch-flow ending rules
+  - kept current FE-BE contract, parsing discipline, retry logic, metrics, and identity evidence structure unchanged
+  - kept `1 to 2 short sentences per panel` for TTS and JSON stability
+- Refined unnamed-character handling in the prompt:
+  - prefer descriptors based on visible age, outfit, role, weapon, job, or standout traits
+  - avoid flat labels like `nam nhan` when the image supports a better description
+  - keep the same descriptor across adjacent panels when the same unnamed person appears again
+  - avoid switching guessed jobs/roles across nearby panels without strong visual proof
+  - allow only a very light layer of Vietnamese Gen Z phrasing without breaking the cinematic recap tone
+- Enabled identity OCR by default in [ai-backend/app/core/config.py](./ai-backend/app/core/config.py):
+  - `AI_BACKEND_GEMINI_IDENTITY_EXPERIMENT_ENABLED=true`
+- Switched OCR defaults to PaddleOCR in:
+  - [ai-backend/.env.example](./ai-backend/.env.example)
+  - local [ai-backend/.env](./ai-backend/.env)
+  - [README.md](./README.md)
+- Added `paddlepaddle` to [ai-backend/requirements.txt](./ai-backend/requirements.txt) and improved PaddleOCR error reporting in [ai-backend/app/providers/ocr/paddleocr_provider.py](./ai-backend/app/providers/ocr/paddleocr_provider.py) so missing framework installs now produce an explicit fix path instead of a vague import failure.
+
+### Frontend implementation
+
+- Added a dedicated `Benchmark` step in the sidebar and app routing.
+- Added benchmark record storage in the frontend store.
+- Added a `Save benchmark` action in the Script step:
+  - merges all `voiceover_text` into one continuous block
+  - appends `Gemini script generation completed.` plus metrics JSON
+  - stores a benchmark record for later comparison
+- Added benchmark scoring and comparison UI:
+  - score dimensions include coverage, script usefulness, story continuity, latency, and stability/efficiency
+  - users can select 2 saved runs and compare scores and metrics side by side
+- Added fallback logic so benchmark save still works for older generated script states by reading metrics back from the latest `Gemini script generation completed.` log entry.
+
+### Validation
+
+Completed on `2026-04-20`:
+- `npm run build:web`
+- `pytest ai-backend/tests/test_routes.py ai-backend/tests/test_gemini_script_service.py ai-backend/tests/test_caption_service.py`
+- `pytest tests/test_gemini_script_service.py tests/test_caption_service.py` inside `ai-backend`
+- `python -m compileall app tests test_score.py`
+- verified `import paddle` and `from paddleocr import PaddleOCR` in the active backend Python environment
+
+### Outcome
+
+- M2 narration is now more directed, more continuous, and less generic while staying within the current project structure.
+- Identity OCR is now active by default and routed through PaddleOCR.
+- Benchmarking now exists both offline in backend scripts and directly in the frontend for run-to-run comparison.
+- M2 remains synchronous and contract-stable, but with stronger observability and better script-quality controls.
+
 ## Milestone Status
 
 | Milestone | Status | Notes |
 | --- | --- | --- |
 | M0 Architecture | Done | FE-BE structure restored. |
 | M1 Extract | Done | Browser-side upload/extract is working perfectly. |
-| M2 Script | Done | Backend Gemini baseline updated with async polling, token metrics, and the minimal character-aware prompt system. |
+| M2 Script | Done | Backend Gemini path is active with prompt update 2.1, token/latency metrics, frontend benchmark UI, and PaddleOCR-backed identity OCR enabled by default. |
 | M3 Voice | In Progress | Voice generation UI in FE, utilizing ElevenLabs. |
 | M4 Timeline | In Progress | Separating MC narration from raw OCR; base timeline editor in active development. |
 | M5 Render | Not started | Browser render/export pending. |
@@ -222,12 +282,14 @@ Added regression coverage in [ai-backend/tests/test_gemini_script_service.py](./
 
 - Local GPU setup (AMD stack) may require constant observation for compatibility when updating `llama.cpp` or Ollama.
 - Large volume chapters using the concurrent async queue might still trigger `429 Quota Exhausted` on free Gemini proxy; need to ensure job retry/backoff handles this gracefully.
-- Character hint selection currently uses lightweight continuity heuristics only; OCR-backed identity confirmation has not been folded into the active Gemini Step Script path yet.
+- Identity OCR now runs in the active Gemini Step Script path, but it is still confirmation-only and does not discover new names or solve full speaker attribution.
+- Prompt quality is improved, but real chapter evaluation is still needed to verify that stronger descriptors and light Gen Z phrasing do not overfit specific story tones.
+- PaddleOCR is now a hard runtime dependency for the default OCR path; local environment drift can still break startup if dependencies are not installed from `requirements.txt`.
 
 ## Next Actions
 
-1. Extend character hint selection with stronger identity signals such as OCR dialogue or panel metadata without regressing prompt size.
+1. Run real-chapter M2 evaluation with PaddleOCR on representative series to validate descriptor continuity, naming stability, and script tone.
 2. Tune `AI_BACKEND_GEMINI_SCRIPT_BATCH_SIZE` with real chapter runs and lock the fastest stable production default.
-3. Complete the M4 Timeline feature: fully integrate narrator/persona editing and finalize timeline UX for YouTube-style recap creation.
-4. Advance M3 Voice integration logic against the new compact script output.
-5. Keep monitoring proxy quota exhaustion behaviour and refine API request throttling if needed.
+3. Decide whether identity OCR should remain confirmation-only or expand carefully into stronger continuity signals without inflating hallucination risk.
+4. Complete the M4 Timeline feature: fully integrate narrator/persona editing and finalize timeline UX for YouTube-style recap creation.
+5. Advance M3 Voice integration logic against the stronger update 2.1 script output and benchmark audio pacing against the new narration style.

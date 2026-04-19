@@ -8,6 +8,7 @@
 @theme {
   --radius-xl: 1rem;
   --radius-2xl: 1.25rem;
+  --ease-expo-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @layer utilities {
@@ -24,6 +25,19 @@
       radial-gradient(circle at top, rgba(80, 162, 255, 0.08), transparent 28%),
       linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 18%),
       var(--background);
+  }
+
+  .glass {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  }
+
+  .shadow-glow {
+    box-shadow: 0 0 24px -4px var(--primary);
+  }
+  
+  .shadow-glow:hover {
+    box-shadow: 0 0 32px 0 var(--primary);
   }
 
   .script-select-menu {

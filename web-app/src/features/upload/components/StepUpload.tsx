@@ -286,8 +286,12 @@ export function StepUpload() {
                   className="group flex items-center justify-between rounded-xl border border-white/5 bg-white/5 p-3 transition-colors hover:bg-white/10"
                 >
                   <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                      <FileImage className="h-5 w-5" />
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-black/40 border border-white/10">
+                      <img 
+                        src={URL.createObjectURL(file)} 
+                        alt={file.name} 
+                        className="h-full w-full object-cover transition-transform group-hover:scale-125" 
+                      />
                     </div>
                     <div className="overflow-hidden">
                       <p className="truncate text-sm font-medium">{file.name}</p>

@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import os
 from pathlib import Path
+from types import ModuleType
 from typing import Any
 
 from app.models.domain import OCRLine, OCRResult
@@ -17,7 +18,10 @@ class PaddleOCRProvider:
 
     async def extract(self, image_path: Path, panel_id: str) -> OCRResult:
         engine = await asyncio.to_thread(self._get_engine)
-        raw_results = await asyncio.to_thread(engine.predict, str(image_path))
+        try:
+            raw_results = await asyncio.to_thread(engine.predict, str(image_path))
+        except Exception as exc:
+            raise self._wrap_runtime_error(exc) from exc
         lines = self._normalize_lines(raw_results)
         return OCRResult(
             panel_id=panel_id,
@@ -29,15 +33,43 @@ class PaddleOCRProvider:
     def _get_engine(self):
         if self._engine is None:
             os.environ.setdefault("PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK", "True")
-            from paddleocr import PaddleOCR
+            # PaddlePaddle 3.3.x has a known CPU oneDNN regression on the OCR path.
+            # Force the plain CPU path so Windows inference remains stable.
+            os.environ.setdefault("FLAGS_enable_pir_api", "0")
+            try:
+                paddleocr_module = self._import_paddleocr_module()
+            except ModuleNotFoundError as exc:
+                if exc.name == "paddle":
+                    raise RuntimeError(
+                        "PaddleOCR requires the 'paddlepaddle' package. Install backend dependencies again or run "
+                        "'python -m pip install paddlepaddle'."
+                    ) from exc
+                raise
 
-            self._engine = PaddleOCR(
+            self._engine = paddleocr_module.PaddleOCR(
                 use_doc_orientation_classify=False,
                 use_doc_unwarping=False,
                 use_textline_orientation=False,
                 lang="korean",
+                device="cpu",
+                enable_mkldnn=False,
             )
         return self._engine
+
+    def _import_paddleocr_module(self) -> ModuleType:
+        import paddleocr
+
+        return paddleocr
+
+    def _wrap_runtime_error(self, exc: Exception) -> RuntimeError:
+        message = str(exc)
+        if "ConvertPirAttribute2RuntimeAttribute" in message or "onednn_instruction.cc" in message:
+            return RuntimeError(
+                "PaddleOCR failed on the PaddlePaddle CPU oneDNN runtime path. "
+                "The backend already forces device='cpu' and enable_mkldnn=False for stability. "
+                "If this still fails in your environment, pin PaddlePaddle to 3.2.2 and retry."
+            )
+        return RuntimeError(f"PaddleOCR inference failed: {message}")
 
     def _normalize_lines(self, raw_results: list[Any]) -> list[OCRLine]:
         lines: list[OCRLine] = []

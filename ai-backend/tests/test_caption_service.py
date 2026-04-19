@@ -1,11 +1,13 @@
 import json
+import sys
 from pathlib import Path
+from types import ModuleType, SimpleNamespace
 
 import pytest
 
 from app.core.config import Settings
 from app.models.domain import OCRLine, OCRResult, PanelReference, ScriptContext, VisionCaptionRaw
-from app.providers.ocr.rapidocr_provider import RapidOCRProvider
+from app.providers.ocr.paddleocr_provider import PaddleOCRProvider
 from app.services.caption_service import CaptionService
 from app.services.script_pipeline import ScriptPipeline
 
@@ -63,21 +65,47 @@ def test_caption_prompt_emphasizes_visual_grounding_and_panel_index():
     assert "visible_text" in prompt
 
 
-def test_rapidocr_provider_filters_lines_and_classifies_roles():
-    provider = RapidOCRProvider(min_confidence=0.55, max_text_lines=2, prefer_sfx=True)
+def test_paddleocr_provider_configures_cpu_without_mkldnn(monkeypatch):
+    captured_kwargs: dict[str, object] = {}
 
-    lines = provider._normalize_lines(
-        [
-            [[[0, 0], [10, 0], [10, 10], [0, 10]], "BOOM!", 0.95],
-            [[[0, 0], [10, 0], [10, 10], [0, 10]], "We have to move now.", 0.91],
-            [[[0, 0], [10, 0], [10, 10], [0, 10]], "noise", 0.30],
-        ]
+    class FakePaddleOCR:
+        def __init__(self, **kwargs):
+            captured_kwargs.update(kwargs)
+
+    fake_module = ModuleType("paddleocr")
+    fake_module.PaddleOCR = FakePaddleOCR
+    monkeypatch.setitem(sys.modules, "paddleocr", fake_module)
+
+    provider = PaddleOCRProvider(min_confidence=0.55, max_text_lines=2, prefer_sfx=True)
+
+    engine = provider._get_engine()
+
+    assert isinstance(engine, FakePaddleOCR)
+    assert captured_kwargs["lang"] == "korean"
+    assert captured_kwargs["device"] == "cpu"
+    assert captured_kwargs["enable_mkldnn"] is False
+    assert captured_kwargs["use_doc_orientation_classify"] is False
+    assert captured_kwargs["use_doc_unwarping"] is False
+    assert captured_kwargs["use_textline_orientation"] is False
+
+
+@pytest.mark.asyncio
+async def test_paddleocr_provider_wraps_onednn_runtime_error(tmp_path: Path):
+    image_path = tmp_path / "panel.png"
+    image_path.write_bytes(b"img")
+
+    provider = PaddleOCRProvider(min_confidence=0.55, max_text_lines=2, prefer_sfx=True)
+    provider._engine = SimpleNamespace(
+        predict=lambda _path: (_ for _ in ()).throw(
+            NotImplementedError(
+                "(Unimplemented) ConvertPirAttribute2RuntimeAttribute not support [pir::ArrayAttribute<pir::DoubleAttribute>]  "
+                "(at ..\\paddle\\fluid\\framework\\new_executor\\instruction\\onednn\\onednn_instruction.cc:118)"
+            )
+        )
     )
 
-    assert len(lines) == 2
-    assert lines[0].role == "sfx"
-    assert lines[1].role == "dialogue"
-    assert lines[0].bbox == [0, 0, 10, 10]
+    with pytest.raises(RuntimeError, match="pin PaddlePaddle to 3.2.2"):
+        await provider.extract(image_path, "panel-1")
 
 
 def test_merge_panel_prefers_ocr_grounding():
@@ -221,7 +249,7 @@ def test_script_pipeline_signature_changes_with_ocr_settings(tmp_path: Path):
     )
     sig_b = pipeline._build_panel_signature(
         job,
-        {"visionModel": "qwen2.5vl:7b", "ocrEnabled": True, "ocrProvider": "rapidocr"},
+        {"visionModel": "qwen2.5vl:7b", "ocrEnabled": True, "ocrProvider": "paddleocr"},
     )
 
     assert sig_a != sig_b

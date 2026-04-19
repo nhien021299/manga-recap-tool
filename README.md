@@ -84,8 +84,7 @@ AI_BACKEND_GEMINI_API_KEY=
 AI_BACKEND_GEMINI_MODEL=gemini-2.5-flash
 AI_BACKEND_GEMINI_API_ENDPOINT=
 AI_BACKEND_GEMINI_SCRIPT_BATCH_SIZE=4
-AI_BACKEND_GEMINI_IDENTITY_EXPERIMENT_ENABLED=false
-AI_BACKEND_GEMINI_IDENTITY_OCR_PROVIDER=rapidocr
+AI_BACKEND_GEMINI_IDENTITY_EXPERIMENT_ENABLED=true
 AI_BACKEND_GEMINI_IDENTITY_OCR_MIN_CONFIDENCE=0.70
 AI_BACKEND_GEMINI_IDENTITY_OCR_MAX_TEXT_LINES=8
 AI_BACKEND_GEMINI_MAX_CONCURRENT_REQUESTS=1
@@ -104,13 +103,13 @@ M2 is the active backend Gemini Step Script flow.
 - FE-BE request and response contract stays stable
 - Backend generates narration directly from uploaded panel images in batches
 - Chunk continuity stays in `storyMemories`
-- OCR for identity is an experiment only and is `off` by default
+- OCR for identity is enabled by default and uses PaddleOCR
 
 ### M2 improvements
 
 - Identity signals:
   - Candidate names come only from `mainCharacter` and `previous_memory.recentNames`
-  - Optional identity OCR is used only to confirm existing candidate names
+  - Identity OCR uses PaddleOCR to confirm existing candidate names
   - OCR does not discover new names and does not do speaker attribution
   - Prompt now separates:
     - confirmed names from visible text/dialogue in the current batch

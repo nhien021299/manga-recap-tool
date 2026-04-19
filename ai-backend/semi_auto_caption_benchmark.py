@@ -48,7 +48,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--modes", nargs="+", default=["vision_only", "vision_ocr"], help="Benchmark modes.")
     parser.add_argument("--workloads", nargs="+", type=int, default=[10, 30, 52], help="Panel counts to test.")
     parser.add_argument("--output", required=True, help="Output directory for benchmark artifacts.")
-    parser.add_argument("--ocr-provider", default="rapidocr", choices=["rapidocr", "paddleocr"], help="OCR provider to use for vision_ocr mode.")
     parser.add_argument("--language", default="vi", choices=["vi", "en"], help="Output language for caption/script stages.")
     return parser.parse_args()
 
@@ -258,7 +257,6 @@ async def run_benchmark(args: argparse.Namespace) -> None:
                     update={
                         "vision_model": model,
                         "ocr_enabled": mode == "vision_ocr",
-                        "ocr_provider": args.ocr_provider,
                         "ocr_debug_save_json": False,
                     }
                 )
@@ -273,7 +271,7 @@ async def run_benchmark(args: argparse.Namespace) -> None:
                     "model": model,
                     "mode": mode,
                     "workload": workload,
-                    "ocrProvider": args.ocr_provider if mode == "vision_ocr" else "disabled",
+                    "ocrProvider": "paddleocr" if mode == "vision_ocr" else "disabled",
                 }
                 try:
                     caption_result = await caption_service.generate_understandings(

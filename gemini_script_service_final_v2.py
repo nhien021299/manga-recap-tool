@@ -316,14 +316,14 @@ class GeminiScriptService:
                 has_text_signal=False,
                 use_neutral_fallback=True,
                 neutral_fallback_reason="identity OCR provider unavailable",
-                ocr_provider="paddleocr",
+                ocr_provider=self.settings.gemini_identity_ocr_provider,
             )
 
         started_at = perf_counter()
         ocr_texts: list[str] = []
         ocr_line_count = 0
         has_text_signal = False
-        provider_name = "paddleocr"
+        provider_name = self.settings.gemini_identity_ocr_provider
 
         try:
             for panel, path in zip(batch_panels, batch_paths):
@@ -608,9 +608,9 @@ class GeminiScriptService:
         language_label = "Vietnamese" if context.language == "vi" else "English"
         narration_mode = self._infer_narration_mode(context, previous_memory)
         neutral_examples = (
-            '"ga trai tre", "ong lao ao den", "nu sat thu", "ten linh canh", "ga thay tu", or "doi thu kia"'
+            '"ga ao den", "ke cam kiem", "co gai la mat", "ten dan ong bi thuong", "bong nguoi kia"'
             if context.language == "vi"
-            else '"the man", "the woman", "the opponent", "the figure", or "the other person"'
+            else '"the black-clad man", "the sword-wielding figure", "the unknown woman", "the wounded man", "the other figure"'
         )
         mode_guide_map = {
             "horror": "Use dread, unease, and disturbing detail. Make the threat feel immediate and visceral.",
@@ -694,12 +694,12 @@ class GeminiScriptService:
                     "Naming rules:",
                     "- Use a character name only when the current images or visible dialogue make the identity clear.",
                     "- Never treat carryover names as proof on their own.",
-                    "- If identity is unclear, label people by visible age, outfit, role, weapon, job, or standout physical traits before using a generic label.",
-                    f"- Prefer specific neutral labels such as {neutral_examples}.",
+                    "- If identity is unclear, label people by visible outfit, weapon, wound, posture, age impression, or standout physical traits before using a generic label.",
+                    f"- Prefer grounded neutral labels such as {neutral_examples}.",
                     '- Avoid overusing flat labels like "nam nhan" when the images support something more precise.',
                     "- If adjacent panels likely show the same unnamed person, keep the same descriptor unless the images clearly reveal better identity detail.",
-                    "- Do not switch an unnamed character from one guessed role or job to another across nearby panels without strong visual proof.",
-                    "- Do not infer a profession such as herb picker, worker, guard, or servant unless the current images make that role genuinely clear.",
+                    "- Do not switch an unnamed character from one guessed role to another across nearby panels without strong visual proof.",
+                    "- Do not infer a profession or social role unless the current images make that role genuinely clear.",
                 ]
             )
         )
@@ -718,7 +718,6 @@ class GeminiScriptService:
                     "- Not every panel should sound maximum intensity.",
                     "- Say what is happening and why it matters.",
                     "- Add light curiosity when appropriate, but stay grounded in the images.",
-                    "- Add a very light touch of modern Vietnamese Gen Z phrasing only when it sounds natural, brief, and does not break the current cinematic recap tone.",
                 ]
             )
         )
@@ -729,8 +728,7 @@ class GeminiScriptService:
                     "- Do not repeat the same emotional keywords across nearby panels unless the scene clearly escalates.",
                     '- Avoid generic lines like "mot canh tuong kinh hoang xuat hien" or equally vague phrasing.',
                     "- If a line feels generic, rewrite it to be more specific and engaging.",
-                    "- Avoid repeatedly calling someone 'nam nhan' or an equally flat label when their look or role is visually clear.",
-                    "- Any Gen Z flavor must stay subtle, short, and fully compatible with the current narration style.",
+                    '- Avoid repeatedly calling someone "nam nhan" or an equally flat label when the visuals support a better descriptor.',
                 ]
             )
         )
@@ -769,6 +767,7 @@ class GeminiScriptService:
         return "\n\n".join(section for section in sections if section.strip())
 
     def _build_story_memory(
+
         self,
         chunk_index: int,
         context: ScriptContext,
@@ -817,14 +816,15 @@ class GeminiScriptService:
         if matched:
             return matched[:MAX_RECENT_NAMES]
 
-        if not previous_memory:
-            setup_text = f"{context.summary} {context.mainCharacter}".strip()
-            seeded = [name for name in self._manual_known_names(context) if self._contains_name(setup_text, name)]
-            return seeded[:MAX_RECENT_NAMES]
+        if previous_memory and previous_memory.recentNames:
+            return previous_memory.recentNames[:MAX_RECENT_NAMES]
 
-        return []
+        setup_text = f"{context.summary} {context.mainCharacter}".strip()
+        seeded = [name for name in self._manual_known_names(context) if self._contains_name(setup_text, name)]
+        return seeded[:MAX_RECENT_NAMES]
 
     def _infer_narration_mode(
+
         self,
         context: ScriptContext,
         previous_memory: StoryMemory | None,

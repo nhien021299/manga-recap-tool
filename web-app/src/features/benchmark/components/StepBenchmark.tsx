@@ -49,9 +49,9 @@ export function StepBenchmark() {
           <BarChart3 className="h-8 w-8 text-primary" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-2xl font-bold text-white">Chua co benchmark record</h2>
+          <h2 className="text-2xl font-bold text-white">Chưa có benchmark record</h2>
           <p className="max-w-xl text-sm text-white/60">
-            Sau khi generate script o tab Kich Ban, bam Save benchmark de luu voiceover va metrics vao day.
+            Sau khi generate script ở tab Kịch Bản, bấm Save benchmark để lưu voiceover và metrics vào đây.
           </p>
         </div>
       </div>
@@ -64,11 +64,11 @@ export function StepBenchmark() {
         <div className="space-y-1">
           <h2 className="text-3xl font-bold tracking-tight text-white">Benchmark Lab</h2>
           <p className="text-sm text-white/65">
-            Chon toi da 2 ban ghi de so sanh diem, latency, token va do on dinh cua script generation.
+            Chọn tối đa 2 bản ghi để so sánh điểm, latency, token và độ ổn định của script generation.
           </p>
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70">
-          Dang luu {benchmarkRecords.length} record
+          Đang lưu {benchmarkRecords.length} record
         </div>
       </div>
 
@@ -79,8 +79,8 @@ export function StepBenchmark() {
             return (
               <Card
                 key={record.id}
-                className={`rounded-3xl border p-6 transition-colors ${
-                  selected ? "border-primary/45 bg-primary/10" : "border-white/10 bg-white/5"
+                className={`glass animate-in slide-in-from-bottom flex-1 rounded-3xl border p-6 transition-all duration-300 ${
+                  selected ? "border-primary/45 bg-primary/10 shadow-glow" : "border-white/10 bg-white/5 shadow-2xl hover:border-white/20"
                 }`}
               >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -125,7 +125,7 @@ export function StepBenchmark() {
                       className="rounded-xl"
                     >
                       <Scale className="mr-2 h-4 w-4" />
-                      {selected ? "Bo chon" : "So sanh"}
+                      {selected ? "Bỏ chọn" : "So sánh"}
                     </Button>
                     <Button
                       variant="outline"
@@ -141,7 +141,7 @@ export function StepBenchmark() {
                     </Button>
                     <Button variant="outline" onClick={() => removeBenchmarkRecord(record.id)} className="rounded-xl border-red-500/25 bg-red-500/10 text-red-100 hover:bg-red-500/15">
                       <Trash2 className="mr-2 h-4 w-4" />
-                      Xoa
+                      Xóa
                     </Button>
                   </div>
                 </div>
@@ -151,31 +151,31 @@ export function StepBenchmark() {
         </div>
 
         <div className="space-y-4">
-          <Card className="rounded-3xl border border-white/10 bg-white/5 p-6">
+          <Card className="glass rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl transition-all duration-300">
             <div className="flex items-center gap-3">
               <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
                 <Gauge className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <h3 className="text-base font-semibold text-white">Comparison Result</h3>
-                <p className="text-sm text-white/55">Can 2 record duoc chon de mo bang so sanh chi tiet.</p>
+                <p className="text-sm text-white/55">Cần 2 record được chọn để mở bảng so sánh chi tiết.</p>
               </div>
             </div>
 
             {selectedRecords.length !== 2 ? (
               <div className="mt-5 rounded-2xl border border-dashed border-white/10 bg-black/20 p-5 text-sm text-white/55">
-                Dang chon {selectedRecords.length}/2 record.
+                Đang chọn {selectedRecords.length}/2 record.
               </div>
             ) : (
               <div className="mt-5 space-y-5">
                 <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
                   {comparisonWinner ? (
                     <p className="text-sm leading-6 text-white">
-                      <span className="font-semibold text-primary">{comparisonWinner.title}</span> dang dan truoc voi
-                      score tong {comparisonWinner.overallScore}.
+                      <span className="font-semibold text-primary">{comparisonWinner.title}</span> đang dẫn trước với
+                      score tổng {comparisonWinner.overallScore}.
                     </p>
                   ) : (
-                    <p className="text-sm leading-6 text-white">Hai record dang hoa diem tong.</p>
+                    <p className="text-sm leading-6 text-white">Hai record đang hòa điểm tổng.</p>
                   )}
                 </div>
 
@@ -184,7 +184,7 @@ export function StepBenchmark() {
                   {selectedRecords.map((record) => (
                     <div key={record.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
                       <p className="text-sm font-semibold text-white">{record.title}</p>
-                      <p className="mt-1 text-xs text-white/50">{record.overallScore} diem</p>
+                      <p className="mt-1 text-xs text-white/50">{record.overallScore} điểm</p>
                     </div>
                   ))}
                 </div>
@@ -229,10 +229,10 @@ export function StepBenchmark() {
           </Card>
 
           {selectedRecords[0] && (
-            <Card className="rounded-3xl border border-white/10 bg-white/5 p-6">
+            <Card className="glass mt-4 animate-in slide-in-from-bottom rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl">
               <h3 className="text-base font-semibold text-white">Merged Benchmark Text</h3>
               <p className="mt-1 text-sm text-white/55">
-                Voiceover da duoc ghep lien mach va noi them log completion + metrics.
+                Voiceover đã được ghép liền mạch và nối thêm log completion + metrics.
               </p>
               <Textarea
                 readOnly

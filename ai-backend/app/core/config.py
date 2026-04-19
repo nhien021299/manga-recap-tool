@@ -39,10 +39,9 @@ class Settings(BaseSettings):
     gemini_api_endpoint: str | None = Field(default=None, alias="AI_BACKEND_GEMINI_API_ENDPOINT")
     gemini_script_batch_size: int = Field(default=4, alias="AI_BACKEND_GEMINI_SCRIPT_BATCH_SIZE")
     gemini_identity_experiment_enabled: bool = Field(
-        default=False,
+        default=True,
         alias="AI_BACKEND_GEMINI_IDENTITY_EXPERIMENT_ENABLED",
     )
-    gemini_identity_ocr_provider: str = Field(default="rapidocr", alias="AI_BACKEND_GEMINI_IDENTITY_OCR_PROVIDER")
     gemini_identity_ocr_min_confidence: float = Field(
         default=0.70,
         alias="AI_BACKEND_GEMINI_IDENTITY_OCR_MIN_CONFIDENCE",
@@ -68,8 +67,7 @@ class Settings(BaseSettings):
     vision_retry_delay_seconds: int = Field(default=5, alias="AI_BACKEND_VISION_RETRY_DELAY_SECONDS")
     vision_max_width: int = Field(default=512, alias="AI_BACKEND_VISION_MAX_WIDTH")
     vision_max_height: int = Field(default=1024, alias="AI_BACKEND_VISION_MAX_HEIGHT")
-    ocr_enabled: bool = Field(default=False, alias="AI_BACKEND_OCR_ENABLED")
-    ocr_provider: str = Field(default="rapidocr", alias="AI_BACKEND_OCR_PROVIDER")
+    ocr_enabled: bool = Field(default=True, alias="AI_BACKEND_OCR_ENABLED")
     ocr_min_confidence: float = Field(default=0.55, alias="AI_BACKEND_OCR_MIN_CONFIDENCE")
     ocr_max_text_lines: int = Field(default=20, alias="AI_BACKEND_OCR_MAX_TEXT_LINES")
     ocr_prefer_sfx: bool = Field(default=True, alias="AI_BACKEND_OCR_PREFER_SFX")

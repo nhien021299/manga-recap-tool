@@ -70,7 +70,7 @@ def test_script_context_defaults_allow_missing_optional_fields():
 
 @pytest.mark.asyncio
 async def test_identity_evidence_without_ocr_uses_carryover_and_neutral_fallback():
-    service = GeminiScriptService(build_settings())
+    service = GeminiScriptService(build_settings(gemini_identity_experiment_enabled=False))
     evidence = await service._build_identity_evidence(
         context=ScriptContext(mainCharacter="Ly Pham"),
         batch_panels=[],
@@ -195,6 +195,12 @@ def test_build_unified_prompt_contains_update_2_1_style_blocks():
     assert "Do not mechanically describe each image in isolation." in prompt
     assert "Make adjacent panels flow like one seamless recap." in prompt
     assert "Every voiceover_text should flow logically into the next one as part of a continuous chapter recap." in prompt
+    assert "label people by visible age, outfit, role, weapon, job, or standout physical traits" in prompt
+    assert "Avoid overusing flat labels like \"nam nhan\"" in prompt
+    assert "Add a very light touch of modern Vietnamese Gen Z phrasing" in prompt
+    assert "keep the same descriptor unless the images clearly reveal better identity detail" in prompt
+    assert "Do not switch an unnamed character from one guessed role or job to another across nearby panels" in prompt
+    assert "Do not infer a profession such as herb picker, worker, guard, or servant unless the current images make that role genuinely clear." in prompt
 
 
 def test_build_unified_prompt_keeps_json_only_guardrails():
@@ -271,8 +277,53 @@ def test_build_story_memory_returns_tiny_summary_and_recent_names():
 
     assert memory.chunkIndex == 0
     assert memory.recentNames == ["Ly Pham"]
-    assert len(memory.summary.split()) <= 50
+    assert len(memory.summary.split()) <= 70
     assert memory.summary
+
+
+def test_summarize_batch_uses_first_and_last_sentence_from_recent_items():
+    service = GeminiScriptService(build_settings())
+    items = [
+        ScriptItem(
+            panel_index=1,
+            voiceover_text="Ly Pham khung lai trong gang tac, nhung ga ao den da ep sat den muc khong con duong lui.",
+        ),
+        ScriptItem(
+            panel_index=2,
+            voiceover_text="Elder Mo loang choang o phia sau, con luoi kiem cua doi thu thi lia ngang nhu muon cat dut moi co hoi song sot.",
+        ),
+        ScriptItem(
+            panel_index=3,
+            voiceover_text=(
+                "Den luc nhom tuong da thoat, bong nguoi bi thuong lai nhin thay mot cai bong khac dang bo theo tu cuoi hanh lang."
+            ),
+        ),
+    ]
+
+    summary = service._summarize_batch(items)
+
+    assert "Ly Pham khung lai trong gang tac" in summary
+    assert "bong khac dang bo theo tu cuoi hanh lang" in summary
+    assert "Elder Mo loang choang" not in summary
+
+
+def test_extract_recent_names_drops_stale_names_when_current_chunk_has_no_match():
+    service = GeminiScriptService(build_settings())
+    previous_memory = StoryMemory(chunkIndex=0, summary="prev", recentNames=["Ly Pham", "Elder Mo"])
+    items = [
+        ScriptItem(
+            panel_index=4,
+            voiceover_text="Ga ao den van ap dao, con bong nguoi bi thuong chi con biet loang choang bam theo.",
+        )
+    ]
+
+    recent_names = service._extract_recent_names(
+        ScriptContext(mainCharacter="Ly Pham", summary="Ly Pham bi truy sat trong hanh lang ngap mau."),
+        items,
+        previous_memory,
+    )
+
+    assert recent_names == []
 
 
 @pytest.mark.asyncio

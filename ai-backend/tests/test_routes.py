@@ -19,7 +19,6 @@ def test_healthcheck():
 
 def test_providers_route_includes_ocr_fields(monkeypatch):
     monkeypatch.setenv("AI_BACKEND_OCR_ENABLED", "true")
-    monkeypatch.setenv("AI_BACKEND_OCR_PROVIDER", "rapidocr")
     get_settings.cache_clear()
 
     from app.services.provider_registry import ProviderRegistry
@@ -31,7 +30,7 @@ def test_providers_route_includes_ocr_fields(monkeypatch):
             assert response.status_code == 200
             payload = response.json()
             assert payload["ocrEnabled"] is True
-            assert payload["ocrProvider"] == "rapidocr"
+            assert payload["ocrProvider"] == "paddleocr"
     finally:
         get_settings.cache_clear()
 

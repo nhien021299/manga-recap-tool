@@ -1,8 +1,8 @@
 fastapi==0.115.12
 httpx==0.28.1
 pillow==11.2.1
-rapidocr-onnxruntime==1.4.4
 paddleocr==3.4.1
+paddlepaddle
 pydantic-settings==2.10.1
 python-multipart==0.0.20
 uvicorn==0.34.2

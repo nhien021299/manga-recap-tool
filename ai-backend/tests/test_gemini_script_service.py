@@ -157,6 +157,101 @@ async def test_identity_evidence_with_ocr_match_confirms_candidate_name(tmp_path
     assert "Ly Pham" in prompt
     assert "Carryover names from previous chunk:" in prompt
     assert "Elder Mo" in prompt
+    assert "Naming rules:" in prompt
+    assert "Truth rules:" in prompt
+
+
+def test_build_unified_prompt_contains_update_2_1_style_blocks():
+    service = GeminiScriptService(build_settings())
+    prompt = service._build_unified_prompt(
+        context=ScriptContext(
+            summary="A bloody chase becomes a desperate fight in a dark corridor.",
+            mainCharacter="Ly Pham",
+        ),
+        panel_count=3,
+        start_index=4,
+        previous_memory=StoryMemory(
+            chunkIndex=0,
+            summary="The wounded group hears something moving behind them.",
+            recentNames=["Ly Pham"],
+        ),
+        identity_evidence=gemini_module.IdentityEvidence(
+            candidate_pool=["Ly Pham"],
+            confirmed_names=["Ly Pham"],
+            carryover_names=[],
+            has_text_signal=True,
+            use_neutral_fallback=False,
+            neutral_fallback_reason="",
+        ),
+    )
+
+    assert "Current mode:" in prompt
+    assert "Truth rules:" in prompt
+    assert "Output rules:" in prompt
+    assert "Lexical rules:" in prompt
+    assert "Batch flow rules:" in prompt
+    assert "Return raw JSON only with this schema:" in prompt
+    assert "Prefer 1 to 2 short sentences per panel." in prompt
+    assert "Do not mechanically describe each image in isolation." in prompt
+    assert "Make adjacent panels flow like one seamless recap." in prompt
+    assert "Every voiceover_text should flow logically into the next one as part of a continuous chapter recap." in prompt
+
+
+def test_build_unified_prompt_keeps_json_only_guardrails():
+    service = GeminiScriptService(build_settings())
+    prompt = service._build_unified_prompt(
+        context=ScriptContext(summary="A quiet room hides a clue."),
+        panel_count=2,
+        start_index=1,
+        previous_memory=None,
+        identity_evidence=gemini_module.IdentityEvidence(
+            candidate_pool=[],
+            confirmed_names=[],
+            carryover_names=[],
+            has_text_signal=False,
+            use_neutral_fallback=True,
+            neutral_fallback_reason="no candidate names available",
+        ),
+    )
+
+    assert "Return raw JSON only with this schema:" in prompt
+    assert '"panel_index": 1' in prompt
+    assert '"voiceover_text": "..."' in prompt
+    assert "Return exactly 2 items for 2 images." in prompt
+    assert "panel_index starts at 1 and increases by 1." in prompt
+
+
+def test_infer_narration_mode_returns_horror():
+    service = GeminiScriptService(build_settings())
+
+    mode = service._infer_narration_mode(
+        ScriptContext(summary="Mau chay lenh lang va con quy lao ra tu bong toi."),
+        None,
+    )
+
+    assert mode == "horror"
+
+
+def test_infer_narration_mode_returns_combat():
+    service = GeminiScriptService(build_settings())
+
+    mode = service._infer_narration_mode(
+        ScriptContext(summary="Cuoc giao chien no ra khi thanh kiem va don tan cong dap vao nhau."),
+        None,
+    )
+
+    assert mode == "combat"
+
+
+def test_infer_narration_mode_falls_back_to_mystery():
+    service = GeminiScriptService(build_settings())
+
+    mode = service._infer_narration_mode(
+        ScriptContext(summary="A stranger stands in the doorway and nobody understands why."),
+        None,
+    )
+
+    assert mode == "mystery"
 
 
 def test_build_story_memory_returns_tiny_summary_and_recent_names():

@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { get, set as idbSet } from "idb-keyval";
 
 import {
+  type BenchmarkRecord,
   DEFAULT_ASPECT,
   STRIP_WIDTH,
   type AppConfig,
@@ -72,6 +73,9 @@ interface RecapState {
   setScriptMeta: (meta: ScriptMeta) => void;
   markScriptOutdated: (reason: string) => void;
   clearScriptData: () => void;
+  benchmarkRecords: BenchmarkRecord[];
+  addBenchmarkRecord: (record: BenchmarkRecord) => void;
+  removeBenchmarkRecord: (id: string) => void;
 
   init: () => Promise<void>;
   reset: () => void;
@@ -381,6 +385,15 @@ export const useRecapStore = create<RecapState>()(
         });
         void idbSet("recap-timeline-data", []);
       },
+      benchmarkRecords: [],
+      addBenchmarkRecord: (record) =>
+        set((state) => ({
+          benchmarkRecords: [record, ...state.benchmarkRecords].slice(0, 30),
+        })),
+      removeBenchmarkRecord: (id) =>
+        set((state) => ({
+          benchmarkRecords: state.benchmarkRecords.filter((record) => record.id !== id),
+        })),
 
       init: async () => {
         set((state) => ({
@@ -437,6 +450,7 @@ export const useRecapStore = create<RecapState>()(
           timeline: [],
           scriptMeta: EMPTY_SCRIPT_META,
           scriptContext: { mangaName: "", mainCharacter: "", summary: "", language: "vi" },
+          benchmarkRecords: getStore().benchmarkRecords,
           progress: 0,
           isLoading: false,
           logs: [],
@@ -462,6 +476,7 @@ export const useRecapStore = create<RecapState>()(
         scriptContext: state.scriptContext,
         logs: state.logs,
         aspectRatio: state.aspectRatio,
+        benchmarkRecords: state.benchmarkRecords,
       }),
     }
   )

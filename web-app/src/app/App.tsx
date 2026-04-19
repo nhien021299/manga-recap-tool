@@ -2,6 +2,7 @@ import { useEffect } from "react";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/app/layout/AppLayout";
+import { StepBenchmark } from "@/features/benchmark/components/StepBenchmark";
 import { StepExtract } from "@/features/extract/components/StepExtract";
 import { StepScript } from "@/features/script/components/StepScript";
 import { StepUpload } from "@/features/upload/components/StepUpload";
@@ -25,6 +26,8 @@ function App() {
         return <StepScript />;
       case "voice":
         return <StepVoice />;
+      case "benchmark":
+        return <StepBenchmark />;
       default:
         return (
           <div className="flex h-[60vh] flex-col items-center justify-center space-y-4 text-center">

@@ -183,6 +183,7 @@ export function useScriptJob() {
         generatedAt: new Date().toISOString(),
         rawOutput: finalResult.rawOutputs?.script || "",
         pipeline: "backend-gemini-unified",
+        metrics: finalResult.metrics,
       });
 
       setProgress(100);

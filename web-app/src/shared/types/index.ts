@@ -94,6 +94,7 @@ export interface ScriptMeta {
   outdatedReason?: string;
   rawOutput?: string;
   pipeline?: ScriptPipeline;
+  metrics?: Metrics;
 }
 
 export interface TimelineItem {
@@ -119,7 +120,31 @@ export interface VoiceConfig {
   ttsModel: string;
 }
 
-export type Step = "upload" | "extract" | "script" | "voice" | "render";
+export interface BenchmarkDimensionScore {
+  key: string;
+  label: string;
+  score: number;
+  note: string;
+}
+
+export interface BenchmarkRecord {
+  id: string;
+  title: string;
+  createdAt: string;
+  mangaName?: string;
+  panelCount: number;
+  mergedVoiceoverText: string;
+  completionLogText: string;
+  combinedText: string;
+  metrics: Metrics;
+  overallScore: number;
+  grade: "A" | "B" | "C" | "D";
+  dimensionScores: BenchmarkDimensionScore[];
+  highlights: string[];
+  warnings: string[];
+}
+
+export type Step = "upload" | "extract" | "script" | "voice" | "render" | "benchmark";
 export type LogType = "request" | "result" | "error";
 
 export interface GeminiLog {
@@ -144,6 +169,15 @@ export interface Metrics {
   scriptMs: number;
   avgPanelMs: number;
   captionSource: string;
+  totalPromptTokens: number;
+  totalCandidatesTokens: number;
+  totalTokens: number;
+  batchSizeUsed: number;
+  retryCount: number;
+  rateLimitedCount: number;
+  throttleWaitMs: number;
+  identityOcrMs: number;
+  identityConfirmedCount: number;
 }
 
 export interface ScriptJobResult {

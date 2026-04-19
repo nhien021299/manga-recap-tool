@@ -5,7 +5,6 @@ import json
 import mimetypes
 import random
 import re
-import unicodedata
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -23,8 +22,8 @@ from app.services.gemini_request_gate import GeminiRequestGate
 from app.utils.image_io import image_to_base64
 
 MAX_OUTPUT_TOKENS = 8192
-MAX_MEMORY_WORDS = 50
-MAX_MEMORY_CHARS = 280
+MAX_MEMORY_WORDS = 70
+MAX_MEMORY_CHARS = 420
 MAX_RECENT_NAMES = 3
 MAX_HINT_NAMES = 2
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
@@ -607,18 +606,36 @@ class GeminiScriptService:
         previous_summary = self._compact_summary(previous_memory.summary if previous_memory else "")
         language_label = "Vietnamese" if context.language == "vi" else "English"
         narration_mode = self._infer_narration_mode(context, previous_memory)
+
         neutral_examples = (
-            '"nam nhan", "co gai", "doi thu", "bong nguoi", or "ke kia"'
+            '"nam nhân", "cô gái", "đối thủ", "bóng người", "kẻ kia"'
             if context.language == "vi"
-            else '"the man", "the woman", "the opponent", "the figure", or "the other person"'
+            else '"the man", "the woman", "the opponent", "the figure", "the other person"'
         )
+
         mode_guide_map = {
-            "horror": "Use dread, unease, and disturbing detail. Make the threat feel immediate and visceral.",
-            "combat": "Use speed, impact, danger, and split-second reactions. Keep the energy sharp and forceful.",
-            "escape": "Use urgency, pursuit, panic, and survival pressure. Make it feel like stopping means death.",
-            "investigation": "Focus on clues, suspicion, evidence, and the danger hiding behind discovery.",
-            "aftermath": "Use exhaustion, silence, damage, and lingering pressure without going flat.",
-            "mystery": "Use curiosity, strange detail, hidden meaning, and unresolved danger.",
+            "horror": (
+                "Use dread, unease, and disturbing detail. "
+                "Focus on emotional shock and the fear of what is appearing."
+            ),
+            "combat": (
+                "Use speed, impact, danger, and split-second reactions. "
+                "Keep the energy sharp and forceful."
+            ),
+            "escape": (
+                "Use urgency, pursuit, panic, and survival pressure. "
+                "Make it feel like stopping means death."
+            ),
+            "investigation": (
+                "Focus on clues, suspicion, evidence, and rising danger behind discovery."
+            ),
+            "aftermath": (
+                "Use exhaustion, silence, damage, and lingering pressure. "
+                "Let the tension breathe without going flat."
+            ),
+            "mystery": (
+                "Use curiosity, strange detail, hidden meaning, and unresolved danger."
+            ),
         }
         mode_guide = mode_guide_map.get(narration_mode, mode_guide_map["mystery"])
 
@@ -626,141 +643,111 @@ class GeminiScriptService:
             f"You write final {language_label} manga recap narration for YouTube.",
             "Your job is to maximize viewer retention.",
             "Every panel should create tension, curiosity, escalation, or emotional payoff.",
-            "\n".join(
-                [
-                    "Current mode:",
-                    f"- {narration_mode}",
-                    f"- Mode behavior: {mode_guide}",
-                ]
-            ),
+            "",
+            "CURRENT MODE:",
+            f"- {narration_mode}",
+            f"- Mode behavior: {mode_guide}",
         ]
+
         if title or setup_summary:
-            series_lines = ["Series context:"]
+            series_lines = ["", "SERIES CONTEXT:"]
             if title:
-                series_lines.append(f"- Manga title: {title}")
+                series_lines.append(f"- Title: {title}")
             if setup_summary:
-                series_lines.append(f"- Setup summary: {setup_summary}")
-            sections.append("\n".join(series_lines))
+                series_lines.append(f"- Setup: {setup_summary}")
+            sections.extend(series_lines)
+
         if previous_summary:
-            sections.append(
-                "\n".join(
-                    [
-                        "Previous context:",
-                        previous_summary,
-                        "If the current images do not show a clear scene change, keep continuity with that context.",
-                    ]
-                )
+            sections.extend(
+                [
+                    "",
+                    "PREVIOUS CONTEXT:",
+                    previous_summary,
+                    "If the current images do not clearly start a new scene, maintain continuity with this context.",
+                ]
             )
+
         if identity_evidence.confirmed_names:
-            sections.append(
-                "\n".join(
-                    [
-                        "Confirmed from visible text/dialogue in this batch:",
-                        f"- {', '.join(identity_evidence.confirmed_names)}",
-                    ]
-                )
+            sections.extend(
+                [
+                    "",
+                    "CONFIRMED NAMES FROM CURRENT BATCH:",
+                    f"- {', '.join(identity_evidence.confirmed_names)}",
+                ]
             )
+
         if identity_evidence.carryover_names:
-            sections.append(
-                "\n".join(
-                    [
-                        "Carryover names from previous chunk:",
-                        f"- {', '.join(identity_evidence.carryover_names)}",
-                        "Use these only as continuity hints, not as proof of identity in the current images.",
-                    ]
-                )
+            sections.extend(
+                [
+                    "",
+                    "CARRYOVER NAMES FROM PREVIOUS BATCH:",
+                    f"- {', '.join(identity_evidence.carryover_names)}",
+                    "- Use them only as continuity hints, never as proof of identity.",
+                ]
             )
+
+        sections.extend(
+            [
+                "",
+                "TRUTH RULE:",
+                "- Only describe what the current images support.",
+                "- Do not invent identity, motive, hidden meaning, future outcome, or twist.",
+                "",
+                "IDENTITY RULE:",
+                "- Use a character name only when current images or visible dialogue make it clear.",
+                "- Never rely on carryover names alone as proof.",
+                f"- If identity is unclear, use neutral labels such as {neutral_examples}.",
+            ]
+        )
+
         if identity_evidence.use_neutral_fallback:
-            sections.append(
-                "\n".join(
-                    [
-                        "Identity confidence is low for this batch.",
-                        "Use neutral labels for people instead of names unless the visible dialogue in this batch clearly names them.",
-                    ]
-                )
-            )
-        sections.append(
-            "\n".join(
+            sections.extend(
                 [
-                    "Truth rules:",
-                    "- Only describe what the current images support.",
-                    "- Do not invent identity, motive, outcome, or twist that the current images do not support.",
+                    "- Identity confidence is low in this batch, so prefer neutral labels unless clearly named.",
                 ]
             )
+
+        sections.extend(
+            [
+                "",
+                "STYLE RULES:",
+                "- Write direct final narration only.",
+                '- No greeting, no intro, no outro, no "tập trước", and no filler.',
+                "- 1 to 2 short sentences per panel.",
+                "- Keep sentences concise, punchy, and easy for TTS.",
+                "- Vary rhythm: hit -> breathe -> hit harder.",
+                "- Not every panel should sound maximum intensity.",
+                "- Say what is happening and why it matters.",
+                "- Add light curiosity when appropriate, but stay grounded.",
+                "",
+                "LEXICAL RULE:",
+                "- Do not repeat the same emotional keywords across nearby panels unless the scene clearly escalates.",
+                '- Avoid generic lines like "một cảnh tượng kinh hoàng xuất hiện" or equivalent vague phrasing.',
+                "",
+                "BATCH FLOW:",
+                "- If the final panel suggests unresolved danger, discovery, or confrontation, end with a line that naturally pulls the viewer forward.",
+                "",
+                "OUTPUT:",
+                "Return raw JSON only with this schema:",
+                "[",
+                "  {",
+                f'    "panel_index": {start_index},',
+                '    "voiceover_text": "..."',
+                "  }",
+                "]",
+                "",
+                "REQUIREMENTS:",
+                f"- Return exactly {panel_count} items for {panel_count} images.",
+                f"- panel_index starts at {start_index} and increases by 1.",
+                "- Each voiceover_text must feel like compelling recap narration, not dry image description.",
+                "- If a line feels generic, rewrite it to be more specific and engaging.",
+            ]
         )
-        sections.append(
-            "\n".join(
-                [
-                    "Naming rules:",
-                    "- Use a character name only when the current images or visible dialogue make the identity clear.",
-                    "- Never treat carryover names as proof on their own.",
-                    f"- If identity is unclear, use neutral labels such as {neutral_examples}.",
-                ]
-            )
-        )
-        sections.append(
-            "\n".join(
-                [
-                    "Output rules:",
-                    f"- Write direct final narration in {language_label}.",
-                    '- No greeting, no intro, no outro, no "tap truoc", and no trailer-style filler.',
-                    "- Do not mechanically describe each image in isolation.",
-                    "- Make adjacent panels flow like one seamless recap.",
-                    "- Clearly establish the subject of the sentence to avoid pronoun confusion.",
-                    "- Keep sentences concise, punchy, high-rhythm, and easy for TTS.",
-                    "- Prefer 1 to 2 short sentences per panel.",
-                    "- Vary rhythm: hit, breathe, then hit harder.",
-                    "- Not every panel should sound maximum intensity.",
-                    "- Say what is happening and why it matters.",
-                    "- Add light curiosity when appropriate, but stay grounded in the images.",
-                ]
-            )
-        )
-        sections.append(
-            "\n".join(
-                [
-                    "Lexical rules:",
-                    "- Do not repeat the same emotional keywords across nearby panels unless the scene clearly escalates.",
-                    '- Avoid generic lines like "mot canh tuong kinh hoang xuat hien" or equally vague phrasing.',
-                    "- If a line feels generic, rewrite it to be more specific and engaging.",
-                ]
-            )
-        )
-        sections.append(
-            "\n".join(
-                [
-                    "Batch flow rules:",
-                    "- If the final panel suggests unresolved danger, discovery, or confrontation, end with a line that naturally pulls the viewer forward.",
-                ]
-            )
-        )
-        sections.append(
-            "\n".join(
-                [
-                    "Return raw JSON only with this schema:",
-                    "[",
-                    "  {",
-                    f'    "panel_index": {start_index},',
-                    '    "voiceover_text": "..."',
-                    "  }",
-                    "]",
-                ]
-            )
-        )
-        sections.append(
-            "\n".join(
-                [
-                    "Requirements:",
-                    f"- Return exactly {panel_count} items for {panel_count} images.",
-                    f"- panel_index starts at {start_index} and increases by 1.",
-                    "- Every voiceover_text must read like a compelling recap line, not a dry description.",
-                    "- Every voiceover_text should flow logically into the next one as part of a continuous chapter recap.",
-                ]
-            )
-        )
-        return "\n\n".join(section for section in sections if section.strip())
+
+        return "\n".join(section for section in sections if section is not None).strip()
 
     def _build_story_memory(
+
         self,
         chunk_index: int,
         context: ScriptContext,
@@ -772,11 +759,24 @@ class GeminiScriptService:
         return StoryMemory(chunkIndex=chunk_index, summary=summary, recentNames=recent_names)
 
     def _summarize_batch(self, items: list[ScriptItem]) -> str:
-        narration = " ".join(item.voiceover_text.strip() for item in items[-2:] if item.voiceover_text.strip())
-        if not narration:
+        texts = [item.voiceover_text.strip() for item in items if item.voiceover_text.strip()]
+        if not texts:
             return ""
-        sentences = [part.strip() for part in re.split(r"(?<=[.!?])\s+", narration) if part.strip()]
-        summary = sentences[0] if sentences else narration
+
+        combined = " ".join(texts[-3:])
+        combined = re.sub(r"\s+", " ", combined).strip()
+        if not combined:
+            return ""
+
+        sentences = [part.strip() for part in re.split(r"(?<=[.!?])\s+", combined) if part.strip()]
+        if not sentences:
+            return self._compact_summary(combined)
+
+        if len(sentences) >= 2:
+            summary = f"{sentences[0]} {sentences[-1]}"
+        else:
+            summary = sentences[0]
+
         return self._compact_summary(summary)
 
     def _extract_recent_names(
@@ -792,23 +792,24 @@ class GeminiScriptService:
                 *self._manual_known_names(context),
             ]
         )
+
         matched = [name for name in candidates if self._contains_name(source_text, name)]
         if matched:
             return matched[:MAX_RECENT_NAMES]
 
-        if not previous_memory:
-            setup_text = f"{context.summary} {context.mainCharacter}".strip()
-            seeded = [name for name in self._manual_known_names(context) if self._contains_name(setup_text, name)]
-            return seeded[:MAX_RECENT_NAMES]
+        if previous_memory and previous_memory.recentNames:
+            return previous_memory.recentNames[:MAX_RECENT_NAMES]
 
-        return []
+        setup_text = f"{context.summary} {context.mainCharacter}".strip()
+        seeded = [name for name in self._manual_known_names(context) if self._contains_name(setup_text, name)]
+        return seeded[:MAX_RECENT_NAMES]
 
     def _infer_narration_mode(
         self,
         context: ScriptContext,
         previous_memory: StoryMemory | None,
     ) -> str:
-        raw_text = " ".join(
+        text = " ".join(
             part
             for part in [
                 context.summary or "",
@@ -816,99 +817,49 @@ class GeminiScriptService:
             ]
             if part
         ).lower()
-        normalized_text = unicodedata.normalize("NFKD", raw_text)
-        normalized_text = "".join(char for char in normalized_text if not unicodedata.combining(char))
 
-        mode_keywords = {
-            "horror": [
-                "mau",
-                "quy",
-                "yeu quai",
-                "xac",
-                "chet",
-                "kinh hoang",
-                "ghe ron",
-                "monster",
-                "blood",
-                "corpse",
-                "demon",
-                "horror",
-                "red eye",
-            ],
-            "combat": [
-                "chien",
-                "danh",
-                "kiem",
-                "truy sat",
-                "tan cong",
-                "giao chien",
-                "fight",
-                "sword",
-                "attack",
-                "battle",
-                "strike",
-            ],
-            "escape": [
-                "chay",
-                "tron",
-                "thoat",
-                "duoi",
-                "hoang loan",
-                "thuc mang",
-                "escape",
-                "flee",
-                "run",
-                "chase",
-                "panic",
-            ],
-            "investigation": [
-                "manh moi",
-                "vat chung",
-                "phong toa",
-                "dieu tra",
-                "kha nghi",
-                "clue",
-                "evidence",
-                "investigate",
-                "suspicious",
-                "search",
-            ],
-            "aftermath": [
-                "nguc",
-                "xa lim",
-                "tu",
-                "kiet suc",
-                "im lang",
-                "hoi tho",
-                "hoi suc",
-                "prison",
-                "cell",
-                "silence",
-                "exhausted",
-                "aftermath",
-            ],
-            "mystery": [
-                "bi mat",
-                "ky la",
-                "an",
-                "la ky",
-                "bi an",
-                "mysterious",
-                "strange",
-                "hidden",
-                "unknown",
-                "weird",
-            ],
-        }
+        horror_keywords = [
+            "máu", "quỷ", "yêu quái", "xác", "chết", "kinh hoàng", "ghê rợn",
+            "monster", "blood", "corpse", "demon", "horror", "red eye",
+        ]
+        combat_keywords = [
+            "chiến", "đánh", "kiếm", "truy sát", "tấn công", "giao chiến",
+            "fight", "sword", "attack", "battle", "strike",
+        ]
+        escape_keywords = [
+            "chạy", "trốn", "thoát", "đuổi", "hoảng loạn", "thục mạng",
+            "escape", "flee", "run", "chase", "panic",
+        ]
+        investigation_keywords = [
+            "manh mối", "vật chứng", "phong tỏa", "điều tra", "khả nghi",
+            "clue", "evidence", "investigate", "suspicious", "search",
+        ]
+        aftermath_keywords = [
+            "ngục", "xà lim", "tù", "kiệt sức", "im lặng", "hơi thở", "hồi sức",
+            "prison", "cell", "silence", "exhausted", "aftermath",
+        ]
+        mystery_keywords = [
+            "bí mật", "kỳ lạ", "ẩn", "lạ kỳ", "bí ẩn",
+            "mysterious", "strange", "hidden", "unknown", "weird",
+        ]
+
+        def score(keywords: list[str]) -> int:
+            return sum(1 for kw in keywords if kw in text)
 
         scores = {
-            mode: sum(1 for keyword in keywords if keyword in normalized_text)
-            for mode, keywords in mode_keywords.items()
+            "horror": score(horror_keywords),
+            "combat": score(combat_keywords),
+            "escape": score(escape_keywords),
+            "investigation": score(investigation_keywords),
+            "aftermath": score(aftermath_keywords),
+            "mystery": score(mystery_keywords),
         }
+
         best_mode = max(scores, key=scores.get)
         return best_mode if scores[best_mode] > 0 else "mystery"
 
     def _manual_known_names(self, context: ScriptContext) -> list[str]:
+
         name = " ".join(context.mainCharacter.split())
         return [name] if name else []
 

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   AlertCircle,
+  BarChart3,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -9,6 +10,7 @@ import {
   Eye,
   Loader2,
   RefreshCw,
+  Save,
   Trash2,
   Wand2,
   X,
@@ -21,7 +23,40 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScriptLogs } from "@/features/script/components/ScriptLogs";
 import { useScriptJob } from "@/features/script/hooks/useScriptJob";
+import { createBenchmarkRecord } from "@/features/benchmark/lib/benchmarkScore";
 import { useRecapStore } from "@/shared/storage/useRecapStore";
+import type { Metrics } from "@/shared/types";
+
+const parseMetricsFromLogDetails = (details?: string | null): Metrics | null => {
+  if (!details) return null;
+  try {
+    const parsed = JSON.parse(details) as Partial<Metrics>;
+    if (!parsed || typeof parsed !== "object") return null;
+    if (typeof parsed.panelCount !== "number" || typeof parsed.totalMs !== "number") return null;
+
+    return {
+      panelCount: parsed.panelCount,
+      totalMs: parsed.totalMs,
+      captionMs: parsed.captionMs ?? 0,
+      ocrMs: parsed.ocrMs ?? 0,
+      mergeMs: parsed.mergeMs ?? 0,
+      scriptMs: parsed.scriptMs ?? 0,
+      avgPanelMs: parsed.avgPanelMs ?? 0,
+      captionSource: parsed.captionSource ?? "unknown",
+      totalPromptTokens: parsed.totalPromptTokens ?? 0,
+      totalCandidatesTokens: parsed.totalCandidatesTokens ?? 0,
+      totalTokens: parsed.totalTokens ?? 0,
+      batchSizeUsed: parsed.batchSizeUsed ?? 0,
+      retryCount: parsed.retryCount ?? 0,
+      rateLimitedCount: parsed.rateLimitedCount ?? 0,
+      throttleWaitMs: parsed.throttleWaitMs ?? 0,
+      identityOcrMs: parsed.identityOcrMs ?? 0,
+      identityConfirmedCount: parsed.identityConfirmedCount ?? 0,
+    };
+  } catch {
+    return null;
+  }
+};
 
 export function StepScript() {
   const {
@@ -37,6 +72,7 @@ export function StepScript() {
     scriptContext,
     setScriptContext,
     updateTimelineItem,
+    addBenchmarkRecord,
     setCurrentStep,
     clearScriptData,
     isLoading,
@@ -47,6 +83,7 @@ export function StepScript() {
   const [showRawScript, setShowRawScript] = useState(false);
   const [showRawUnderstanding, setShowRawUnderstanding] = useState(false);
   const [showMemories, setShowMemories] = useState(false);
+  const [lastSavedBenchmarkId, setLastSavedBenchmarkId] = useState<string | null>(null);
 
   const panelById = useMemo(() => new Map(panels.map((panel) => [panel.id, panel])), [panels]);
   const latestErrorDetails = useMemo(() => {
@@ -56,11 +93,37 @@ export function StepScript() {
     }
     return null;
   }, [logs]);
+  const availableMetrics = useMemo(() => {
+    if (scriptMeta.metrics) return scriptMeta.metrics;
+
+    for (let index = logs.length - 1; index >= 0; index -= 1) {
+      const log = logs[index];
+      if (log.type !== "result") continue;
+      if (!log.message.toLowerCase().includes("script generation completed")) continue;
+      const parsed = parseMetricsFromLogDetails(log.details);
+      if (parsed) return parsed;
+    }
+
+    return null;
+  }, [logs, scriptMeta.metrics]);
 
   const generateDisabled =
     isLoading ||
     panels.length === 0 ||
     !config.apiBaseUrl;
+
+  const handleSaveBenchmark = () => {
+    if (!availableMetrics || timeline.length === 0) return;
+    const record = createBenchmarkRecord({
+      mangaName: scriptContext.mangaName,
+      timeline,
+      storyMemories,
+      metrics: availableMetrics,
+    });
+    addBenchmarkRecord(record);
+    setLastSavedBenchmarkId(record.id);
+    setCurrentStep("benchmark");
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -74,6 +137,16 @@ export function StepScript() {
         <div className="flex gap-3">
           {timeline.length > 0 && (
             <>
+              {availableMetrics && (
+                <Button
+                  variant="outline"
+                  onClick={handleSaveBenchmark}
+                  disabled={isLoading}
+                  className="rounded-xl border-emerald-500/30 bg-emerald-500/10 px-6 font-bold text-emerald-100 hover:bg-emerald-500/15"
+                >
+                  <Save className="mr-2 h-4 w-4" /> Save benchmark
+                </Button>
+              )}
               <Button
                 variant="outline"
                 onClick={clearScriptData}
@@ -148,6 +221,32 @@ export function StepScript() {
               </div>
               {error && <p className="text-sm text-red-100/90">{error}</p>}
               {latestErrorDetails && <pre className="whitespace-pre-wrap rounded-xl border border-white/10 bg-black/20 p-3 text-xs text-red-50/80">{latestErrorDetails}</pre>}
+            </div>
+          )}
+
+          {availableMetrics && (
+            <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/8 p-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-emerald-200/75">Benchmark Snapshot</p>
+                  <p className="mt-2 text-sm text-white/80">
+                    Script da generate xong. Save se ghep toan bo `voiceover_text` thanh mot doan lien mach va kem log completion cua Gemini.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={handleSaveBenchmark} className="rounded-xl bg-emerald-400 px-5 font-bold text-slate-950 hover:bg-emerald-300">
+                    <BarChart3 className="mr-2 h-4 w-4" /> Save vao benchmark
+                  </Button>
+                  <Button variant="outline" onClick={() => setCurrentStep("benchmark")} className="rounded-xl">
+                    Mo benchmark
+                  </Button>
+                </div>
+              </div>
+              {lastSavedBenchmarkId && (
+                <p className="mt-3 text-xs text-emerald-100/80">
+                  Da luu benchmark record `#{lastSavedBenchmarkId.slice(-6)}`.
+                </p>
+              )}
             </div>
           )}
         </Card>

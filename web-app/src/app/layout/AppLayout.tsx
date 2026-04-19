@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   FileText,
   Mic2,
   Scissors,
@@ -20,6 +21,7 @@ const steps: Array<{ id: Step; label: string; icon: LucideIcon }> = [
   { id: "script", label: "Kịch Bản", icon: FileText },
   { id: "voice", label: "Lồng Tiếng", icon: Mic2 },
   { id: "render", label: "Xuất Video", icon: Video },
+  { id: "benchmark", label: "Benchmark", icon: BarChart3 },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {

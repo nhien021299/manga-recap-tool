@@ -60,8 +60,6 @@ export function StepScript() {
   const generateDisabled =
     isLoading ||
     panels.length === 0 ||
-    !scriptContext.mangaName ||
-    !scriptContext.mainCharacter ||
     !config.apiBaseUrl;
 
   return (
@@ -119,16 +117,17 @@ export function StepScript() {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="mangaName" className="text-[10px] font-semibold uppercase tracking-wide text-white/80">Ten truyen</Label>
-              <Input id="mangaName" value={scriptContext.mangaName} onChange={(e) => setScriptContext({ mangaName: e.target.value })} className="h-12 rounded-xl border-white/20 bg-white/10 text-white" />
+              <Label htmlFor="mangaName" className="text-[10px] font-semibold uppercase tracking-wide text-white/80">Ten truyen (tuy chon)</Label>
+              <Input id="mangaName" value={scriptContext.mangaName ?? ""} onChange={(e) => setScriptContext({ mangaName: e.target.value })} className="h-12 rounded-xl border-white/20 bg-white/10 text-white" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="mainChar" className="text-[10px] font-semibold uppercase tracking-wide text-white/80">Nhan vat chinh</Label>
-              <Input id="mainChar" value={scriptContext.mainCharacter} onChange={(e) => setScriptContext({ mainCharacter: e.target.value })} className="h-12 rounded-xl border-white/20 bg-white/10 text-white" />
+              <Label htmlFor="mainChar" className="text-[10px] font-semibold uppercase tracking-wide text-white/80">Ten nhan vat goi y (tuy chon)</Label>
+              <Input id="mainChar" value={scriptContext.mainCharacter ?? ""} onChange={(e) => setScriptContext({ mainCharacter: e.target.value })} className="h-12 rounded-xl border-white/20 bg-white/10 text-white" />
+              <p className="text-xs leading-5 text-white/45">Backend chi dung ten nay khi hinh anh hoac hoi thoai xac nhan ro. Neu canh mo ho, he thong se quay ve cach goi trung tinh.</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="summary" className="text-[10px] font-semibold uppercase tracking-wide text-white/80">Boi canh tom tat</Label>
-              <Textarea id="summary" value={scriptContext.summary} onChange={(e) => setScriptContext({ summary: e.target.value })} className="min-h-[120px] rounded-xl border-white/20 bg-white/10 text-white" />
+              <Textarea id="summary" value={scriptContext.summary ?? ""} onChange={(e) => setScriptContext({ summary: e.target.value })} className="min-h-[120px] rounded-xl border-white/20 bg-white/10 text-white" />
             </div>
           </div>
 
@@ -182,10 +181,6 @@ export function StepScript() {
                       onChange={(e) => updateTimelineItem(index, { scriptItem: { ...item.scriptItem, voiceover_text: e.target.value } })}
                       className="min-h-[120px] resize-y rounded-2xl border-primary/20 bg-primary/10 p-4 text-base font-medium leading-relaxed text-white"
                     />
-                    <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white/80">
-                      <span className="mr-2 text-[10px] font-extrabold uppercase tracking-wider text-primary">AI View</span>
-                      {item.scriptItem.ai_view}
-                    </div>
                   </div>
                 </div>
               </Card>
@@ -207,7 +202,6 @@ export function StepScript() {
                     <p className="text-sm font-medium leading-relaxed text-white/90">{item.summary || "Chua co tom tat."}</p>
                     <p className="mt-3 text-xs text-white/60">Action: {item.action || "--"}</p>
                     <p className="mt-1 text-xs text-white/60">Dialogue: {item.dialogue || "--"}</p>
-                    <p className="mt-1 text-xs text-white/60">SFX: {(item.sfx || []).join(", ") || "--"}</p>
                   </div>
                 ))}
               </div>
@@ -259,6 +253,15 @@ export function StepScript() {
                     <div key={memory.chunkIndex} className="rounded-2xl border border-white/10 bg-black/20 p-4">
                       <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-white/60">Chunk {memory.chunkIndex + 1}</p>
                       <p className="text-sm leading-6 text-white/85">{memory.summary}</p>
+                      {!!memory.recentNames?.length && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {memory.recentNames.map((name) => (
+                            <span key={name} className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-primary">
+                              {name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

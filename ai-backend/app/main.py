@@ -13,6 +13,7 @@ from app.routes.script import router as script_router
 from app.routes.system import router as system_router
 from app.services.caption_service import CaptionService
 from app.services.gemini_script_service import GeminiScriptService
+from app.services.gemini_request_gate import GeminiRequestGate
 from app.services.job_queue import JobQueue
 from app.services.llm_service import LLMService
 from app.services.provider_registry import ProviderRegistry
@@ -24,16 +25,27 @@ def build_services(settings: Settings) -> dict[str, object]:
     text_provider = provider_registry.get_text_provider()
     vision_provider = provider_registry.get_vision_provider()
     ocr_provider = provider_registry.get_ocr_provider()
+    identity_ocr_provider = provider_registry.get_identity_ocr_provider()
     caption_service = CaptionService(settings, vision_provider, text_provider, ocr_provider=ocr_provider)
     llm_service = LLMService(settings, text_provider)
     script_pipeline = ScriptPipeline(provider_registry, caption_service, llm_service)
-    job_queue = JobQueue(script_pipeline)
-    gemini_script_service = GeminiScriptService(settings)
+    gemini_request_gate = GeminiRequestGate(
+        max_concurrent_requests=settings.gemini_max_concurrent_requests,
+        min_request_interval_ms=settings.gemini_min_request_interval_ms,
+        cooldown_on_429_ms=settings.gemini_cooldown_on_429_ms,
+    )
+    gemini_script_service = GeminiScriptService(
+        settings,
+        identity_ocr_provider=identity_ocr_provider,
+        gemini_request_gate=gemini_request_gate,
+    )
+    job_queue = JobQueue(gemini_script_service)
     return {
         "provider_registry": provider_registry,
         "caption_service": caption_service,
         "job_queue": job_queue,
         "gemini_script_service": gemini_script_service,
+        "gemini_request_gate": gemini_request_gate,
     }
 
 

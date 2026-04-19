@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 import logging
@@ -27,9 +27,9 @@ from app.utils.json_retry import (
 
 logger = logging.getLogger(__name__)
 
-VI_INSET_PREFIX = "Khung phụ: "
+VI_INSET_PREFIX = "Khung phá»¥: "
 EN_INSET_PREFIX = "Inset: "
-VI_GENERIC_FIGURE = "hình thể mơ hồ"
+VI_GENERIC_FIGURE = "hÃ¬nh thá»ƒ mÆ¡ há»“"
 EN_GENERIC_FIGURE = "unclear figure"
 SUPERNATURAL_TERMS = (
     "ghost",
@@ -38,9 +38,9 @@ SUPERNATURAL_TERMS = (
     "demon",
     "apparition",
     "ma",
-    "quỷ",
-    "yêu quái",
-    "linh hồn",
+    "quá»·",
+    "yÃªu quÃ¡i",
+    "linh há»“n",
 )
 
 
@@ -309,7 +309,6 @@ class CaptionService:
             inset_event=raw.inset_event.strip(),
             visible_objects=self._clean_list(raw.visible_objects),
             visible_text=self._clean_list(raw.visible_text),
-            sfx_guess=self._clean_list(raw.sfx_guess),
             scene_tone=raw.scene_tone.strip(),
         )
 
@@ -329,7 +328,6 @@ class CaptionService:
         visible_objects = self._clean_list(visible_objects)
         visible_text = self._merge_visible_text(vision.visible_text, ocr)
         dialogue = self._build_dialogue(ocr, correction_tags)
-        sfx = self._build_sfx(vision.sfx_guess, ocr, correction_tags)
         summary = self._build_summary(context.language, main_event, inset_event)
         action = self._build_action(context.language, main_event, inset_event)
         if inset_event:
@@ -338,8 +336,8 @@ class CaptionService:
         if not summary:
             summary = f"Panel {panel.orderIndex + 1} summary unavailable"
         scene_tone = vision.scene_tone.strip()
-        emotion = scene_tone or ("Căng thẳng" if context.language == "vi" else "tense")
-        narrative_hook = self._build_narrative_hook(context.language, action, sfx, dialogue)
+        emotion = scene_tone or ("CÄƒng tháº³ng" if context.language == "vi" else "tense")
+        narrative_hook = self._build_narrative_hook(context.language, action, dialogue)
 
         understanding = PanelUnderstanding(
             panelId=panel.panelId,
@@ -353,7 +351,6 @@ class CaptionService:
             action=action or main_event,
             emotion=emotion,
             dialogue=dialogue,
-            sfx=sfx,
             cliffhanger=narrative_hook,
             narrative_hook=narrative_hook,
         )
@@ -376,14 +373,6 @@ class CaptionService:
             correction_tags.append("dialogue_grounded")
         return " ".join(dialogue_lines).strip()
 
-    def _build_sfx(self, sfx_guess: list[str], ocr: OCRResult, correction_tags: list[str]) -> list[str]:
-        sfx = [line.text for line in ocr.lines if line.role == "sfx"]
-        if sfx:
-            correction_tags.append("sfx_grounded")
-        else:
-            sfx.extend(sfx_guess)
-        return self._clean_list(sfx)
-
     def _build_summary(self, language: str, main_event: str, inset_event: str) -> str:
         if not main_event and not inset_event:
             return ""
@@ -394,20 +383,16 @@ class CaptionService:
 
     def _build_action(self, language: str, main_event: str, inset_event: str) -> str:
         if main_event and inset_event:
-            connector = " Đồng thời, " if language == "vi" else " Meanwhile, "
+            connector = " Äá»“ng thá»i, " if language == "vi" else " Meanwhile, "
             return f"{main_event}{connector}{inset_event}".strip()
         return main_event or inset_event
 
-    def _build_narrative_hook(self, language: str, action: str, sfx: list[str], dialogue: str) -> str:
+    def _build_narrative_hook(self, language: str, action: str, dialogue: str) -> str:
         if action:
             return action
         if dialogue:
             return dialogue
-        if sfx:
-            if language == "vi":
-                return f"Âm thanh {sfx[0]} báo hiệu biến động đang đến gần."
-            return f"The {sfx[0]} sound signals immediate danger."
-        return "Tension keeps rising." if language != "vi" else "Căng thẳng vẫn tiếp tục dâng lên."
+        return "Tension keeps rising." if language != "vi" else "Cang thang van tiep tuc dang len."
 
     def _sanitize_text(self, value: str, language: str, correction_tags: list[str]) -> str:
         sanitized = value.strip()
@@ -485,7 +470,7 @@ Panels in this batch:
 Rules:
 - Return exactly one item per image in the same order.
 - Return one top-level JSON object with an `items` array.
-- Each item must include these keys: panel_index, main_event, inset_event, visible_objects, visible_text, sfx_guess, scene_tone.
+- Each item must include these keys: panel_index, main_event, inset_event, visible_objects, visible_text scene_tone.
 - panel_index must match the panel order in this batch starting from {first_panel}.
 - Describe only what is directly visible in each panel.
 - Do not infer ghost, monster, identity, or story meaning unless it is clearly visible.
@@ -494,9 +479,9 @@ Rules:
 - visible_objects should list only the most important visible objects or scene elements.
 - visible_text should list readable or partly readable on-panel text exactly as seen.
 - If text is stylized, partly obscured, or unreadable, keep it in visible_text as unreadable text.
-- sfx_guess should contain short sound-effect guesses only when the panel strongly suggests them visually.
 - scene_tone should describe visual tension or atmosphere in 2 to 5 words.
 - Keep every field short, concrete, and grounded.
 - All natural-language field values must be written in {language_label}.
 - Return JSON only.
 """.strip()
+

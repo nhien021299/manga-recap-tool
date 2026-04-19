@@ -71,7 +71,7 @@ export function StepUpload() {
     setPanelUnderstandingMeta({ panelSignature: "", rawOutput: "" });
     setStoryMemories([]);
     setTimeline([]);
-    setScriptMeta({ status: "idle", sourceUnits: [], rawOutput: "", pipeline: "backend-gemini" });
+    setScriptMeta({ status: "idle", sourceUnits: [], rawOutput: "", pipeline: "backend-gemini-unified" });
   };
 
   const buildPanelsFromFiles = async (panelFiles: File[]): Promise<Panel[]> => {

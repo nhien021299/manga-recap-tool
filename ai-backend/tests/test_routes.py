@@ -1,7 +1,13 @@
+import json
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
-from app.core.config import get_settings
-from app.main import app
+from app.core.config import Settings, get_settings
+from app.deps import get_app_settings, get_gemini_script_service
+from app.main import app, build_services
+from app.models.api import ScriptJobResult
+from app.models.domain import Metrics, RawOutputs
 
 
 def test_healthcheck():
@@ -28,3 +34,101 @@ def test_providers_route_includes_ocr_fields(monkeypatch):
             assert payload["ocrProvider"] == "rapidocr"
     finally:
         get_settings.cache_clear()
+
+
+class DummyGeminiService:
+    def __init__(self, result: ScriptJobResult | None = None, error: Exception | None = None) -> None:
+        self.result = result
+        self.error = error
+
+    async def generate_script(self, **_kwargs):
+        if self.error is not None:
+            raise self.error
+        assert self.result is not None
+        return self.result
+
+
+def build_route_settings(tmp_path: Path) -> Settings:
+    return Settings(_env_file=None).model_copy(
+        update={
+            "temp_root_raw": str(tmp_path / ".temp" / "jobs"),
+            "gemini_api_key": "test-key",
+        }
+    )
+
+
+def test_script_generate_route_returns_metrics_and_result(tmp_path: Path):
+    settings = build_route_settings(tmp_path)
+    result = ScriptJobResult(
+        understandings=[],
+        generatedItems=[],
+        storyMemories=[],
+        panelSignature="sig",
+        rawOutputs=RawOutputs(script="[]"),
+        metrics=Metrics(
+            panelCount=1,
+            totalMs=100,
+            captionMs=0,
+            scriptMs=100,
+            batchSizeUsed=4,
+            retryCount=1,
+            rateLimitedCount=0,
+            throttleWaitMs=750,
+            identityOcrMs=0,
+            identityConfirmedCount=0,
+        ),
+    )
+    app.dependency_overrides[get_app_settings] = lambda: settings
+    app.dependency_overrides[get_gemini_script_service] = lambda: DummyGeminiService(result=result)
+
+    try:
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/v1/script/generate",
+                data={
+                    "context": json.dumps({"language": "vi"}),
+                    "panels": json.dumps([{"panelId": "p1", "orderIndex": 0}]),
+                    "options": json.dumps({"returnRawOutputs": True}),
+                },
+                files=[("files", ("panel-1.png", b"fake-image-bytes", "image/png"))],
+            )
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["error"] is None
+        assert payload["result"]["metrics"]["batchSizeUsed"] == 4
+        assert payload["result"]["metrics"]["retryCount"] == 1
+        assert payload["result"]["metrics"]["throttleWaitMs"] == 750
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_script_generate_route_returns_error_body_with_logs(tmp_path: Path):
+    settings = build_route_settings(tmp_path)
+    app.dependency_overrides[get_app_settings] = lambda: settings
+    app.dependency_overrides[get_gemini_script_service] = lambda: DummyGeminiService(error=RuntimeError("boom"))
+
+    try:
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/v1/script/generate",
+                data={
+                    "context": json.dumps({"language": "vi"}),
+                    "panels": json.dumps([{"panelId": "p1", "orderIndex": 0}]),
+                },
+                files=[("files", ("panel-1.png", b"fake-image-bytes", "image/png"))],
+            )
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["result"] is None
+        assert payload["error"] == "boom"
+        assert any(log["type"] == "error" for log in payload["logs"])
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_build_services_shares_gate_between_sync_and_queue():
+    settings = Settings(_env_file=None).model_copy(update={"gemini_api_key": "test-key"})
+    services = build_services(settings)
+
+    assert services["job_queue"].script_pipeline is services["gemini_script_service"]
+    assert services["gemini_script_service"].gemini_request_gate is services["gemini_request_gate"]

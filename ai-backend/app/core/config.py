@@ -19,23 +19,9 @@ def _normalize_secret(value: str | None) -> str:
     return trimmed
 
 
-def _read_env_value(path: Path, key: str) -> str:
-    if not path.exists():
-        return ""
-
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        current_key, value = line.split("=", 1)
-        if current_key.strip() == key:
-            return _normalize_secret(value)
-    return ""
-
-
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(Path(__file__).resolve().parents[2] / ".env"),
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -43,10 +29,34 @@ class Settings(BaseSettings):
     host: str = Field(default="127.0.0.1", alias="AI_BACKEND_HOST")
     port: int = Field(default=8000, alias="AI_BACKEND_PORT")
     api_prefix: str = "/api/v1"
-    cors_origins_raw: str = Field(default="http://localhost:5173", alias="AI_BACKEND_CORS_ORIGINS")
+    cors_origins_raw: str = Field(
+        default="http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173",
+        alias="AI_BACKEND_CORS_ORIGINS",
+    )
     temp_root_raw: str = Field(default=".temp/jobs", alias="AI_BACKEND_TEMP_ROOT")
     gemini_api_key: str = Field(default="", alias="AI_BACKEND_GEMINI_API_KEY")
     gemini_model: str = Field(default="gemini-2.5-flash", alias="AI_BACKEND_GEMINI_MODEL")
+    gemini_api_endpoint: str | None = Field(default=None, alias="AI_BACKEND_GEMINI_API_ENDPOINT")
+    gemini_script_batch_size: int = Field(default=4, alias="AI_BACKEND_GEMINI_SCRIPT_BATCH_SIZE")
+    gemini_identity_experiment_enabled: bool = Field(
+        default=False,
+        alias="AI_BACKEND_GEMINI_IDENTITY_EXPERIMENT_ENABLED",
+    )
+    gemini_identity_ocr_provider: str = Field(default="rapidocr", alias="AI_BACKEND_GEMINI_IDENTITY_OCR_PROVIDER")
+    gemini_identity_ocr_min_confidence: float = Field(
+        default=0.70,
+        alias="AI_BACKEND_GEMINI_IDENTITY_OCR_MIN_CONFIDENCE",
+    )
+    gemini_identity_ocr_max_text_lines: int = Field(
+        default=8,
+        alias="AI_BACKEND_GEMINI_IDENTITY_OCR_MAX_TEXT_LINES",
+    )
+    gemini_max_concurrent_requests: int = Field(default=1, alias="AI_BACKEND_GEMINI_MAX_CONCURRENT_REQUESTS")
+    gemini_min_request_interval_ms: int = Field(default=750, alias="AI_BACKEND_GEMINI_MIN_REQUEST_INTERVAL_MS")
+    gemini_retry_attempts: int = Field(default=4, alias="AI_BACKEND_GEMINI_RETRY_ATTEMPTS")
+    gemini_retry_base_delay_ms: int = Field(default=2000, alias="AI_BACKEND_GEMINI_RETRY_BASE_DELAY_MS")
+    gemini_retry_max_delay_ms: int = Field(default=15000, alias="AI_BACKEND_GEMINI_RETRY_MAX_DELAY_MS")
+    gemini_cooldown_on_429_ms: int = Field(default=20000, alias="AI_BACKEND_GEMINI_COOLDOWN_ON_429_MS")
     text_provider: str = Field(default="ollama", alias="AI_BACKEND_TEXT_PROVIDER")
     text_model: str = Field(default="gemma3", alias="AI_BACKEND_TEXT_MODEL")
     text_base_url: str = Field(default="http://localhost:11434", alias="AI_BACKEND_TEXT_BASE_URL")
@@ -56,8 +66,8 @@ class Settings(BaseSettings):
     vision_timeout_seconds: int = Field(default=120, alias="AI_BACKEND_VISION_TIMEOUT_SECONDS")
     vision_timeout_retries: int = Field(default=2, alias="AI_BACKEND_VISION_TIMEOUT_RETRIES")
     vision_retry_delay_seconds: int = Field(default=5, alias="AI_BACKEND_VISION_RETRY_DELAY_SECONDS")
-    vision_max_width: int = Field(default=768, alias="AI_BACKEND_VISION_MAX_WIDTH")
-    vision_max_height: int = Field(default=1536, alias="AI_BACKEND_VISION_MAX_HEIGHT")
+    vision_max_width: int = Field(default=512, alias="AI_BACKEND_VISION_MAX_WIDTH")
+    vision_max_height: int = Field(default=1024, alias="AI_BACKEND_VISION_MAX_HEIGHT")
     ocr_enabled: bool = Field(default=False, alias="AI_BACKEND_OCR_ENABLED")
     ocr_provider: str = Field(default="rapidocr", alias="AI_BACKEND_OCR_PROVIDER")
     ocr_min_confidence: float = Field(default=0.55, alias="AI_BACKEND_OCR_MIN_CONFIDENCE")
@@ -85,13 +95,7 @@ class Settings(BaseSettings):
 
     @property
     def effective_gemini_api_key(self) -> str:
-        direct_value = _normalize_secret(self.gemini_api_key)
-        if direct_value:
-            return direct_value
-
-        repo_root = Path(__file__).resolve().parents[3]
-        web_app_env = repo_root / "web-app" / ".env"
-        return _read_env_value(web_app_env, "VITE_GEMINI_API_KEY")
+        return _normalize_secret(self.gemini_api_key)
 
 
 @lru_cache(maxsize=1)

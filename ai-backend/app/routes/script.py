@@ -31,7 +31,7 @@ async def generate_script(
     if not settings.effective_gemini_api_key:
         raise HTTPException(
             status_code=500,
-            detail="Gemini API key is not configured on the backend. Set AI_BACKEND_GEMINI_API_KEY or keep VITE_GEMINI_API_KEY in web-app/.env.",
+            detail="Gemini API key is not configured on the backend. Set AI_BACKEND_GEMINI_API_KEY in ai-backend/.env.",
         )
 
     request_id = f"gemini-{uuid.uuid4()}"
@@ -60,11 +60,10 @@ async def generate_script(
         )
         add_log("result", "Gemini backend generation completed")
         return ScriptGenerationResponse(result=result, logs=logs)
-    except HTTPException:
-        raise
     except Exception as exc:
         add_log("error", "Gemini backend generation failed", str(exc))
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        # We return 200 but include the error in the body so FE can see all accumulated logs
+        return ScriptGenerationResponse(result=None, logs=logs, error=str(exc))
     finally:
         cleanup_temp_dir(temp_dir)
 

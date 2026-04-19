@@ -36,9 +36,9 @@ export function ScriptLogs() {
             <Terminal className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <h3 className="text-sm font-black uppercase tracking-widest text-white">Backend Gemini Log</h3>
+            <h3 className="text-sm font-black uppercase tracking-widest text-white">XỬ LÝ KỊCH BẢN AI</h3>
             <p className="mt-0.5 text-xs text-white/50">
-              Stage 1 builds panel understanding. Stage 2 writes narration on the backend.
+              Phân tích hình ảnh và sáng tạo kịch bản lồng tiếng chuyên sâu.
             </p>
           </div>
         </div>

@@ -138,29 +138,96 @@ Smoke test result summary:
 Fixed during validation:
 - missing Python imaging dependency in runtime environment until backend deps were installed
 - raw `httpx` request logging exposed full Gemini URL including query-string key
-- backend initially had no retry path for transient Gemini `503`
+    - backend initially had no retry path for transient Gemini `503`
+
+## Checkpoint: Translation & Automated Benchmarking (2026-04-16)
+
+- Completed full English -> Vietnamese translation for Gemini script generation prompts (`_build_understanding_prompt`, `_build_narration_prompt`, `_build_narration_context_summary`).
+- Updated `app.models.domain.Metrics` to track and return `totalPromptTokens`, `totalCandidatesTokens`, and `totalTokens` usage straight from the API.
+- Implemented `test_score.py` within `ai-backend` for localized batch testing of chapter directories (e.g. `D:\Manhwa Recap\Tâm Ma\test 2`). This script fully runs the backend `GeminiScriptService`, captures latency & token metrics, and then executes an **automated Gemini benchmark** (scoring narrative tension, continuity, and overall score out of 10), and writes to `result.json`.
+- *Note:* Live verification executed on proxy `http://127.0.0.1:8045` with the script yielded an `HTTP 429: Resource Exhausted` error. You can run the final test directly from the backend by calling `python test_score.py` whenever the proxy quota resets!
+
+## Checkpoint: Async Pipeline, UI Dashboards & Optimization (2026-04-17)
+
+- **Async Job Architecture:** Migrated AI script generation pipeline to an asynchronous job-based architecture. Implemented real-time log streaming via job polling.
+- **Vision Pipeline Optimization:** Unified the vision-to-narration flow to reduce latency and token usage. Optimized panel image resolution to `512px` to resolve proxy constraints. Refined prompts for strict character identification.
+- **Frontend UI & Observability:** Finalized the high-fidelity backend progress dashboard. Added OCR extraction logs to UI, fixed container layouts, and implemented collapsible raw data output sections with copy functionality. Restructured the "Panel Understanding" layout.
+- **GPU Setup & Benchmarking:** Fixed AMD GPU compute offload (ROCm/Vulkan, `llama.cpp` fallback), added thermal safety cooldowns. Ran multi-model local benchmarks (`qwen3-vl:4b`, `qwen2.5vl:7b`, `gemma3`) for the vision-OCR pipeline.
+- **Stability:** Executed a comprehensive project cache and temporary file cleanup across both `web-app` and `ai-backend`.
+
+## Checkpoint: Minimal Character-Aware Prompt System (2026-04-17)
+
+### Product direction
+
+- Replaced the heavier character-system direction with a speed-first minimal layer for direct image-to-script generation.
+- Character handling now exists only to support naming continuity and uncertainty control inside the final narration prompt.
+- `mangaName` and `mainCharacter` are no longer required inputs for Step Script.
+
+### Backend implementation
+
+- Refactored [ai-backend/app/services/gemini_script_service.py](./ai-backend/app/services/gemini_script_service.py) around a compact direct-generation prompt.
+- Added tiny memory shape in [ai-backend/app/models/domain.py](./ai-backend/app/models/domain.py):
+  - `StoryMemory.summary`
+  - `StoryMemory.recentNames`
+- Added lightweight character hint selection:
+  - inject at most 2 names
+  - prefer names from `recentNames` and manual `mainCharacter`
+  - fall back to neutral labels when identity is uncertain
+- Added compact story-memory generation:
+  - one short continuity summary per batch
+  - keep at most 3 recent names
+- Reduced default Gemini script batch size to `4` via `AI_BACKEND_GEMINI_SCRIPT_BATCH_SIZE` in [ai-backend/app/core/config.py](./ai-backend/app/core/config.py).
+
+### Frontend implementation
+
+- Updated [web-app/src/shared/types/index.ts](./web-app/src/shared/types/index.ts) so script context fields can stay optional.
+- Updated [web-app/src/features/script/api/scriptApi.ts](./web-app/src/features/script/api/scriptApi.ts) to send only non-empty context fields.
+- Updated [web-app/src/features/script/hooks/useScriptJob.ts](./web-app/src/features/script/hooks/useScriptJob.ts) so script generation no longer blocks on missing manga title or main-character hint.
+- Updated [web-app/src/features/script/components/StepScript.tsx](./web-app/src/features/script/components/StepScript.tsx):
+  - both context inputs are now marked optional
+  - UI explains neutral fallback naming behavior
+  - story memory UI shows recent injected names
+
+### Validation
+
+Completed on `2026-04-17`:
+- `python -m pytest tests/test_gemini_script_service.py`
+- `python -m compileall app tests/test_gemini_script_service.py`
+- `npm --prefix web-app run build`
+
+Added regression coverage in [ai-backend/tests/test_gemini_script_service.py](./ai-backend/tests/test_gemini_script_service.py):
+- optional `ScriptContext` defaults
+- compact prompt composition
+- tiny memory + recent-name extraction
+
+### Outcome
+
+- Prompt is shorter and less rigid than the prior forced-name design.
+- Naming is now optional and guarded by uncertainty rules.
+- Continuity survives across adjacent batches without re-feeding large prior context.
+- FE and BE contract now supports script generation even when title or character hints are missing.
 
 ## Milestone Status
 
 | Milestone | Status | Notes |
 | --- | --- | --- |
-| M0 Architecture | Done for current direction | FE-BE structure restored and active Step Script flow is backend Gemini |
-| M1 Extract | Largely done | Browser-side upload/extract remains active |
-| M2 Script | Done for backend Gemini baseline | FE calls BE, BE calls Gemini, store hydration is working |
-| M3 Voice | Partial | ElevenLabs flow stays frontend-side |
-| M4 Timeline | Not started | Only base timeline editing exists |
-| M5 Render | Not started | Browser render/export still pending |
+| M0 Architecture | Done | FE-BE structure restored. |
+| M1 Extract | Done | Browser-side upload/extract is working perfectly. |
+| M2 Script | Done | Backend Gemini baseline updated with async polling, token metrics, and the minimal character-aware prompt system. |
+| M3 Voice | In Progress | Voice generation UI in FE, utilizing ElevenLabs. |
+| M4 Timeline | In Progress | Separating MC narration from raw OCR; base timeline editor in active development. |
+| M5 Render | Not started | Browser render/export pending. |
 
 ## Open Risks
 
-- Chapter-scale validation is still pending on real workloads such as `10` and `52` panels
-- Backend repo still contains legacy local-AI code paths that are not part of the active product flow
-- `POST /api/v1/script/generate` is currently synchronous and cannot be cancelled mid-request
-- Gemini prompt quality has only been smoke-tested, not yet tuned on production-like chapters
+- Local GPU setup (AMD stack) may require constant observation for compatibility when updating `llama.cpp` or Ollama.
+- Large volume chapters using the concurrent async queue might still trigger `429 Quota Exhausted` on free Gemini proxy; need to ensure job retry/backoff handles this gracefully.
+- Character hint selection currently uses lightweight continuity heuristics only; OCR-backed identity confirmation has not been folded into the active Gemini Step Script path yet.
 
 ## Next Actions
 
-1. Run end-to-end validation on a real extracted chapter workload from the UI.
-2. Prefer moving the Gemini key permanently into `ai-backend/.env` and stop depending on `web-app/.env` fallback.
-3. Decide whether to keep or archive the legacy local-AI backend modules.
-4. If long chapter latency becomes a UX problem, add async job orchestration for the backend Gemini route without reintroducing local model runtime.
+1. Extend character hint selection with stronger identity signals such as OCR dialogue or panel metadata without regressing prompt size.
+2. Tune `AI_BACKEND_GEMINI_SCRIPT_BATCH_SIZE` with real chapter runs and lock the fastest stable production default.
+3. Complete the M4 Timeline feature: fully integrate narrator/persona editing and finalize timeline UX for YouTube-style recap creation.
+4. Advance M3 Voice integration logic against the new compact script output.
+5. Keep monitoring proxy quota exhaustion behaviour and refine API request throttling if needed.

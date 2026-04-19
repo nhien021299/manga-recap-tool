@@ -12,20 +12,40 @@ const parseResponseError = async (response: Response): Promise<string> => {
   return text || `HTTP ${response.status}`;
 };
 
+const parseFetchError = (error: unknown, apiBaseUrl: string): Error => {
+  if (error instanceof Error && error.name === "AbortError") {
+    return error;
+  }
+  if (error instanceof TypeError) {
+    return new Error(
+      `Cannot reach backend at ${normalizeBaseUrl(
+        apiBaseUrl
+      )}. Check that the backend is running and that CORS allows this web origin.`
+    );
+  }
+  return error instanceof Error ? error : new Error("Unknown network error.");
+};
+
 const buildFormData = (
   panels: Panel[],
   context: ScriptContext,
   options?: { reuseCache?: boolean; returnRawOutputs?: boolean }
 ) => {
   const formData = new FormData();
+  const payload: Record<string, string> = {
+    language: context.language === "en" ? "en" : "vi",
+  };
+  const mangaName = context.mangaName?.trim();
+  const mainCharacter = context.mainCharacter?.trim();
+  const summary = context.summary?.trim();
+
+  if (mangaName) payload.mangaName = mangaName;
+  if (mainCharacter) payload.mainCharacter = mainCharacter;
+  if (summary) payload.summary = summary;
+
   formData.append(
     "context",
-    JSON.stringify({
-      mangaName: context.mangaName,
-      mainCharacter: context.mainCharacter,
-      summary: context.summary || "",
-      language: context.language === "en" ? "en" : "vi",
-    })
+    JSON.stringify(payload)
   );
   formData.append(
     "panels",
@@ -49,20 +69,23 @@ const buildFormData = (
   return formData;
 };
 
-export async function generateScriptViaBackend(
+export async function submitScriptGeneration(
   apiBaseUrl: string,
   panels: Panel[],
   context: ScriptContext,
   options?: { reuseCache?: boolean; returnRawOutputs?: boolean }
-): Promise<ScriptGenerationResponse> {
-  const response = await fetch(`${normalizeBaseUrl(apiBaseUrl)}/api/v1/script/generate`, {
-    method: "POST",
-    body: buildFormData(panels, context, options),
-  });
+) : Promise<ScriptGenerationResponse> {
+  try {
+    const response = await fetch(`${normalizeBaseUrl(apiBaseUrl)}/api/v1/script/generate`, {
+      method: "POST",
+      body: buildFormData(panels, context, options),
+    });
 
-  if (!response.ok) {
-    throw new Error(await parseResponseError(response));
+    if (!response.ok) {
+      throw new Error(await parseResponseError(response));
+    }
+    return response.json();
+  } catch (error) {
+    throw parseFetchError(error, apiBaseUrl);
   }
-
-  return response.json();
 }

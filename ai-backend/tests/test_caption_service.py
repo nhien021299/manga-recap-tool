@@ -19,7 +19,15 @@ class FakeVisionProvider:
     def __init__(self, payload: dict) -> None:
         self.payload = payload
 
-    async def generate_structured(self, prompt: str, *, image_paths: list[Path], schema: dict | None = None, system: str | None = None, max_tokens: int = 1024) -> str:
+    async def generate_structured(
+        self,
+        prompt: str,
+        *,
+        image_paths: list[Path],
+        schema: dict | None = None,
+        system: str | None = None,
+        max_tokens: int = 1024,
+    ) -> str:
         assert "panel_index" in prompt
         assert image_paths
         assert schema is not None
@@ -52,7 +60,7 @@ def test_caption_prompt_emphasizes_visual_grounding_and_panel_index():
     assert "Describe only what is directly visible in each panel." in prompt
     assert "panel_index" in prompt
     assert "main_event and inset_event" in prompt
-    assert "sfx_guess" in prompt
+    assert "visible_text" in prompt
 
 
 def test_rapidocr_provider_filters_lines_and_classifies_roles():
@@ -82,7 +90,6 @@ def test_merge_panel_prefers_ocr_grounding():
         inset_event="Một chiếc giỏ bị lật đổ.",
         visible_objects=["tia sáng", "mái nhà", "giỏ"],
         visible_text=[],
-        sfx_guess=["unreadable sfx"],
         scene_tone="căng thẳng, đột ngột",
     )
     ocr = OCRResult(
@@ -104,10 +111,9 @@ def test_merge_panel_prefers_ocr_grounding():
     )
 
     assert understanding.dialogue == "Chạy mau"
-    assert understanding.sfx == ["ẦM"]
+    assert understanding.visible_text == ["ẦM", "Chạy mau"]
     assert "inset_recovered" in diagnostics.correction_tags
     assert "dialogue_grounded" in diagnostics.correction_tags
-    assert "sfx_grounded" in diagnostics.correction_tags
 
 
 @pytest.mark.asyncio
@@ -125,7 +131,6 @@ async def test_generate_understandings_vision_only_metrics(tmp_path: Path):
                         "inset_event": "",
                         "visible_objects": ["người đàn ông", "thanh kiếm"],
                         "visible_text": [],
-                        "sfx_guess": [],
                         "scene_tone": "căng thẳng",
                     }
                 ]
@@ -173,7 +178,6 @@ async def test_generate_understandings_vision_ocr_metrics(tmp_path: Path):
                         "inset_event": "",
                         "visible_objects": ["lightning", "roof"],
                         "visible_text": [],
-                        "sfx_guess": ["thunder crash"],
                         "scene_tone": "violent, tense",
                     }
                 ]
@@ -194,7 +198,7 @@ async def test_generate_understandings_vision_ocr_metrics(tmp_path: Path):
     assert result.caption_source == "vision_ocr"
     assert result.ocr_ms >= 0
     assert result.understandings[0].dialogue == "We move"
-    assert result.understandings[0].sfx == ["BOOM"]
+    assert result.understandings[0].visible_text == ["BOOM", "We move"]
 
 
 def test_script_pipeline_signature_changes_with_ocr_settings(tmp_path: Path):
@@ -211,7 +215,13 @@ def test_script_pipeline_signature_changes_with_ocr_settings(tmp_path: Path):
     job = type("Job", (), {"request": request, "file_paths": [file_path]})()
     pipeline = ScriptPipeline(provider_registry=None, caption_service=None, llm_service=None)
 
-    sig_a = pipeline._build_panel_signature(job, {"visionModel": "qwen2.5vl:7b", "ocrEnabled": False, "ocrProvider": "disabled"})
-    sig_b = pipeline._build_panel_signature(job, {"visionModel": "qwen2.5vl:7b", "ocrEnabled": True, "ocrProvider": "rapidocr"})
+    sig_a = pipeline._build_panel_signature(
+        job,
+        {"visionModel": "qwen2.5vl:7b", "ocrEnabled": False, "ocrProvider": "disabled"},
+    )
+    sig_b = pipeline._build_panel_signature(
+        job,
+        {"visionModel": "qwen2.5vl:7b", "ocrEnabled": True, "ocrProvider": "rapidocr"},
+    )
 
     assert sig_a != sig_b

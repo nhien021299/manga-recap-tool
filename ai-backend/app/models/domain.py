@@ -2,8 +2,8 @@ from pydantic import BaseModel, Field
 
 
 class ScriptContext(BaseModel):
-    mangaName: str
-    mainCharacter: str
+    mangaName: str = ""
+    mainCharacter: str = ""
     summary: str = ""
     language: str = "vi"
 
@@ -34,7 +34,6 @@ class VisionCaptionRaw(BaseModel):
     inset_event: str = ""
     visible_objects: list[str] = Field(default_factory=list)
     visible_text: list[str] = Field(default_factory=list)
-    sfx_guess: list[str] = Field(default_factory=list)
     scene_tone: str = ""
 
 
@@ -57,21 +56,19 @@ class PanelUnderstanding(BaseModel):
     action: str = ""
     emotion: str = ""
     dialogue: str = ""
-    sfx: list[str] = Field(default_factory=list)
     cliffhanger: str = ""
     narrative_hook: str = ""
 
 
 class ScriptItem(BaseModel):
     panel_index: int
-    ai_view: str
     voiceover_text: str
-    sfx: list[str] = Field(default_factory=list)
 
 
 class StoryMemory(BaseModel):
     chunkIndex: int
     summary: str
+    recentNames: list[str] = Field(default_factory=list)
 
 
 class CaptionDraft(BaseModel):
@@ -85,7 +82,6 @@ class CaptionDraft(BaseModel):
     action: str = ""
     emotion: str = ""
     dialogue: str = ""
-    sfx: list[str] = Field(default_factory=list)
     cliffhanger: str = ""
     narrative_hook: str = ""
 
@@ -100,9 +96,7 @@ class VisionCaptionBatchOutput(BaseModel):
 
 class ScriptDraft(BaseModel):
     panel_index: int
-    ai_view: str = ""
     voiceover_text: str = ""
-    sfx: list[str] = Field(default_factory=list)
 
 
 class ScriptChunkOutput(BaseModel):
@@ -127,3 +121,12 @@ class Metrics(BaseModel):
     scriptMs: int
     avgPanelMs: float = 0.0
     captionSource: str = "vision_only"
+    totalPromptTokens: int = 0
+    totalCandidatesTokens: int = 0
+    totalTokens: int = 0
+    batchSizeUsed: int = 0
+    retryCount: int = 0
+    rateLimitedCount: int = 0
+    throttleWaitMs: int = 0
+    identityOcrMs: int = 0
+    identityConfirmedCount: int = 0

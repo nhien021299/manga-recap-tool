@@ -1,10 +1,10 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
-import { generateScriptViaBackend } from "@/features/script/api/scriptApi";
+import { submitScriptGeneration } from "@/features/script/api/scriptApi";
 import { useRecapStore } from "@/shared/storage/useRecapStore";
 import type { Panel, ScriptItem, StoryMemory, TimelineItem } from "@/shared/types";
 
-const SCRIPT_CHUNK_SIZE = 20;
+const SCRIPT_CHUNK_SIZE = 10;
 
 const buildPanelSignature = (panels: Panel[]): string =>
   JSON.stringify(
@@ -27,9 +27,7 @@ const mergeTimelineWithExisting = (
   return panels.map((panel, index) => {
     const generated = generatedItems.find((item) => item.panel_index === index + 1) || {
       panel_index: index + 1,
-      ai_view: "No visual summary",
       voiceover_text: "Narration unavailable.",
-      sfx: [],
     };
     const existing = existingByPanelId.get(panel.id);
     const memoryForPanel = storyMemories[Math.floor(index / SCRIPT_CHUNK_SIZE)];
@@ -83,12 +81,13 @@ export function useScriptJob() {
     setCurrentStep,
     setIsLoading,
     setProgress,
-    addSFXToDictionary,
     addLog,
     replaceLogs,
   } = useRecapStore();
+
   const [error, setError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const activeRequestId = useRef(0);
 
   const log = useCallback(
     (type: "request" | "result" | "error", message: string, details?: string) => {
@@ -110,26 +109,22 @@ export function useScriptJob() {
       log("error", message);
       return;
     }
-    if (!scriptContext.mangaName || !scriptContext.mainCharacter) {
-      const message = "Please provide manga name and main character before generating script.";
-      setError(message);
-      log("error", message);
-      return;
-    }
+    const requestId = activeRequestId.current + 1;
+    activeRequestId.current = requestId;
 
     setError(null);
     setIsGenerating(true);
     setIsLoading(true);
-    setProgress(5);
+    setProgress(10);
     replaceLogs([]);
     log(
       "request",
-      `Starting backend Gemini script generation for ${panels.length} panels`,
+      `Starting Gemini script generation for ${panels.length} panels.`,
       JSON.stringify(
         {
           panelCount: panels.length,
           language: config.language,
-          apiBaseUrl: config.apiBaseUrl,
+          endpoint: "/api/v1/script/generate",
         },
         null,
         2
@@ -141,34 +136,42 @@ export function useScriptJob() {
         ...scriptContext,
         language: config.language,
       } as const;
-      const response = await generateScriptViaBackend(config.apiBaseUrl, panels, context, {
+
+      const response = await submitScriptGeneration(config.apiBaseUrl, panels, context, {
         reuseCache: true,
         returnRawOutputs: true,
       });
-      replaceLogs(response.logs);
 
-      setPanelUnderstandings(response.result.understandings);
+      if (activeRequestId.current !== requestId) {
+        return;
+      }
+
+      replaceLogs(response.logs || []);
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      const finalResult = response.result;
+      if (!finalResult) {
+        throw new Error("Backend returned no script result.");
+      }
+
+      setPanelUnderstandings(finalResult.understandings || []);
       setPanelUnderstandingMeta({
         generatedAt: new Date().toISOString(),
         panelSignature: buildPanelSignature(panels),
-        rawOutput: response.result.rawOutputs?.understanding || "",
+        rawOutput: finalResult.rawOutputs?.understanding || "",
       });
-      setProgress(60);
-      setStoryMemories(response.result.storyMemories);
+
+      setStoryMemories(finalResult.storyMemories || []);
 
       const nextTimeline = mergeTimelineWithExisting(
         panels,
-        response.result.generatedItems,
+        finalResult.generatedItems || [],
         timeline,
-        response.result.storyMemories
+        finalResult.storyMemories || []
       );
-      const allSfx = new Set<string>();
-      response.result.generatedItems.forEach((item) => {
-        (item.sfx || []).forEach((tag) => allSfx.add(tag));
-      });
-      if (allSfx.size > 0) {
-        addSFXToDictionary(Array.from(allSfx));
-      }
 
       setTimeline(nextTimeline);
       setScriptMeta({
@@ -178,26 +181,28 @@ export function useScriptJob() {
           orderIndex: index,
         })),
         generatedAt: new Date().toISOString(),
-        rawOutput: response.result.rawOutputs?.script || "",
-        pipeline: "backend-gemini",
+        rawOutput: finalResult.rawOutputs?.script || "",
+        pipeline: "backend-gemini-unified",
       });
+
       setProgress(100);
       setCurrentStep("script");
-      log(
-        "result",
-        "Backend Gemini script generation completed",
-        JSON.stringify(response.result.metrics, null, 2)
-      );
+      log("result", "Gemini script generation completed.", JSON.stringify(finalResult.metrics, null, 2));
     } catch (generationError) {
+      if (activeRequestId.current !== requestId) {
+        return;
+      }
+
       const message = generationError instanceof Error ? generationError.message : "Unknown backend Gemini error.";
       setError(message);
       log("error", "Backend Gemini script generation failed", message);
     } finally {
-      setIsGenerating(false);
-      setIsLoading(false);
+      if (activeRequestId.current === requestId) {
+        setIsGenerating(false);
+        setIsLoading(false);
+      }
     }
   }, [
-    addSFXToDictionary,
     config.apiBaseUrl,
     config.language,
     log,
@@ -215,15 +220,18 @@ export function useScriptJob() {
     timeline,
   ]);
 
-  const cancelActiveScriptJob = useCallback(() => {
-    setError("Synchronous backend Gemini generation cannot be cancelled mid-request yet.");
-  }, []);
+  const cancelActiveScriptJob = useCallback(async () => {
+    activeRequestId.current += 1;
+    setIsGenerating(false);
+    setIsLoading(false);
+    log("request", "Ignored the active script response on the frontend.");
+  }, [log, setIsLoading]);
 
   return {
     generateScript,
     cancelActiveScriptJob,
     isGenerating,
-    canCancel: false,
+    canCancel: isGenerating,
     error,
   };
 }

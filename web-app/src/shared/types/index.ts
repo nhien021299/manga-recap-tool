@@ -37,14 +37,9 @@ export interface Panel {
   rect?: { x: number; y: number; width: number; height: number };
 }
 
-export interface SFXItem {
-  file: string;
-  emoji: string;
-}
-
 export interface ScriptContext {
-  mangaName: string;
-  mainCharacter: string;
+  mangaName?: string;
+  mainCharacter?: string;
   summary?: string;
   language?: "vi" | "en";
 }
@@ -56,7 +51,6 @@ export interface PanelUnderstanding {
   action: string;
   emotion: string;
   dialogue: string;
-  sfx: string[];
   cliffhanger: string;
 }
 
@@ -70,9 +64,7 @@ export type SceneInput = PanelUnderstanding;
 
 export interface ScriptItem {
   panel_index: number;
-  ai_view: string;
   voiceover_text: string;
-  sfx: string[];
 }
 
 export interface ScriptSourceUnit {
@@ -87,11 +79,12 @@ export interface ScriptSegment {
 }
 
 export type ScriptDraftStatus = "idle" | "generated" | "edited" | "outdated";
-export type ScriptPipeline = "backend-gemini";
+export type ScriptPipeline = "backend-gemini-unified";
 
 export interface StoryMemory {
   chunkIndex: number;
   summary: string;
+  recentNames?: string[];
 }
 
 export interface ScriptMeta {
@@ -163,6 +156,7 @@ export interface ScriptJobResult {
 }
 
 export interface ScriptGenerationResponse {
-  result: ScriptJobResult;
+  result: ScriptJobResult | null;
   logs: GeminiLog[];
+  error?: string | null;
 }

@@ -1,9 +1,0 @@
-model,mode,workload,ocrProvider,panel_id,review_bucket,manual_specificity,action_clarity_manual,manual_emotion,manual_dialogue,notes
-qwen3-vl:4b,vision_only,10,disabled,scene-001.png,text-sfx-heavy,,,,,
-qwen3-vl:4b,vision_only,10,disabled,scene-002.png,text-sfx-heavy,,,,,
-qwen3-vl:4b,vision_only,10,disabled,scene-003.png,text-sfx-heavy,,,,,
-qwen3-vl:4b,vision_only,10,disabled,scene-004.png,text-sfx-heavy,,,,,
-qwen3-vl:4b,vision_only,30,disabled,scene-001.png,text-sfx-heavy,,,,,
-qwen3-vl:4b,vision_only,30,disabled,scene-002.png,text-sfx-heavy,,,,,
-qwen3-vl:4b,vision_only,30,disabled,scene-003.png,text-sfx-heavy,,,,,
-qwen3-vl:4b,vision_only,30,disabled,scene-004.png,text-sfx-heavy,,,,,

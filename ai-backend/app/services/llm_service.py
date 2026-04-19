@@ -74,9 +74,7 @@ class LLMService:
                 chunk_items.append(
                     ScriptItem(
                         panel_index=understanding.orderIndex + 1,
-                        ai_view=draft.ai_view.strip() or understanding.summary,
                         voiceover_text=draft.voiceover_text.strip(),
-                        sfx=draft.sfx or understanding.sfx,
                     )
                 )
             items.extend(chunk_items)
@@ -179,15 +177,13 @@ class LLMService:
         if context.language == "vi":
             english_markers = ("suddenly", "meanwhile", "however", "then", "dark shadow")
             for item in parsed.items:
-                text = f"{item.ai_view} {item.voiceover_text}".lower()
+                text = item.voiceover_text.lower()
                 if any(marker in text for marker in english_markers):
                     raise ValueError(f"Detected English phrasing in Vietnamese output. Raw output: {raw_output}")
 
         for item in parsed.items:
             if not item.voiceover_text.strip():
                 raise ValueError(f"Empty voiceover_text detected. Raw output: {raw_output}")
-            if not item.ai_view.strip():
-                raise ValueError(f"Empty ai_view detected. Raw output: {raw_output}")
 
     def _build_script_prompt(
         self,
@@ -210,7 +206,6 @@ class LLMService:
                         f"action: {item.action or 'N/A'}",
                         f"emotion: {item.emotion or 'N/A'}",
                         f"dialogue: {item.dialogue or 'N/A'}",
-                        f"sfx: {', '.join(item.sfx) or 'none'}",
                         f"hook: {item.narrative_hook or item.cliffhanger or 'N/A'}",
                     ]
                 )
@@ -263,8 +258,6 @@ Rules:
 - voiceover_text must feel fast, engaging, tense, and natural for one narrator reading aloud.
 - Keep sentences concise and TTS-friendly.
 - If dialogue appears in the structured input, blend it naturally into the narration. Do not present it like a dry report.
-- ai_view should describe the physical scene, action, inset detail if present, and the most important visual focus of each panel.
-- sfx should come from the structured input, with only light normalization.
 - Use only the provided structured inputs and previous story memory. Do not invent plot facts.
 - Prefer main_event, inset_event, visible_objects, visible_text, and scene_tone over dramatic interpretation.
 - Do not force the main character's name into every panel.
@@ -272,7 +265,7 @@ Rules:
 - If the acting character is unclear, describe the person generically instead of assigning the main character's name.
 - All natural-language field values must be written in {language_label}.
 - If Output language is Vietnamese, do not use English words or English connective phrases.
-- Every item must include both ai_view and voiceover_text.
+- Every item must include voiceover_text.
 - Return JSON only.
 """.strip()
 

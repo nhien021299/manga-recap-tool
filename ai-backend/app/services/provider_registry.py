@@ -43,6 +43,21 @@ class ProviderRegistry:
             prefer_sfx=self.settings.ocr_prefer_sfx,
         )
 
+    def get_identity_ocr_provider(self) -> RapidOCRProvider | PaddleOCRProvider | None:
+        if not self.settings.gemini_identity_experiment_enabled:
+            return None
+        if self.settings.gemini_identity_ocr_provider == "paddleocr":
+            return PaddleOCRProvider(
+                min_confidence=self.settings.gemini_identity_ocr_min_confidence,
+                max_text_lines=self.settings.gemini_identity_ocr_max_text_lines,
+                prefer_sfx=self.settings.ocr_prefer_sfx,
+            )
+        return RapidOCRProvider(
+            min_confidence=self.settings.gemini_identity_ocr_min_confidence,
+            max_text_lines=self.settings.gemini_identity_ocr_max_text_lines,
+            prefer_sfx=self.settings.ocr_prefer_sfx,
+        )
+
     def get_provider_info(self) -> dict[str, object]:
         return {
             "textProvider": self.settings.text_provider,

@@ -25,7 +25,6 @@ Use `.env.example` and set:
 
 ```bash
 VITE_API_BASE_URL=http://127.0.0.1:8000
-VITE_GEMINI_API_KEY=
 VITE_ELEVENLABS_API_KEY=
 VITE_TTS_VOICE_ID=pNInz6obpgmqS29pXo3W
 VITE_TTS_MODEL=eleven_multilingual_v2
@@ -33,4 +32,4 @@ VITE_TTS_MODEL=eleven_multilingual_v2
 
 Notes:
 - `VITE_API_BASE_URL` is the active frontend setting for Step Script.
-- `VITE_GEMINI_API_KEY` is only a temporary backend fallback source if `AI_BACKEND_GEMINI_API_KEY` is not set.
+- Gemini API keys must be configured on the backend via `AI_BACKEND_GEMINI_API_KEY` in `ai-backend/.env`.

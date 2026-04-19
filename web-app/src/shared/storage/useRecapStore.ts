@@ -10,7 +10,6 @@ import {
   type Panel,
   type PanelUnderstanding,
   type PanelUnderstandingMeta,
-  type SFXItem,
   type Scene,
   type ScriptContext,
   type ScriptMeta,
@@ -41,9 +40,6 @@ interface RecapState {
   addLog: (log: Omit<GeminiLog, "id" | "timestamp">) => void;
   replaceLogs: (logs: GeminiLog[]) => void;
   clearLogs: () => void;
-
-  sfxDictionary: Record<string, SFXItem>;
-  addSFXToDictionary: (sfxList: string[]) => void;
 
   virtualStrip: VirtualStripImage[];
   totalVirtualHeight: number;
@@ -117,7 +113,7 @@ const EMPTY_SCRIPT_META: ScriptMeta = {
   status: "idle",
   sourceUnits: [],
   rawOutput: "",
-  pipeline: "backend-gemini",
+  pipeline: "backend-gemini-unified",
 };
 
 const EMPTY_PANEL_UNDERSTANDING_META: PanelUnderstandingMeta = {
@@ -152,7 +148,6 @@ const normalizePanelUnderstanding = (
   action: item.action || "",
   emotion: item.emotion || "",
   dialogue: item.dialogue || "",
-  sfx: Array.isArray(item.sfx) ? item.sfx : [],
   cliffhanger: item.cliffhanger || "",
 });
 
@@ -228,23 +223,6 @@ export const useRecapStore = create<RecapState>()(
         }),
       clearLogs: () => set({ logs: [] }),
 
-      sfxDictionary: {
-        "sấm sét": { file: "thunder_01.mp3", emoji: "🌩️" },
-        "chém kiếm": { file: "sword_slash.mp3", emoji: "⚔️" },
-      },
-      addSFXToDictionary: (sfxList) =>
-        set((state) => {
-          const next = { ...state.sfxDictionary };
-          let changed = false;
-          sfxList.forEach((sfx) => {
-            const key = sfx.toLowerCase().trim();
-            if (key && !next[key]) {
-              next[key] = { file: "", emoji: "🔔" };
-              changed = true;
-            }
-          });
-          return changed ? { sfxDictionary: next } : state;
-        }),
 
       virtualStrip: [],
       totalVirtualHeight: 0,
@@ -483,7 +461,6 @@ export const useRecapStore = create<RecapState>()(
         scriptMeta: state.scriptMeta,
         scriptContext: state.scriptContext,
         logs: state.logs,
-        sfxDictionary: state.sfxDictionary,
         aspectRatio: state.aspectRatio,
       }),
     }

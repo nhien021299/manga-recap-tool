@@ -38,8 +38,9 @@ class ScriptJobResult(BaseModel):
 
 
 class ScriptGenerationResponse(BaseModel):
-    result: ScriptJobResult
+    result: ScriptJobResult | None = None
     logs: list[JobLogEntry] = Field(default_factory=list)
+    error: str | None = None
 
 
 class CreateJobResponse(BaseModel):

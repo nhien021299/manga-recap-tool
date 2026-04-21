@@ -3,37 +3,66 @@ logs
 *.log
 npm-debug.log*
 yarn-debug.log*
-yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-web-app/dist
-dist-ssr
-*.local
-
-# Editor directories and files
+# OS / Editor
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+.gemini/
 
-# Vite / React / Environment
+# Node / Frontend
+node_modules
+dist
+dist-ssr
+*.local
+.eslintcache
+
+# Python / Backend
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+build/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Models & Heavy Assets (F5-TTS, etc.)
+backend/.models/f5-onnx/**/*.onnx
+backend/.models/f5-onnx/CPU_F32/
+backend/.models/f5-onnx/GPU_CUDA_F16/
+backend/.models/f5-onnx/downloads/
+backend/.models/f5-reference/*.wav
+*.onnx
+
+# Benchmarks & Runtime output
+backend/.bench/f5-venv/
+backend/.bench/vieneu-venv/
+backend/.bench/samples/
+backend/.temp/
+web-app/public/samples/
+dia_bench.json
+generate_samples.py
+
+# Environment
 .env
 .env.*
 !.env.example
-.eslintcache
-
-# Tooling
-coverage
-.nyc_output
-
-# Temporary / OS
-thumbs.db
-.gemini/

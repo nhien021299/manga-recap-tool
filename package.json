@@ -5,7 +5,7 @@
     "web-app"
   ],
   "scripts": {
-    "dev:be": "node -e \"const path=require('path'); const {spawn}=require('child_process'); const root=path.dirname(process.env.npm_package_json); const backend=path.join(root,'ai-backend'); const args=['-m','uvicorn','app.main:app','--reload','--host','127.0.0.1','--port','8000','--app-dir',backend,'--reload-dir',backend, ...process.argv.slice(1)]; const child=spawn('python',args,{cwd:backend,stdio:'inherit'}); child.on('exit', code => process.exit(code ?? 0)); child.on('error', err => { console.error(err); process.exit(1); });\"",
+    "dev:be": "node -e \"const fs=require('fs'); const path=require('path'); const {spawn}=require('child_process'); const root=path.dirname(process.env.npm_package_json); const backend=path.join(root,'backend'); const preferredPython=path.join(backend,'.bench','vieneu-venv','Scripts','python.exe'); const pythonCommand=fs.existsSync(preferredPython)?preferredPython:'python'; const args=['-m','uvicorn','app.main:app','--reload','--host','127.0.0.1','--port','8000','--app-dir',backend,'--reload-dir',backend, ...process.argv.slice(1)]; const child=spawn(pythonCommand,args,{cwd:backend,stdio:'inherit'}); child.on('exit', code => process.exit(code ?? 0)); child.on('error', err => { console.error(err); process.exit(1); });\"",
     "dev:web": "npm --prefix web-app run dev",
     "build:web": "npm --prefix web-app run build",
     "lint:web": "npm --prefix web-app run lint"

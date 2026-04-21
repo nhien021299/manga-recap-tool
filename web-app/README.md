@@ -9,7 +9,7 @@ React + Vite editor app for the manga recap workflow.
 - Persist editor state and blobs with IndexedDB
 - Send panel files to backend for Gemini script generation
 - Hydrate returned `panelUnderstandings`, `storyMemories`, `timeline`, raw outputs, and logs
-- Keep voice generation frontend-side with ElevenLabs
+- Generate narration audio through backend `/api/v1/voice/*` routes
 
 ## Commands
 
@@ -25,11 +25,11 @@ Use `.env.example` and set:
 
 ```bash
 VITE_API_BASE_URL=http://127.0.0.1:8000
-VITE_ELEVENLABS_API_KEY=
-VITE_TTS_VOICE_ID=pNInz6obpgmqS29pXo3W
-VITE_TTS_MODEL=eleven_multilingual_v2
+VITE_TTS_PROVIDER=vieneu
+VITE_TTS_VOICE_KEY=default
 ```
 
 Notes:
 - `VITE_API_BASE_URL` is the active frontend setting for Step Script.
-- Gemini API keys must be configured on the backend via `AI_BACKEND_GEMINI_API_KEY` in `ai-backend/.env`.
+- Gemini API keys must be configured on the backend via `AI_BACKEND_GEMINI_API_KEY` in `backend/.env`.
+- Voice presets are loaded from the backend via `GET /api/v1/voice/options`.

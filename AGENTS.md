@@ -15,8 +15,8 @@ Your job:
 
 - Frontend app: `./web-app`
 - Frontend agent guide: `./web-app/WEB-AGENTS.md`
-- Backend app: `./ai-backend`
-- Backend agent guide: `./ai-backend/BACKEND-AGENTS.md`
+- Backend app: `./backend`
+- Backend agent guide: `./backend/BACKEND-AGENTS.md`
 
 Active product architecture on `2026-04-16`:
 - FE-BE structure is active
@@ -37,7 +37,7 @@ Load `./web-app/WEB-AGENTS.md` only when the prompt is mainly about:
 - design system, tokens, visual consistency
 
 ### Route To Backend Only
-Load `./ai-backend/BACKEND-AGENTS.md` only when the prompt is mainly about:
+Load `./backend/BACKEND-AGENTS.md` only when the prompt is mainly about:
 - FastAPI routes, request/response models, validation
 - Gemini backend flow, providers, model config, retries, logging
 - legacy Ollama, llama.cpp, OCR, model switching

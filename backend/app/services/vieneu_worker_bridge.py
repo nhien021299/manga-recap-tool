@@ -131,6 +131,16 @@ class VieneuTtsWorkerBridge:
                 return self._vieneu_client
 
             try:
+                try:
+                    import vieneu
+                except ImportError:
+                    import sys
+                    from pathlib import Path
+                    venv_site = Path(__file__).resolve().parents[3] / "backend" / ".bench" / "vieneu-venv" / "Lib" / "site-packages"
+                    if venv_site.exists() and str(venv_site) not in sys.path:
+                        sys.path.append(str(venv_site))
+                    import vieneu
+
                 from vieneu import Vieneu # type: ignore
                 self._vieneu_client = Vieneu()
                 try:

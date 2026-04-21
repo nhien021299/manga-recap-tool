@@ -91,5 +91,5 @@ app.include_router(script_router, prefix=prefix)
 app.include_router(voice_router, prefix=prefix)
 
 voice_samples_dir = Path(__file__).resolve().parents[2] / ".bench" / "samples"
-if voice_samples_dir.exists():
-    app.mount("/assets/voice-samples", StaticFiles(directory=str(voice_samples_dir)), name="voice-samples")
+voice_samples_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/assets/voice-samples", StaticFiles(directory=str(voice_samples_dir)), name="voice-samples")

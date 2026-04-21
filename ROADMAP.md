@@ -112,7 +112,7 @@ Diagnostics:
 | M0 Architecture | Done | FE-BE structure is stable. |
 | M1 Extract | Done | Browser-side upload/extract flow is active. |
 | M2 Script | Done | Backend Gemini route is the active product path. |
-| M3 Voice | In Progress | VieNeu is production-usable with FE preview presets. F5 runtime is wired and benchmarkable, but Vietnamese output quality is still not acceptable for production. |
+| M3 Voice | Done | Vieneu & F5 presets overhauled with authentic manga recap narration personas. F5 reference text duplication fixed. Static mount race condition resolved. Fresh samples regenerated. |
 | M4 Timeline | In Progress | Timeline editing remains in active development. |
 | M5 Render | Not started | Browser render/export is still pending. |
 

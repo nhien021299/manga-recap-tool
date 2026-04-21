@@ -576,15 +576,15 @@ export function StepExtract() {
             {displayScenes.length} scenes
           </span>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={prevStep} disabled={isExporting || isSavingExport} className="rounded-xl border-white/10 px-4 h-10 font-bold active:scale-95">
-            <ChevronLeft className="w-4 h-4 mr-1" /> Quay lại
+        <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={prevStep} disabled={isExporting || isSavingExport} className="bg-white/5 border-white/10 text-white hover:bg-white/10 px-6 font-bold">
+            <ChevronLeft className="w-4 h-4" /> Quay lại
           </Button>
-          <Button onClick={exportScenes} disabled={isExporting || isSavingExport} size="sm" className="rounded-xl bg-primary text-primary-foreground px-6 h-10 shadow-glow font-black border-none relative overflow-hidden group">
+          <Button onClick={exportScenes} disabled={isExporting || isSavingExport} className="group px-8 font-bold">
             {isExporting ? (
-              <span className="flex items-center"><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Xuất ({exportProgress}%)</span>
+              <><Loader2 className="w-4 h-4 animate-spin" /> Xuất ({exportProgress}%)</>
             ) : (
-              <span className="flex items-center">Tiếp tục<ChevronRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" /></span>
+              <>Tiếp tục<ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>
             )}
           </Button>
         </div>

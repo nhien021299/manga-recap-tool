@@ -149,7 +149,7 @@ export function StepScript() {
                   variant="outline"
                   onClick={handleSaveBenchmark}
                   disabled={isLoading}
-                  className="rounded-xl border-emerald-500/30 bg-emerald-500/10 px-6 font-bold text-emerald-100 hover:bg-emerald-500/15"
+                  className="border-emerald-500/30 bg-emerald-500/10 px-6 font-bold text-emerald-100 hover:bg-emerald-500/15"
                 >
                   <Save className="mr-2 h-4 w-4" /> Save benchmark
                 </Button>
@@ -158,7 +158,7 @@ export function StepScript() {
                 variant="outline"
                 onClick={clearScriptData}
                 disabled={isLoading}
-                className="rounded-xl border-red-500/30 bg-red-500/10 px-6 font-bold text-red-200 hover:bg-red-500/15"
+                className="border-red-500/30 bg-red-500/10 px-6 font-bold text-red-200 hover:bg-red-500/15"
               >
                 <Trash2 className="mr-2 h-4 w-4" /> Xóa script cache
               </Button>
@@ -166,18 +166,18 @@ export function StepScript() {
                 variant="outline"
                 onClick={generateScript}
                 disabled={generateDisabled}
-                className="rounded-xl border-primary/30 bg-primary/10 px-6 font-bold text-primary hover:bg-primary/15"
+                className="border-primary/30 bg-primary/10 px-6 font-bold text-primary hover:bg-primary/15"
               >
                 {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
                 Regenerate
               </Button>
             </>
           )}
-          <Button variant="outline" onClick={() => setCurrentStep(virtualStrip.length > 0 ? "extract" : "upload")} className="rounded-xl border-white/30 bg-white/10 px-6 font-bold text-white hover:bg-white/20">
-            <ChevronLeft className="mr-2 h-4 w-4" /> Quay lại
+          <Button variant="outline" onClick={() => setCurrentStep(virtualStrip.length > 0 ? "extract" : "upload")} className="bg-white/5 border-white/10 text-white hover:bg-white/10 px-6 font-bold">
+            <ChevronLeft className="w-4 h-4" /> Quay lại
           </Button>
-          <Button onClick={() => setCurrentStep("voice")} disabled={timeline.length === 0} className="rounded-xl bg-primary px-8 font-black tracking-tight text-primary-foreground shadow-glow transition-all hover:bg-primary/90 hover:scale-105 active:scale-95">
-            Tiếp tục <ChevronRight className="ml-2 h-4 w-4" />
+          <Button onClick={() => setCurrentStep("voice")} disabled={timeline.length === 0} className="group px-8 font-bold">
+            Tiếp tục <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </Button>
         </div>
       </div>

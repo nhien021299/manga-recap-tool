@@ -114,10 +114,47 @@ export interface AppConfig {
   language: "vi" | "en";
 }
 
+export type TTSProvider = string;
+
 export interface VoiceConfig {
-  elevenLabsApiKey: string;
-  ttsVoiceId: string;
-  ttsModel: string;
+  provider: TTSProvider;
+  voiceKey: string;
+  speed: number;
+}
+
+export interface VoiceOption {
+  key: string;
+  label: string;
+  provider: TTSProvider;
+  isAvailable: boolean;
+  sampleRate?: number | null;
+  speakerCount: number;
+  quality: string;
+  description: string;
+  styleTag?: string | null;
+  sampleUrl?: string | null;
+  statusMessage?: string | null;
+}
+
+export interface VoiceProviderOption {
+  id: TTSProvider;
+  label: string;
+  enabled: boolean;
+  defaultVoiceKey?: string | null;
+  statusMessage?: string | null;
+  voices: VoiceOption[];
+}
+
+export interface VoiceOptionsResponse {
+  defaultProvider: TTSProvider;
+  providers: VoiceProviderOption[];
+}
+
+export interface VoiceGenerateRequest {
+  text: string;
+  provider: TTSProvider;
+  voiceKey: string;
+  speed: number;
 }
 
 export interface BenchmarkDimensionScore {

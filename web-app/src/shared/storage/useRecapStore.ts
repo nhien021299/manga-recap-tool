@@ -89,29 +89,31 @@ interface PersistedVirtualStripState {
   images: PersistedVirtualStripImage[];
 }
 
-const normalizeSecret = (value: string | undefined | null): string => {
-  if (!value) return "";
-  const trimmed = value.trim();
-  if (!trimmed) return "";
-  if (
-    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-    (trimmed.startsWith("'") && trimmed.endsWith("'"))
-  ) {
-    return trimmed.slice(1, -1).trim();
-  }
-  return trimmed;
-};
-
 const normalizeAppConfig = (config?: Partial<AppConfig> | null): AppConfig => ({
   apiBaseUrl: (config?.apiBaseUrl || import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000").trim(),
   language: config?.language === "en" ? "en" : "vi",
 });
 
-const normalizeVoiceConfig = (config?: Partial<VoiceConfig> | null): VoiceConfig => ({
-  elevenLabsApiKey: normalizeSecret(config?.elevenLabsApiKey || import.meta.env.VITE_ELEVENLABS_API_KEY || ""),
-  ttsVoiceId: (config?.ttsVoiceId || import.meta.env.VITE_TTS_VOICE_ID || "pNInz6obpgmqS29pXo3W").trim(),
-  ttsModel: (config?.ttsModel || import.meta.env.VITE_TTS_MODEL || "eleven_multilingual_v2").trim(),
-});
+const normalizeNumber = (value: unknown, fallback: number): number => {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback;
+};
+
+const normalizeVoiceConfig = (config?: Partial<VoiceConfig> | null): VoiceConfig => {
+  return {
+    provider: (config?.provider || import.meta.env.VITE_TTS_PROVIDER || "vieneu").trim() || "vieneu",
+    voiceKey: (
+      config?.voiceKey ||
+      import.meta.env.VITE_TTS_VOICE_KEY ||
+      "default"
+    ).trim(),
+    speed: Math.max(0.8, Math.min(1.15, normalizeNumber(config?.speed, 1))),
+  };
+};
 
 const EMPTY_SCRIPT_META: ScriptMeta = {
   status: "idle",
@@ -461,7 +463,7 @@ export const useRecapStore = create<RecapState>()(
       },
     }),
     {
-      name: "manga-recap-storage-v9",
+      name: "manga-recap-storage-v10",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         config: normalizeAppConfig(state.config),

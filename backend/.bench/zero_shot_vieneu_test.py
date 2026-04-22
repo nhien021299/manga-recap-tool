@@ -49,7 +49,7 @@ def main() -> None:
 
         load_from_file(VOICES_FILE)
         voice_data = tts.get_preset_voice(VOICE_KEY)
-        audio = tts.infer(text=TEXT, voice=voice_data, temperature=1.0)
+        audio = tts.infer(text=TEXT, voice=voice_data, temperature=0.7)
         tts.save(audio, str(OUT_PATH))
     finally:
         tts.close()

@@ -19,16 +19,17 @@ export function useVoiceGeneration() {
 
   const attachAudioToTimeline = useCallback(
     async (index: number, audioBlob: Blob) => {
-      const audioUrl = URL.createObjectURL(audioBlob);
+      const tempAudioUrl = URL.createObjectURL(audioBlob);
       const duration = await new Promise<number>((resolve) => {
-        const audio = new Audio(audioUrl);
+        const audio = new Audio(tempAudioUrl);
         audio.onloadedmetadata = () => resolve(audio.duration);
       });
+      URL.revokeObjectURL(tempAudioUrl);
 
       updateTimelineItem(index, {
         audioBlob,
-        audioUrl,
         audioDuration: duration,
+        audioStatus: "ready",
       });
     },
     [updateTimelineItem]
@@ -44,6 +45,7 @@ export function useVoiceGeneration() {
         const item = timeline[index];
         if (!item.scriptItem?.voiceover_text) continue;
 
+        updateTimelineItem(index, { audioStatus: "generating" });
         const audioBlob = await generateVoiceAudio(config.apiBaseUrl, buildRequest(item.scriptItem.voiceover_text));
         await attachAudioToTimeline(index, audioBlob);
         setProgress(Math.round(((index + 1) / timeline.length) * 100));
@@ -51,11 +53,15 @@ export function useVoiceGeneration() {
       // Ngâm trạng thái 100% để user nhìn thấy một chút trước khi văng sang màn list
       await new Promise((resolve) => setTimeout(resolve, 600));
     } catch (voiceError) {
+      const failedIndex = timeline.findIndex((item) => item.audioStatus === "generating");
+      if (failedIndex >= 0) {
+        updateTimelineItem(failedIndex, { audioStatus: "error" });
+      }
       setError(voiceError instanceof Error ? voiceError.message : "Unknown voice generation error.");
     } finally {
       setIsLoading(false);
     }
-  }, [attachAudioToTimeline, buildRequest, config.apiBaseUrl, setIsLoading, setProgress, timeline]);
+  }, [attachAudioToTimeline, buildRequest, config.apiBaseUrl, setIsLoading, setProgress, timeline, updateTimelineItem]);
 
   const generateSingleVoice = useCallback(
     async (index: number) => {
@@ -64,13 +70,15 @@ export function useVoiceGeneration() {
 
       try {
         setError(null);
+        updateTimelineItem(index, { audioStatus: "generating" });
         const audioBlob = await generateVoiceAudio(config.apiBaseUrl, buildRequest(item.scriptItem.voiceover_text));
         await attachAudioToTimeline(index, audioBlob);
       } catch (voiceError) {
+        updateTimelineItem(index, { audioStatus: "error" });
         setError(voiceError instanceof Error ? voiceError.message : "Unknown voice generation error.");
       }
     },
-    [attachAudioToTimeline, buildRequest, config.apiBaseUrl, timeline]
+    [attachAudioToTimeline, buildRequest, config.apiBaseUrl, timeline, updateTimelineItem]
   );
 
   const clearAllVoices = useCallback(() => {
@@ -79,6 +87,7 @@ export function useVoiceGeneration() {
       delete clone.audioBlob;
       delete clone.audioUrl;
       delete clone.audioDuration;
+      clone.audioStatus = "missing";
       return clone;
     });
     setTimeline(newTimeline);

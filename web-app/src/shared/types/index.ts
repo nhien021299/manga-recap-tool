@@ -80,6 +80,8 @@ export interface ScriptSegment {
 
 export type ScriptDraftStatus = "idle" | "generated" | "edited" | "outdated";
 export type ScriptPipeline = "backend-gemini-unified";
+export type AudioStatus = "missing" | "ready" | "stale" | "generating" | "error";
+export type CaptionMode = "off" | "burned";
 
 export interface StoryMemory {
   chunkIndex: number;
@@ -104,9 +106,12 @@ export interface TimelineItem {
   scriptSource?: ScriptSourceUnit;
   scriptSegment?: ScriptSegment;
   scriptStatus?: "auto" | "edited";
+  enabled?: boolean;
+  holdAfterMs?: number;
   audioBlob?: Blob;
   audioDuration?: number;
   audioUrl?: string;
+  audioStatus?: AudioStatus;
 }
 
 export interface AppConfig {
@@ -155,6 +160,32 @@ export interface VoiceGenerateRequest {
   provider: TTSProvider;
   voiceKey: string;
   speed: number;
+}
+
+export interface RenderConfig {
+  captionMode: CaptionMode;
+  outputWidth: number;
+  aspectRatio: number;
+}
+
+export interface CompiledRenderClip {
+  panelId: string;
+  orderIndex: number;
+  startMs: number;
+  durationMs: number;
+  holdAfterMs: number;
+  captionText: string;
+  panel: Panel;
+  imageBlob: Blob;
+  audioBlob?: Blob;
+}
+
+export interface RenderPlan {
+  clips: CompiledRenderClip[];
+  totalDurationMs: number;
+  outputWidth: number;
+  outputHeight: number;
+  captionMode: CaptionMode;
 }
 
 export interface BenchmarkDimensionScore {

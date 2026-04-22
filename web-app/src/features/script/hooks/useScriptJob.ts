@@ -49,7 +49,14 @@ const mergeTimelineWithExisting = (
       };
     }
 
-    return {
+    const generatedText = generated.voiceover_text.trim();
+    const canReuseAudio =
+      !!existing &&
+      (existing.scriptItem.voiceover_text ?? "").trim() === generatedText &&
+      existing.audioStatus === "ready" &&
+      !!existing.audioBlob;
+
+    const nextItem: TimelineItem = {
       panelId: panel.id,
       imageBlob: panel.blob,
       scriptItem: generated,
@@ -63,7 +70,19 @@ const mergeTimelineWithExisting = (
         memorySnapshot: memoryForPanel?.summary,
       },
       scriptStatus: "auto",
+      enabled: existing?.enabled ?? true,
+      holdAfterMs: existing?.holdAfterMs ?? 250,
     };
+
+    if (canReuseAudio && existing) {
+      nextItem.audioBlob = existing.audioBlob;
+      nextItem.audioDuration = existing.audioDuration;
+      nextItem.audioStatus = "ready";
+      return nextItem;
+    }
+
+    nextItem.audioStatus = generatedText ? "missing" : "missing";
+    return nextItem;
   });
 };
 

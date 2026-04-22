@@ -105,10 +105,10 @@ self.onmessage = async (e: MessageEvent) => {
       const paddingX = Math.max(2, Math.min(12, Math.floor(contentWidth * 0.01)));
       const paddingY = Math.max(2, Math.min(10, Math.floor(contentHeight * 0.01)));
 
-      let finalX = Math.max(0, bounds.minX - paddingX);
-      let finalY = Math.max(0, bounds.minY - paddingY);
-      let finalWidth = Math.min(width - finalX, contentWidth + (paddingX * 2));
-      let finalHeight = Math.min(height - finalY, contentHeight + (paddingY * 2));
+      const finalX = Math.max(0, bounds.minX - paddingX);
+      const finalY = Math.max(0, bounds.minY - paddingY);
+      const finalWidth = Math.min(width - finalX, contentWidth + (paddingX * 2));
+      const finalHeight = Math.min(height - finalY, contentHeight + (paddingY * 2));
 
       return {
         y: finalY,

@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/app/layout/AppLayout";
 import { StepBenchmark } from "@/features/benchmark/components/StepBenchmark";
 import { StepExtract } from "@/features/extract/components/StepExtract";
+import { StepRender } from "@/features/render/components/StepRender";
 import { StepScript } from "@/features/script/components/StepScript";
 import { StepUpload } from "@/features/upload/components/StepUpload";
 import { StepVoice } from "@/features/voice/components/StepVoice";
@@ -26,6 +27,8 @@ function App() {
         return <StepScript />;
       case "voice":
         return <StepVoice />;
+      case "render":
+        return <StepRender />;
       case "benchmark":
         return <StepBenchmark />;
       default:

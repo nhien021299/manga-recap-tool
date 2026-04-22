@@ -47,6 +47,12 @@ interface SceneOverlayProps {
   removeScene: (id: string) => void;
 }
 
+interface SceneHandleProps {
+  className: string;
+  title: string;
+  onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
+}
+
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 const getSceneToneClass = (scene: Scene): string => {
@@ -117,6 +123,14 @@ const applyTransform = (
   };
 };
 
+const SceneHandle = ({ className, title, onPointerDown }: SceneHandleProps) => (
+  <div
+    className={className}
+    onPointerDown={onPointerDown}
+    title={title}
+  />
+);
+
 const SceneOverlay = ({
   scene,
   scaleFactor,
@@ -166,25 +180,6 @@ const SceneOverlay = ({
     onTransformCommit(scene.id);
   };
 
-  const Handle = ({
-    mode,
-    className,
-    title,
-  }: {
-    mode: TransformMode;
-    className: string;
-    title: string;
-  }) => (
-    <div
-      className={className}
-      onPointerDown={(e) => {
-        e.stopPropagation();
-        beginDrag(e, mode);
-      }}
-      title={title}
-    />
-  );
-
   return (
     <div
       ref={pointerHostRef}
@@ -201,14 +196,70 @@ const SceneOverlay = ({
       onPointerUp={(e) => endDrag(e, false)}
       onPointerCancel={(e) => endDrag(e, true)}
     >
-      <Handle mode="top" title="Resize top" className="absolute -top-px left-2 right-2 h-[2px] cursor-ns-resize bg-white/90" />
-      <Handle mode="bottom" title="Resize bottom" className="absolute -bottom-px left-2 right-2 h-[2px] cursor-ns-resize bg-white/90" />
-      <Handle mode="left" title="Resize left" className="absolute -left-px top-2 bottom-2 w-[2px] cursor-ew-resize bg-white/90" />
-      <Handle mode="right" title="Resize right" className="absolute -right-px top-2 bottom-2 w-[2px] cursor-ew-resize bg-white/90" />
-      <Handle mode="top-left" title="Resize top-left" className="absolute -top-[3px] -left-[3px] h-[8px] w-[8px] cursor-nwse-resize border border-white bg-cyan-300" />
-      <Handle mode="top-right" title="Resize top-right" className="absolute -top-[3px] -right-[3px] h-[8px] w-[8px] cursor-nesw-resize border border-white bg-cyan-300" />
-      <Handle mode="bottom-left" title="Resize bottom-left" className="absolute -bottom-[3px] -left-[3px] h-[8px] w-[8px] cursor-nesw-resize border border-white bg-cyan-300" />
-      <Handle mode="bottom-right" title="Resize bottom-right" className="absolute -bottom-[3px] -right-[3px] h-[8px] w-[8px] cursor-nwse-resize border border-white bg-cyan-300" />
+      <SceneHandle
+        title="Resize top"
+        className="absolute -top-px left-2 right-2 h-[2px] cursor-ns-resize bg-white/90"
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          beginDrag(e, "top");
+        }}
+      />
+      <SceneHandle
+        title="Resize bottom"
+        className="absolute -bottom-px left-2 right-2 h-[2px] cursor-ns-resize bg-white/90"
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          beginDrag(e, "bottom");
+        }}
+      />
+      <SceneHandle
+        title="Resize left"
+        className="absolute -left-px top-2 bottom-2 w-[2px] cursor-ew-resize bg-white/90"
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          beginDrag(e, "left");
+        }}
+      />
+      <SceneHandle
+        title="Resize right"
+        className="absolute -right-px top-2 bottom-2 w-[2px] cursor-ew-resize bg-white/90"
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          beginDrag(e, "right");
+        }}
+      />
+      <SceneHandle
+        title="Resize top-left"
+        className="absolute -top-[3px] -left-[3px] h-[8px] w-[8px] cursor-nwse-resize border border-white bg-cyan-300"
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          beginDrag(e, "top-left");
+        }}
+      />
+      <SceneHandle
+        title="Resize top-right"
+        className="absolute -top-[3px] -right-[3px] h-[8px] w-[8px] cursor-nesw-resize border border-white bg-cyan-300"
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          beginDrag(e, "top-right");
+        }}
+      />
+      <SceneHandle
+        title="Resize bottom-left"
+        className="absolute -bottom-[3px] -left-[3px] h-[8px] w-[8px] cursor-nesw-resize border border-white bg-cyan-300"
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          beginDrag(e, "bottom-left");
+        }}
+      />
+      <SceneHandle
+        title="Resize bottom-right"
+        className="absolute -bottom-[3px] -right-[3px] h-[8px] w-[8px] cursor-nwse-resize border border-white bg-cyan-300"
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          beginDrag(e, "bottom-right");
+        }}
+      />
 
       <div className="absolute top-1 left-1/2 -translate-x-1/2 p-1 bg-black/70 border border-white/30 opacity-85 pointer-events-none">
         <GripHorizontal className="w-4 h-4 text-white" />

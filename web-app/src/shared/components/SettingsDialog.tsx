@@ -1,5 +1,5 @@
 import { Settings2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -31,19 +31,16 @@ const normalizeConfigValue = (value: string): string => {
 
 export function SettingsDialog() {
   const { config, setConfig, voiceConfig, setVoiceConfig } = useRecapStore();
+  const [open, setOpen] = useState(false);
   const [localConfig, setLocalConfig] = useState(config);
   const [localVoiceConfig, setLocalVoiceConfig] = useState(voiceConfig);
   const [voiceOptions, setVoiceOptions] = useState<VoiceOptionsResponse | null>(null);
   const [voiceOptionsError, setVoiceOptionsError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const previewAudioRef = useState(() => new Audio())[0];
+  const previewAudioRef = useRef<HTMLAudioElement>(new Audio());
 
   useEffect(() => {
-    setLocalConfig(config);
-    setLocalVoiceConfig(voiceConfig);
-  }, [config, voiceConfig]);
-
-  useEffect(() => {
+    if (!open) return;
     let cancelled = false;
 
     const loadVoiceOptions = async () => {
@@ -80,7 +77,7 @@ export function SettingsDialog() {
     return () => {
       cancelled = true;
     };
-  }, [config.apiBaseUrl, localConfig.apiBaseUrl]);
+  }, [config.apiBaseUrl, localConfig.apiBaseUrl, localVoiceConfig.provider, localVoiceConfig.voiceKey, open]);
 
   const activeProvider = useMemo(
     () => voiceOptions?.providers.find((provider) => provider.id === localVoiceConfig.provider) || null,
@@ -100,27 +97,40 @@ export function SettingsDialog() {
   };
 
   useEffect(() => {
+    const previewAudio = previewAudioRef.current;
     return () => {
-      previewAudioRef.pause();
+      previewAudio.pause();
     };
-  }, [previewAudioRef]);
+  }, []);
 
   const handlePreview = () => {
     const nextPreviewUrl = resolveVoiceSampleUrl(localConfig.apiBaseUrl || config.apiBaseUrl, selectedVoice?.sampleUrl);
     if (!nextPreviewUrl) return;
-    if (previewUrl === nextPreviewUrl && !previewAudioRef.paused) {
-      previewAudioRef.pause();
+    if (previewUrl === nextPreviewUrl && !previewAudioRef.current.paused) {
+      previewAudioRef.current.pause();
       setPreviewUrl(null);
       return;
     }
-    previewAudioRef.src = nextPreviewUrl;
-    void previewAudioRef.play();
+    previewAudioRef.current.src = nextPreviewUrl;
+    void previewAudioRef.current.play();
     setPreviewUrl(nextPreviewUrl);
-    previewAudioRef.onended = () => setPreviewUrl(null);
+    previewAudioRef.current.onended = () => setPreviewUrl(null);
+  };
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen) {
+      previewAudioRef.current.pause();
+      setPreviewUrl(null);
+      return;
+    }
+
+    setLocalConfig(config);
+    setLocalVoiceConfig(voiceConfig);
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger
         render={
           <Button variant="ghost" size="icon" className="rounded-full">

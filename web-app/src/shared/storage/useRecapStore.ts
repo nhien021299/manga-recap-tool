@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { get, set as idbSet } from "idb-keyval";
 
 import {
+  type AudioStatus,
   type BenchmarkRecord,
   DEFAULT_ASPECT,
   STRIP_WIDTH,
@@ -11,6 +12,7 @@ import {
   type Panel,
   type PanelUnderstanding,
   type PanelUnderstandingMeta,
+  type RenderConfig,
   type Scene,
   type ScriptContext,
   type ScriptMeta,
@@ -36,6 +38,8 @@ interface RecapState {
 
   aspectRatio: number;
   setAspectRatio: (ratio: number) => void;
+  renderConfig: RenderConfig;
+  setRenderConfig: (config: Partial<RenderConfig>) => void;
 
   logs: GeminiLog[];
   addLog: (log: Omit<GeminiLog, "id" | "timestamp">) => void;
@@ -69,6 +73,7 @@ interface RecapState {
   timeline: TimelineItem[];
   setTimeline: (timeline: TimelineItem[]) => void;
   updateTimelineItem: (index: number, item: Partial<TimelineItem>) => void;
+  moveTimelineItem: (fromIndex: number, toIndex: number) => void;
   scriptMeta: ScriptMeta;
   setScriptMeta: (meta: ScriptMeta) => void;
   markScriptOutdated: (reason: string) => void;
@@ -103,8 +108,15 @@ const normalizeNumber = (value: unknown, fallback: number): number => {
   return fallback;
 };
 
+const clamp = (value: number, min: number, max: number): number =>
+  Math.min(max, Math.max(min, value));
+
 const DEFAULT_TTS_PROVIDER = "vieneu";
 const DEFAULT_TTS_VOICE_KEY = "voice_default";
+const DEFAULT_HOLD_AFTER_MS = 250;
+const MIN_HOLD_AFTER_MS = 0;
+const MAX_HOLD_AFTER_MS = 3000;
+const DEFAULT_OUTPUT_WIDTH = 1080;
 
 const normalizeVoiceConfig = (config?: Partial<VoiceConfig> | null): VoiceConfig => {
   const provider = (config?.provider || import.meta.env.VITE_TTS_PROVIDER || DEFAULT_TTS_PROVIDER).trim() || DEFAULT_TTS_PROVIDER;
@@ -124,6 +136,15 @@ const normalizeVoiceConfig = (config?: Partial<VoiceConfig> | null): VoiceConfig
     speed: Math.max(0.8, Math.min(1.15, normalizeNumber(config?.speed, 1))),
   };
 };
+
+const normalizeRenderConfig = (
+  config?: Partial<RenderConfig> | null,
+  fallbackAspectRatio = DEFAULT_ASPECT
+): RenderConfig => ({
+  captionMode: config?.captionMode === "burned" ? "burned" : "off",
+  outputWidth: Math.max(720, Math.round(normalizeNumber(config?.outputWidth, DEFAULT_OUTPUT_WIDTH))),
+  aspectRatio: normalizeNumber(config?.aspectRatio, fallbackAspectRatio) || fallbackAspectRatio,
+});
 
 const EMPTY_SCRIPT_META: ScriptMeta = {
   status: "idle",
@@ -167,22 +188,58 @@ const normalizePanelUnderstanding = (
   cliffhanger: item.cliffhanger || "",
 });
 
+const hasReadyAudioData = (item: Partial<TimelineItem>): boolean =>
+  item.audioBlob instanceof Blob &&
+  typeof item.audioDuration === "number" &&
+  Number.isFinite(item.audioDuration) &&
+  item.audioDuration > 0;
+
+const normalizeHoldAfterMs = (value: unknown): number =>
+  clamp(Math.round(normalizeNumber(value, DEFAULT_HOLD_AFTER_MS)), MIN_HOLD_AFTER_MS, MAX_HOLD_AFTER_MS);
+
+const resolveAudioStatus = (item: Partial<TimelineItem>): AudioStatus => {
+  if (item.audioStatus === "stale" || item.audioStatus === "generating" || item.audioStatus === "error") {
+    return item.audioStatus;
+  }
+  return hasReadyAudioData(item) ? "ready" : "missing";
+};
+
+const revokeTimelineAudioUrls = (items: TimelineItem[]): void => {
+  items.forEach((item) => {
+    if (!item.audioUrl) return;
+    try {
+      URL.revokeObjectURL(item.audioUrl);
+    } catch {
+      // ignore
+    }
+  });
+};
+
 const normalizeTimelineItem = (item: TimelineItem, index: number): TimelineItem => {
   const scriptSource = item.scriptSource ?? {
     panelId: item.panelId,
     orderIndex: index,
   };
   const scriptStatus = item.scriptStatus ?? "auto";
+  const enabled = item.enabled ?? true;
+  const holdAfterMs = normalizeHoldAfterMs(item.holdAfterMs);
   const scriptSegment = item.scriptSegment ?? {
     narration: item.scriptItem?.voiceover_text ?? "",
     status: scriptStatus,
   };
+  const audioStatus = resolveAudioStatus(item);
+  const readyAudioBlob = hasReadyAudioData(item) ? item.audioBlob : undefined;
+  const audioUrl = readyAudioBlob ? URL.createObjectURL(readyAudioBlob) : undefined;
 
   return {
     ...item,
     scriptSource,
     scriptSegment,
     scriptStatus,
+    enabled,
+    holdAfterMs,
+    audioStatus,
+    audioUrl,
   };
 };
 
@@ -215,7 +272,16 @@ export const useRecapStore = create<RecapState>()(
       setProgress: (progress) => set({ progress }),
 
       aspectRatio: DEFAULT_ASPECT,
-      setAspectRatio: (aspectRatio) => set({ aspectRatio }),
+      setAspectRatio: (aspectRatio) =>
+        set((state) => ({
+          aspectRatio,
+          renderConfig: normalizeRenderConfig({ ...state.renderConfig, aspectRatio }, aspectRatio),
+        })),
+      renderConfig: normalizeRenderConfig(undefined, DEFAULT_ASPECT),
+      setRenderConfig: (config) =>
+        set((state) => ({
+          renderConfig: normalizeRenderConfig({ ...state.renderConfig, ...config }, state.aspectRatio),
+        })),
 
       logs: [],
       addLog: (log) =>
@@ -256,7 +322,14 @@ export const useRecapStore = create<RecapState>()(
         const persisted: PersistedVirtualStripState = {
           stripWidth,
           totalVirtualHeight,
-          images: virtualStrip.map(({ objectUrl, ...rest }) => rest),
+          images: virtualStrip.map((image) => ({
+            id: image.id,
+            file: image.file,
+            originalWidth: image.originalWidth,
+            originalHeight: image.originalHeight,
+            scaledHeight: image.scaledHeight,
+            globalY: image.globalY,
+          })),
         };
         void idbSet("recap-virtual-strip-data", persisted);
       },
@@ -341,6 +414,7 @@ export const useRecapStore = create<RecapState>()(
       timeline: [],
       setTimeline: (timeline) => {
         const normalizedTimeline = timeline.map(normalizeTimelineItem);
+        revokeTimelineAudioUrls(getStore().timeline);
         set({ timeline: normalizedTimeline });
         void idbSet("recap-timeline-data", normalizedTimeline);
       },
@@ -348,6 +422,7 @@ export const useRecapStore = create<RecapState>()(
         const state = getStore();
         const newTimeline = [...state.timeline];
         const currentItem = newTimeline[index];
+        if (!currentItem) return;
         const nextItem = normalizeTimelineItem({ ...currentItem, ...item }, index);
         const scriptChanged =
           !!item.scriptItem &&
@@ -359,6 +434,18 @@ export const useRecapStore = create<RecapState>()(
             narration: nextItem.scriptItem.voiceover_text ?? "",
             status: "edited",
           };
+          delete nextItem.audioBlob;
+          delete nextItem.audioDuration;
+          delete nextItem.audioUrl;
+          nextItem.audioStatus = nextItem.scriptItem.voiceover_text.trim() ? "stale" : "missing";
+        }
+
+        if (currentItem.audioUrl && currentItem.audioUrl !== nextItem.audioUrl) {
+          try {
+            URL.revokeObjectURL(currentItem.audioUrl);
+          } catch {
+            // ignore
+          }
         }
 
         newTimeline[index] = nextItem;
@@ -374,6 +461,26 @@ export const useRecapStore = create<RecapState>()(
         });
         void idbSet("recap-timeline-data", newTimeline);
       },
+      moveTimelineItem: (fromIndex, toIndex) => {
+        const state = getStore();
+        if (
+          fromIndex < 0 ||
+          toIndex < 0 ||
+          fromIndex >= state.timeline.length ||
+          toIndex >= state.timeline.length ||
+          fromIndex === toIndex
+        ) {
+          return;
+        }
+
+        const nextTimeline = [...state.timeline];
+        const [moved] = nextTimeline.splice(fromIndex, 1);
+        nextTimeline.splice(toIndex, 0, moved);
+        const normalizedTimeline = nextTimeline.map(normalizeTimelineItem);
+        revokeTimelineAudioUrls(state.timeline);
+        set({ timeline: normalizedTimeline });
+        void idbSet("recap-timeline-data", normalizedTimeline);
+      },
       scriptMeta: EMPTY_SCRIPT_META,
       setScriptMeta: (scriptMeta) => set({ scriptMeta }),
       markScriptOutdated: (reason) =>
@@ -388,6 +495,7 @@ export const useRecapStore = create<RecapState>()(
               : state.scriptMeta,
         })),
       clearScriptData: () => {
+        revokeTimelineAudioUrls(getStore().timeline);
         set({
           panelUnderstandings: [],
           panelUnderstandingMeta: EMPTY_PANEL_UNDERSTANDING_META,
@@ -411,6 +519,7 @@ export const useRecapStore = create<RecapState>()(
         set((state) => ({
           config: normalizeAppConfig(state.config),
           voiceConfig: normalizeVoiceConfig(state.voiceConfig),
+          renderConfig: normalizeRenderConfig(state.renderConfig, state.aspectRatio),
         }));
 
         const savedVirtualStrip = await get("recap-virtual-strip-data");
@@ -448,6 +557,7 @@ export const useRecapStore = create<RecapState>()(
             // ignore
           }
         });
+        revokeTimelineAudioUrls(getStore().timeline);
 
         set({
           currentStep: "upload",
@@ -466,6 +576,7 @@ export const useRecapStore = create<RecapState>()(
           progress: 0,
           isLoading: false,
           logs: [],
+          renderConfig: normalizeRenderConfig(undefined, DEFAULT_ASPECT),
         });
         void idbSet("recap-virtual-strip-data", null);
         void idbSet("recap-panels-data", []);
@@ -473,7 +584,7 @@ export const useRecapStore = create<RecapState>()(
       },
     }),
     {
-      name: "manga-recap-storage-v10",
+      name: "manga-recap-storage-v11",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         config: normalizeAppConfig(state.config),
@@ -489,6 +600,7 @@ export const useRecapStore = create<RecapState>()(
         logs: state.logs,
         aspectRatio: state.aspectRatio,
         benchmarkRecords: state.benchmarkRecords,
+        renderConfig: normalizeRenderConfig(state.renderConfig, state.aspectRatio),
       }),
     }
   )

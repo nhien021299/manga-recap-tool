@@ -163,7 +163,7 @@ export function StepVoice() {
           >
             <ChevronLeft className="h-4 w-4" /> Back
           </Button>
-          <Button onClick={nextStep} disabled={totalDuration === 0 || isLoading} className="group px-8 font-bold">
+          <Button onClick={nextStep} disabled={timeline.length === 0 || isLoading} className="group px-8 font-bold">
             Continue <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Button>
         </div>

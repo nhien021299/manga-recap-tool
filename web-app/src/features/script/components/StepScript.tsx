@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
   AlertCircle,
@@ -76,11 +76,11 @@ export function StepScript() {
   const { generateScript, error, isGenerating } = useScriptJob();
   const [zoomedIdx, setZoomedIdx] = useState<number | null>(null);
 
-  const navigateZoom = (dir: number) => {
+  const navigateZoom = useCallback((dir: number) => {
     if (zoomedIdx === null) return;
     const nextIdx = (zoomedIdx + dir + timeline.length) % timeline.length;
     setZoomedIdx(nextIdx);
-  };
+  }, [timeline.length, zoomedIdx]);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -91,7 +91,7 @@ export function StepScript() {
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [zoomedIdx, timeline.length]);
+  }, [navigateZoom, zoomedIdx]);
 
   const panelById = useMemo(() => new Map(panels.map((panel) => [panel.id, panel])), [panels]);
   const latestErrorDetails = useMemo(() => {

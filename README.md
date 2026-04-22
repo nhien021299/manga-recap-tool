@@ -119,7 +119,7 @@ AI_BACKEND_TTS_WARM_ON_STARTUP=false
 AI_BACKEND_TTS_SMOKE_TEST_TEXT=
 AI_BACKEND_TTS_MAX_CONCURRENT_JOBS=1
 AI_BACKEND_TTS_VIENEU_MODEL_ID=pnnbao-ump/VieNeu-TTS-0.3B
-AI_BACKEND_TTS_VIENEU_TEMPERATURE=1.0
+AI_BACKEND_TTS_VIENEU_TEMPERATURE=0.7
 AI_BACKEND_TTS_VIENEU_VOICE_KEY=voice_default
 AI_BACKEND_TTS_VIENEU_VOICE_ROOT=.models/vieneu-voices
 ```
@@ -154,6 +154,4 @@ Validated during this migration:
 
 ## Notes
 
-- `voice_2_clone` is kept only as a legacy alias in `clone-cache.json`
-- persisted frontend state that still holds `voice_2_clone` is normalized to `voice_default`
 - `GET /api/v1/system/tts?provider=vieneu` is the only supported TTS runtime query

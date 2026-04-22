@@ -73,7 +73,6 @@ def main() -> int:
         "defaultVoiceKey": args.voice_key,
         "fallbacks": {
             "default": args.voice_key,
-            "voice_2_clone": args.voice_key,
             args.voice_key: args.voice_key,
         },
         "voices": {

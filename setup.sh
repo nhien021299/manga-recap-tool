@@ -33,12 +33,13 @@ if [ ! -f ".env" ]; then
 fi
 cd ..
 
-# 4. Check Models
-echo -e "\n\033[0;33m[3/4] Checking local models...\033[0m"
-if [ ! -d "backend/.models/f5-onnx/CPU_F32" ]; then
-    echo -e "\033[0;35mWarning: F5 ONNX models not found in backend/.models/f5-onnx/\033[0m"
+# 4. Check canonical VieNeu voice assets
+echo -e "\n\033[0;33m[3/4] Checking local voice assets...\033[0m"
+if [ ! -f "backend/.models/vieneu-voices/voices.json" ]; then
+    echo -e "\033[0;35mWarning: backend/.models/vieneu-voices/voices.json was not found.\033[0m"
+    echo "Build the cached preset with backend/scripts/build_voice_default_preset.py before using TTS."
 else
-    echo -e "\033[0;32mF5 ONNX models found.\033[0m"
+    echo -e "\033[0;32mVieNeu preset manifest found.\033[0m"
 fi
 
 # 5. Success

@@ -127,6 +127,16 @@ export interface VoiceConfig {
   speed: number;
 }
 
+export interface VoiceGenerationProgress {
+  currentIndex: number;
+  totalCount: number;
+  panelId: string;
+  panelOrder: number;
+  voiceKey: string;
+  textLength: number;
+  startedAt: string;
+}
+
 export interface VoiceOption {
   key: string;
   label: string;

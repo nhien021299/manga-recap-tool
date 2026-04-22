@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 from app.core.config import Settings
@@ -50,19 +51,43 @@ def test_load_local_voice_overrides_skips_when_manifest_missing(tmp_path: Path):
     assert client.loaded is None
 
 
-def test_resolve_fallback_voice_key_uses_clone_cache_manifest(tmp_path: Path):
+def test_get_provider_option_reads_presets_without_loading_model(monkeypatch, tmp_path: Path):
     settings = build_settings(tmp_path)
     bridge = VieneuTtsWorkerBridge(settings)
     voices_root = settings.tts_vieneu_voice_root
     voices_root.mkdir(parents=True)
-    manifest_path = voices_root / "clone-cache.json"
-    manifest_path.write_text(
-        (
-            '{"fallbacks":{"voice_2_clone":"voice_default"}}'
-        ),
+    (voices_root / "voices.json").write_text(
+        '{"default_voice":"voice_default","presets":{"voice_default":{"description":"Cached voice"}}}',
         encoding="utf-8",
     )
 
-    fallback = bridge._resolve_voice_key("voice_2_clone")
+    def fail_if_loaded():
+        raise AssertionError("model loader should not run for provider options")
 
-    assert fallback == "voice_default"
+    monkeypatch.setattr(bridge, "_ensure_model_loaded", fail_if_loaded)
+
+    provider = bridge.get_provider_option("VieNeu-TTS-0.3B")
+
+    assert provider.enabled is True
+    assert provider.defaultVoiceKey == "voice_default"
+    assert [voice.key for voice in provider.voices] == ["voice_default"]
+
+
+def test_get_runtime_response_reports_actionable_missing_torch_error(monkeypatch, tmp_path: Path):
+    settings = build_settings(tmp_path)
+    bridge = VieneuTtsWorkerBridge(settings)
+
+    def raise_missing_torch():
+        exc = ModuleNotFoundError("No module named 'torch'")
+        exc.name = "torch"
+        raise exc
+
+    monkeypatch.setattr(bridge, "_ensure_model_loaded", raise_missing_torch)
+
+    runtime = bridge.get_runtime_response()
+
+    assert runtime.isAvailable is False
+    assert runtime.runtimePython == sys.executable
+    assert runtime.startupError is not None
+    assert "Missing Python dependency 'torch'" in runtime.startupError
+    assert "pip install -r" in runtime.startupError

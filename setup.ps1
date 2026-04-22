@@ -39,13 +39,13 @@ if (-not (Test-Path ".env")) {
 }
 cd ..
 
-# 4. Check Models (Warning if missing)
-Write-Host "`n[3/4] Checking local models..." -ForegroundColor Yellow
-if (-not (Test-Path "backend\.models\f5-onnx\CPU_F32")) {
-    Write-Host "Warning: F5 ONNX models not found in backend/.models/f5-onnx/" -ForegroundColor DarkYellow
-    Write-Host "If you plan to use F5-TTS, please download them from the shared repository."
+# 4. Check canonical VieNeu voice assets
+Write-Host "`n[3/4] Checking local voice assets..." -ForegroundColor Yellow
+if (-not (Test-Path "backend\.models\vieneu-voices\voices.json")) {
+    Write-Host "Warning: backend/.models/vieneu-voices/voices.json was not found." -ForegroundColor DarkYellow
+    Write-Host "Build the cached preset with backend/scripts/build_voice_default_preset.py before using TTS."
 } else {
-    Write-Host "F5 ONNX models found." -ForegroundColor Green
+    Write-Host "VieNeu preset manifest found." -ForegroundColor Green
 }
 
 # 5. Success

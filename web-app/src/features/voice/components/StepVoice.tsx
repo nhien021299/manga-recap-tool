@@ -25,7 +25,8 @@ const PREVIEW_TEXT =
   "Xin chào, đây là đoạn nghe thử để kiểm tra chất giọng kể chuyện, độ cuốn và nhịp review truyện của preset này.";
 
 export function StepVoice() {
-  const { config, voiceConfig, setVoiceConfig, timeline, panels, setCurrentStep, isLoading, progress } = useRecapStore();
+  const { config, voiceConfig, setVoiceConfig, timeline, panels, setCurrentStep, isLoading, progress, currentVoiceGeneration } =
+    useRecapStore();
   const { generateAllVoices, generateSingleVoice, clearAllVoices, error } = useVoiceGeneration();
   const [playingIdx, setPlayingIdx] = useState<number | null>(null);
   const [voiceOptions, setVoiceOptions] = useState<VoiceOptionsResponse | null>(null);
@@ -124,6 +125,9 @@ export function StepVoice() {
   };
 
   const totalDuration = timeline.reduce((total, item) => total + (item.audioDuration || 0), 0);
+  const activePanel = currentVoiceGeneration
+    ? panels.find((entry) => entry.id === currentVoiceGeneration.panelId) || null
+    : null;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -278,12 +282,41 @@ export function StepVoice() {
               {isLoading ? "Generating audio..." : "Generate all clips"}
             </Button>
             {isLoading && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex justify-between text-xs font-mono">
                   <span>PROGRESS</span>
                   <span>{progress}%</span>
                 </div>
                 <Progress value={progress} className="h-1.5" />
+                {currentVoiceGeneration && (
+                  <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-left">
+                    <div className="flex items-center justify-between gap-3 text-[11px] uppercase tracking-[0.2em] text-white/50">
+                      <span>
+                        Clip {currentVoiceGeneration.currentIndex}/{currentVoiceGeneration.totalCount}
+                      </span>
+                      <span>{currentVoiceGeneration.voiceKey}</span>
+                    </div>
+                    <div className="mt-2 flex items-center gap-3">
+                      {activePanel?.thumbnail ? (
+                        <img
+                          src={activePanel.thumbnail}
+                          alt={`Panel ${currentVoiceGeneration.panelOrder}`}
+                          className="h-12 w-12 rounded-lg border border-white/10 object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-[10px] text-white/50">
+                          #{currentVoiceGeneration.panelOrder}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-white">Panel {currentVoiceGeneration.panelOrder}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {currentVoiceGeneration.textLength} chars, panelId {currentVoiceGeneration.panelId}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -293,6 +326,7 @@ export function StepVoice() {
           <div className="space-y-3 p-4">
             {timeline.map((item, index) => {
               const panel = panels.find((entry) => entry.id === item.panelId);
+              const isCurrentGenerating = currentVoiceGeneration?.panelId === item.panelId;
               return (
                 <Card
                   key={item.panelId}
@@ -332,6 +366,11 @@ export function StepVoice() {
                       <span className="text-[10px] uppercase text-muted-foreground">
                         {item.audioDuration ? `${item.audioDuration.toFixed(1)}s` : "--"}
                       </span>
+                      {isCurrentGenerating && (
+                        <span className="flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-primary">
+                          <Loader2 className="h-3 w-3 animate-spin" /> Generating now
+                        </span>
+                      )}
                     </div>
                   </div>
 

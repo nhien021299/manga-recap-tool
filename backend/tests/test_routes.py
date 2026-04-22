@@ -45,6 +45,7 @@ def test_tts_runtime_route_returns_runtime_payload():
         assert payload["executionProvider"] in {"torch-cpu", "torch-gpu"}
         assert "deviceName" in payload
         assert payload["modelBundle"] == "pnnbao-ump/VieNeu-TTS-0.3B"
+        assert payload["runtimePython"]
 
 def test_tts_runtime_route_accepts_explicit_vieneu_provider():
     with TestClient(app) as client:
@@ -52,6 +53,14 @@ def test_tts_runtime_route_accepts_explicit_vieneu_provider():
         assert response.status_code == 200
         payload = response.json()
         assert payload["provider"] == "vieneu"
+
+
+def test_voice_sample_assets_allow_cross_origin_embedding():
+    with TestClient(app) as client:
+        response = client.get("/assets/voice-samples/vieneu/voice-default.wav")
+
+    assert response.status_code == 200
+    assert response.headers["cross-origin-resource-policy"] == "cross-origin"
 
 
 def test_tts_runtime_route_rejects_unknown_provider():

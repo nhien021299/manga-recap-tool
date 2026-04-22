@@ -26,6 +26,16 @@ import { useRecapStore } from "@/shared/storage/useRecapStore";
 
 const formatSeconds = (milliseconds: number): string => `${(milliseconds / 1000).toFixed(1)}s`;
 
+const describeRenderError = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+};
+
 export function StepRender() {
   const {
     timeline,
@@ -98,7 +108,7 @@ export function StepRender() {
       setPreviewUrl(URL.createObjectURL(nextBlob));
       setActiveTab("export");
     } catch (error) {
-      setRenderError(error instanceof Error ? error.message : "Render failed.");
+      setRenderError(describeRenderError(error));
     } finally {
       setIsRendering(false);
     }

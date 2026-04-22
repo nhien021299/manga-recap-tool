@@ -83,6 +83,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def add_static_asset_embed_headers(request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/assets/voice-samples/"):
+        response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
+    return response
+
+
 prefix = get_settings().api_prefix
 app.include_router(health_router, prefix=prefix)
 app.include_router(system_router, prefix=prefix)
@@ -90,6 +100,6 @@ app.include_router(caption_router, prefix=prefix)
 app.include_router(script_router, prefix=prefix)
 app.include_router(voice_router, prefix=prefix)
 
-voice_samples_dir = Path(__file__).resolve().parents[2] / ".bench" / "samples"
+voice_samples_dir = Path(__file__).resolve().parents[1] / ".bench" / "samples"
 voice_samples_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/assets/voice-samples", StaticFiles(directory=str(voice_samples_dir)), name="voice-samples")

@@ -92,7 +92,7 @@ class Settings(BaseSettings):
         default="pnnbao-ump/VieNeu-TTS-0.3B",
         alias="AI_BACKEND_TTS_VIENEU_MODEL_ID",
     )
-    tts_vieneu_temperature: float = Field(default=1.0, alias="AI_BACKEND_TTS_VIENEU_TEMPERATURE")
+    tts_vieneu_temperature: float = Field(default=0.7, alias="AI_BACKEND_TTS_VIENEU_TEMPERATURE")
     tts_vieneu_default_voice_key: str = Field(default="voice_default", alias="AI_BACKEND_TTS_VIENEU_VOICE_KEY")
     tts_vieneu_voice_root_raw: str = Field(
         default=".models/vieneu-voices",

@@ -21,6 +21,7 @@ import {
   type TimelineItem,
   type VirtualStripImage,
   type VoiceConfig,
+  type VoiceGenerationProgress,
 } from "@/shared/types";
 
 interface RecapState {
@@ -35,6 +36,8 @@ interface RecapState {
   setIsLoading: (loading: boolean) => void;
   progress: number;
   setProgress: (progress: number) => void;
+  currentVoiceGeneration: VoiceGenerationProgress | null;
+  setCurrentVoiceGeneration: (progress: VoiceGenerationProgress | null) => void;
 
   aspectRatio: number;
   setAspectRatio: (ratio: number) => void;
@@ -125,10 +128,7 @@ const normalizeVoiceConfig = (config?: Partial<VoiceConfig> | null): VoiceConfig
     import.meta.env.VITE_TTS_VOICE_KEY ||
     DEFAULT_TTS_VOICE_KEY
   ).trim();
-  const voiceKey =
-    requestedVoiceKey === "default" || requestedVoiceKey === "voice_2_clone"
-      ? DEFAULT_TTS_VOICE_KEY
-      : (requestedVoiceKey || DEFAULT_TTS_VOICE_KEY);
+  const voiceKey = requestedVoiceKey === "default" ? DEFAULT_TTS_VOICE_KEY : (requestedVoiceKey || DEFAULT_TTS_VOICE_KEY);
 
   return {
     provider,
@@ -270,6 +270,8 @@ export const useRecapStore = create<RecapState>()(
       setIsLoading: (loading) => set({ isLoading: loading }),
       progress: 0,
       setProgress: (progress) => set({ progress }),
+      currentVoiceGeneration: null,
+      setCurrentVoiceGeneration: (currentVoiceGeneration) => set({ currentVoiceGeneration }),
 
       aspectRatio: DEFAULT_ASPECT,
       setAspectRatio: (aspectRatio) =>
@@ -574,6 +576,7 @@ export const useRecapStore = create<RecapState>()(
           scriptContext: { mangaName: "", mainCharacter: "", summary: "", language: "vi" },
           benchmarkRecords: getStore().benchmarkRecords,
           progress: 0,
+          currentVoiceGeneration: null,
           isLoading: false,
           logs: [],
           renderConfig: normalizeRenderConfig(undefined, DEFAULT_ASPECT),

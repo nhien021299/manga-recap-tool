@@ -1,8 +1,9 @@
-import { fetchFile, toBlobURL } from "@ffmpeg/util";
+import { fetchFile } from "@ffmpeg/util";
+import coreURL from "@ffmpeg/core?url";
+import wasmURL from "@ffmpeg/core/wasm?url";
 
 import type { CompiledRenderClip, RenderPlan } from "@/shared/types";
 
-const FFmpegCoreVersion = "0.12.10";
 const FRAME_RATE = 30;
 const SILENT_AUDIO_RATE = 24000;
 
@@ -16,6 +17,28 @@ export interface RenderProgressUpdate {
 
 let ffmpegSingleton: FFmpegInstance | null = null;
 let ffmpegLoadPromise: Promise<FFmpegInstance> | null = null;
+let ffmpegLogsBound = false;
+const ffmpegLogHistory: string[] = [];
+
+const pushFfmpegLog = (message: string): void => {
+  ffmpegLogHistory.push(message);
+  if (ffmpegLogHistory.length > 40) {
+    ffmpegLogHistory.shift();
+  }
+};
+
+const formatFfmpegLogs = (): string =>
+  ffmpegLogHistory.length > 0 ? `\nFFmpeg logs:\n${ffmpegLogHistory.join("\n")}` : "";
+
+const normalizeError = (error: unknown): Error => {
+  if (error instanceof Error) return error;
+  if (typeof error === "string") return new Error(error);
+  try {
+    return new Error(JSON.stringify(error));
+  } catch {
+    return new Error(String(error));
+  }
+};
 
 const emitProgress = (
   onProgress: ((update: RenderProgressUpdate) => void) | undefined,
@@ -175,11 +198,19 @@ const loadFfmpeg = async (
     emitProgress(onProgress, "Loading FFmpeg", 5, "Fetching ffmpeg core");
     const [{ FFmpeg }] = await Promise.all([import("@ffmpeg/ffmpeg")]);
     const ffmpeg = new FFmpeg();
-    const baseUrl = `https://cdn.jsdelivr.net/npm/@ffmpeg/core@${FFmpegCoreVersion}/dist/umd`;
+
+    if (!ffmpegLogsBound) {
+      ffmpeg.on("log", ({ message }) => {
+        if (message) {
+          pushFfmpegLog(message);
+        }
+      });
+      ffmpegLogsBound = true;
+    }
 
     await ffmpeg.load({
-      coreURL: await toBlobURL(`${baseUrl}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await toBlobURL(`${baseUrl}/ffmpeg-core.wasm`, "application/wasm"),
+      coreURL,
+      wasmURL,
     });
 
     ffmpegSingleton = ffmpeg;
@@ -188,6 +219,22 @@ const loadFfmpeg = async (
   })();
 
   return ffmpegLoadPromise;
+};
+
+const assertExecSucceeded = (exitCode: number, operation: string, command: string[]): void => {
+  if (exitCode === 0) return;
+  throw new Error(
+    `${operation} failed with ffmpeg exit code ${exitCode}.\nCommand: ${command.join(" ")}${formatFfmpegLogs()}`
+  );
+};
+
+const safeDeleteFile = async (ffmpeg: FFmpegInstance, path: string | null): Promise<void> => {
+  if (!path) return;
+  try {
+    await ffmpeg.deleteFile(path);
+  } catch {
+    // Ignore cleanup failures from repeated renders or partially-written files.
+  }
 };
 
 const buildClipArgs = (
@@ -263,55 +310,80 @@ export const renderPlanToMp4 = async (
   const ffmpeg = await loadFfmpeg(onProgress);
   const sessionId = `render-${Date.now()}`;
   const segmentFiles: string[] = [];
+  const tempFiles: string[] = [];
 
-  for (let index = 0; index < plan.clips.length; index += 1) {
-    const clip = plan.clips[index];
-    emitProgress(
-      onProgress,
-      "Preparing clips",
-      15 + (index / Math.max(plan.clips.length, 1)) * 55,
-      `Preparing clip ${index + 1}/${plan.clips.length}`
-    );
+  try {
+    for (let index = 0; index < plan.clips.length; index += 1) {
+      const clip = plan.clips[index];
+      emitProgress(
+        onProgress,
+        "Preparing clips",
+        15 + (index / Math.max(plan.clips.length, 1)) * 55,
+        `Preparing clip ${index + 1}/${plan.clips.length}`
+      );
 
-    const frameBlob = await composeFrame(clip, plan);
-    const frameFile = `${sessionId}-frame-${index}.png`;
-    const audioFile = clip.audioBlob ? `${sessionId}-audio-${index}.wav` : null;
-    const segmentFile = `${sessionId}-segment-${index}.mp4`;
+      const frameBlob = await composeFrame(clip, plan);
+      const frameFile = `${sessionId}-frame-${index}.png`;
+      const audioFile = clip.audioBlob ? `${sessionId}-audio-${index}.wav` : null;
+      const segmentFile = `${sessionId}-segment-${index}.mp4`;
+      const command = buildClipArgs(clip, frameFile, audioFile, segmentFile);
 
-    await ffmpeg.writeFile(frameFile, await fetchFile(frameBlob));
-    if (audioFile && clip.audioBlob) {
-      await ffmpeg.writeFile(audioFile, await fetchFile(clip.audioBlob));
+      tempFiles.push(frameFile, segmentFile);
+      if (audioFile) {
+        tempFiles.push(audioFile);
+      }
+
+      await ffmpeg.writeFile(frameFile, await fetchFile(frameBlob));
+      if (audioFile && clip.audioBlob) {
+        await ffmpeg.writeFile(audioFile, await fetchFile(clip.audioBlob));
+      }
+
+      const exitCode = await ffmpeg.exec(command);
+      assertExecSucceeded(exitCode, `Clip ${index + 1} render`, command);
+      segmentFiles.push(segmentFile);
+
+      await safeDeleteFile(ffmpeg, frameFile);
+      if (audioFile) {
+        await safeDeleteFile(ffmpeg, audioFile);
+      }
     }
 
-    await ffmpeg.exec(buildClipArgs(clip, frameFile, audioFile, segmentFile));
-    segmentFiles.push(segmentFile);
+    emitProgress(onProgress, "Muxing video", 78, "Concatenating segments");
+    const concatFile = `${sessionId}-concat.txt`;
+    const concatText = segmentFiles.map((file) => `file '${file}'`).join("\n");
+    tempFiles.push(concatFile);
+    await ffmpeg.writeFile(concatFile, new TextEncoder().encode(concatText));
+
+    const outputFile = `${sessionId}-output.mp4`;
+    tempFiles.push(outputFile);
+    const concatCommand = [
+      "-y",
+      "-f",
+      "concat",
+      "-safe",
+      "0",
+      "-i",
+      concatFile,
+      "-c",
+      "copy",
+      "-movflags",
+      "+faststart",
+      outputFile,
+    ];
+    const concatExitCode = await ffmpeg.exec(concatCommand);
+    assertExecSucceeded(concatExitCode, "Video mux", concatCommand);
+
+    emitProgress(onProgress, "Finalizing export", 96, "Reading output");
+    const data = await ffmpeg.readFile(outputFile);
+    const outputBytes = data instanceof Uint8Array ? data : new TextEncoder().encode(String(data));
+    const finalizedBytes = new Uint8Array(outputBytes);
+    emitProgress(onProgress, "Done", 100, "MP4 ready");
+    return new Blob([finalizedBytes], { type: "video/mp4" });
+  } catch (error) {
+    throw normalizeError(error);
+  } finally {
+    for (const file of tempFiles) {
+      await safeDeleteFile(ffmpeg, file);
+    }
   }
-
-  emitProgress(onProgress, "Muxing video", 78, "Concatenating segments");
-  const concatFile = `${sessionId}-concat.txt`;
-  const concatText = segmentFiles.map((file) => `file '${file}'`).join("\n");
-  await ffmpeg.writeFile(concatFile, new TextEncoder().encode(concatText));
-
-  const outputFile = `${sessionId}-output.mp4`;
-  await ffmpeg.exec([
-    "-y",
-    "-f",
-    "concat",
-    "-safe",
-    "0",
-    "-i",
-    concatFile,
-    "-c",
-    "copy",
-    "-movflags",
-    "+faststart",
-    outputFile,
-  ]);
-
-  emitProgress(onProgress, "Finalizing export", 96, "Reading output");
-  const data = await ffmpeg.readFile(outputFile);
-  const outputBytes = data instanceof Uint8Array ? data : new TextEncoder().encode(String(data));
-  const finalizedBytes = new Uint8Array(outputBytes);
-  emitProgress(onProgress, "Done", 100, "MP4 ready");
-  return new Blob([finalizedBytes], { type: "video/mp4" });
 };

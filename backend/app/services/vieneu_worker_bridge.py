@@ -5,6 +5,7 @@ import json
 import logging
 import sys
 import threading
+import time
 from pathlib import Path
 
 import soundfile as sf
@@ -27,11 +28,60 @@ class VieneuTtsWorkerBridge:
         self._voice_presets: list[dict[str, str]] = []
         self._voice_alias_manifest: dict[str, object] | None = None
 
-    def get_provider_option(self, label: str) -> VoiceProviderOption:
+    def _backend_root(self) -> Path:
+        return Path(__file__).resolve().parents[2]
+
+    def _requirements_path(self) -> Path:
+        return self._backend_root() / "requirements.txt"
+
+    def _vieneu_site_packages(self) -> Path:
+        return self._backend_root() / ".bench" / "vieneu-venv" / "Lib" / "site-packages"
+
+    def _runtime_python(self) -> str:
+        return sys.executable
+
+    def _install_hint(self) -> str:
+        runtime_python = self._runtime_python()
+        requirements = self._requirements_path()
+        return f'"{runtime_python}" -m pip install -r "{requirements}"'
+
+    def _format_runtime_error(self, exc: Exception) -> str:
+        if isinstance(exc, ModuleNotFoundError) and exc.name:
+            module_name = exc.name
+            return (
+                f"Missing Python dependency '{module_name}' for VieNeu TTS in '{self._runtime_python()}'. "
+                f"Install backend requirements into that environment: {self._install_hint()}"
+            )
+        return str(exc)
+
+    def _load_voice_presets_from_disk(self) -> list[dict[str, str]]:
+        voices_file = self.settings.tts_vieneu_voice_root / "voices.json"
+        if not voices_file.exists():
+            return []
+
         try:
-            self._ensure_model_loaded()
-        except Exception as exc:
-            self._last_error = str(exc)
+            payload = json.loads(voices_file.read_text(encoding="utf-8"))
+        except Exception:
+            logger.exception("Failed to parse VieNeu voices manifest: %s", voices_file)
+            return []
+
+        presets = payload.get("presets")
+        if not isinstance(presets, dict):
+            return []
+
+        resolved_presets: list[dict[str, str]] = []
+        for preset_id, raw_meta in presets.items():
+            if not isinstance(preset_id, str) or not preset_id.strip():
+                continue
+            meta = raw_meta if isinstance(raw_meta, dict) else {}
+            label = str(meta.get("label") or meta.get("description") or preset_id).strip() or preset_id
+            resolved_presets.append({"id": preset_id.strip(), "label": label})
+        return resolved_presets
+
+    def get_provider_option(self, label: str) -> VoiceProviderOption:
+        disk_presets = self._load_voice_presets_from_disk()
+        if disk_presets:
+            self._voice_presets = disk_presets
 
         resolved_default_voice_key = self._resolve_voice_key(self.settings.tts_vieneu_default_voice_key)
         voices: list[VoiceOption] = []
@@ -63,9 +113,9 @@ class VieneuTtsWorkerBridge:
         return VoiceProviderOption(
             id="vieneu",
             label=label,
-            enabled=self.is_available(),
+            enabled=bool(self._voice_presets),
             defaultVoiceKey=resolved_default_voice_key,
-            statusMessage=self._last_error,
+            statusMessage=None if self._voice_presets else "VieNeu voice preset manifest is missing.",
             voices=voices,
         )
 
@@ -74,7 +124,7 @@ class VieneuTtsWorkerBridge:
         try:
             self._ensure_model_loaded()
         except Exception as exc:
-            self._last_error = str(exc)
+            self._last_error = self._format_runtime_error(exc)
 
         return TtsRuntimeResponse(
             provider="vieneu",
@@ -88,7 +138,7 @@ class VieneuTtsWorkerBridge:
             modelSource="huggingface",
             modelPath=self.settings.tts_vieneu_model_id,
             modelBundle=self.settings.tts_vieneu_model_id,
-            runtimePython=None,
+            runtimePython=self._runtime_python(),
             availableProviders=["cpu", "gpu"] if supports_gpu else ["cpu"],
             warm=self._is_warm,
             isAvailable=self.is_available(),
@@ -117,23 +167,49 @@ class VieneuTtsWorkerBridge:
 
         with self._generation_lock:
             client = self._ensure_model_loaded()
+            started_at = time.perf_counter()
             try:
                 requested_voice_key = request.voiceKey or self.settings.tts_vieneu_default_voice_key
                 resolved_voice_key = self._resolve_voice_key(requested_voice_key)
+                text = request.text.strip()
+                preview = text[:80].replace("\n", " ")
+                logger.info(
+                    "VieNeu generation started voiceKey=%s resolvedVoiceKey=%s chars=%s words=%s speed=%.2f preview=%r",
+                    requested_voice_key,
+                    resolved_voice_key,
+                    len(text),
+                    len(text.split()),
+                    request.speed,
+                    preview,
+                )
                 voice_data = client.get_preset_voice(resolved_voice_key)
                 audio_array = client.infer(
-                    text=request.text,
+                    text=text,
                     voice=voice_data,
                     temperature=self.settings.tts_vieneu_temperature,
                 )
                 wav_buffer = io.BytesIO()
                 sf.write(wav_buffer, audio_array, getattr(client, "sample_rate", 24000), format="WAV")
+                elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
+                logger.info(
+                    "VieNeu generation completed voiceKey=%s resolvedVoiceKey=%s chars=%s audioSamples=%s elapsedMs=%s",
+                    requested_voice_key,
+                    resolved_voice_key,
+                    len(text),
+                    len(audio_array),
+                    elapsed_ms,
+                )
                 self._is_warm = True
                 self._last_error = None
                 return wav_buffer.getvalue()
             except Exception as exc:
                 self._last_error = str(exc)
-                logger.exception("VieNeu generation failed")
+                elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
+                logger.exception(
+                    "VieNeu generation failed voiceKey=%s elapsedMs=%s",
+                    request.voiceKey or self.settings.tts_vieneu_default_voice_key,
+                    elapsed_ms,
+                )
                 raise RuntimeError(f"VieNeu generation failed: {exc}") from exc
 
     def _load_local_voice_overrides(self, client) -> None:
@@ -206,11 +282,16 @@ class VieneuTtsWorkerBridge:
 
             try:
                 try:
+                    import torch  # noqa: F401
+                except ModuleNotFoundError as exc:
+                    raise RuntimeError(self._format_runtime_error(exc)) from exc
+
+                try:
                     from vieneu import Vieneu  # type: ignore
                 except ImportError:
-                    venv_site = Path(__file__).resolve().parents[2] / ".bench" / "vieneu-venv" / "Lib" / "site-packages"
+                    venv_site = self._vieneu_site_packages()
                     if venv_site.exists() and str(venv_site) not in sys.path:
-                        sys.path.append(str(venv_site))
+                        sys.path.insert(0, str(venv_site))
                     from vieneu import Vieneu  # type: ignore
 
                 _requested_runtime, resolved_runtime, _fallback, _supports_gpu, _device_name = self._resolve_runtime_state()
@@ -226,7 +307,7 @@ class VieneuTtsWorkerBridge:
                 self._is_warm = True
                 self._last_error = None
             except Exception as exc:
-                self._last_error = str(exc)
+                self._last_error = self._format_runtime_error(exc)
                 logger.exception("Failed to initialize VieNeu TTS")
                 raise
 

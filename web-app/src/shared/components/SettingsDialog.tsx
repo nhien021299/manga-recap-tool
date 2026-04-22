@@ -131,7 +131,7 @@ export function SettingsDialog() {
       <DialogContent className="glass border-white/10 sm:max-width-[520px]">
         <DialogHeader>
           <DialogTitle>System Settings</DialogTitle>
-          <DialogDescription>Configure the backend API and switch between the active VieNeu and F5 voice providers.</DialogDescription>
+          <DialogDescription>Configure the backend API and choose the active VieNeu-TTS-0.3B voice preset.</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">

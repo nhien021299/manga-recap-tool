@@ -16,61 +16,37 @@ manga-recap-tool/
 - `backend/`: FastAPI service for Step Script generation and backend-owned TTS
 - `ai/`: notes and internal references
 
-Verified on `2026-04-21`:
-
-- `npm --prefix web-app run build` passes
-- `pytest backend/tests/test_voice_routes.py backend/tests/test_routes.py` passes
-- `python -m compileall backend/app backend/tests` passes
-
-## Checkpoint: TTS Cleanup, Preset Preview, and F5 Reality Check (2026-04-21)
+## Checkpoint: VieNeu-TTS-0.3B Standard Migration (2026-04-22)
 
 ### Completed
 
-- Removed old TTS branches from the active repo path:
-  - `dia`
-  - `piper`
-  - legacy ElevenLabs browser path
-- Kept the active backend TTS contract on:
-  - `GET /api/v1/voice/options`
-  - `POST /api/v1/voice/generate`
-  - `GET /api/v1/system/tts`
-- Locked the active provider set to:
-  - `vieneu`
-  - `f5`
-- Added runtime-specific diagnostics so `vieneu` and `f5` can be checked separately through:
-  - `GET /api/v1/system/tts?provider=vieneu`
-  - `GET /api/v1/system/tts?provider=f5`
-- Added curated preset metadata and frontend preview playback for TTS voice presets.
-- Generated sample preview WAV files for both providers and mounted them as backend static assets for the frontend voice picker.
+- Replaced the old multi-provider TTS direction with one production TTS path only:
+  - provider: `vieneu`
+  - model: `pnnbao-ump/VieNeu-TTS-0.3B`
+  - mode: `standard`
+- Defined the canonical production preset:
+  - `voice_default`
+- Built a cached standard preset from the project reference wav/txt:
+  - `backend/.models/vieneu-voices/voices.json`
+  - `backend/.models/vieneu-voices/clone-cache.json`
+- Switched backend generation to use cached preset data on every request:
+  - no per-request reference encoding
+  - `voice_default` is loaded once and reused
+- Added preset build tooling for clean future setup:
+  - [backend/scripts/build_voice_default_preset.py](./backend/scripts/build_voice_default_preset.py)
+- Updated frontend defaults:
+  - `VITE_TTS_PROVIDER=vieneu`
+  - `VITE_TTS_VOICE_KEY=voice_default`
+- Added migration compatibility for old saved clients:
+  - `voice_2_clone -> voice_default`
+  - `default -> voice_default`
 
-### Current Progress
+### Removed From Active Product Scope
 
-- `vieneu`
-  - backend generation flow is working
-  - frontend preview/sample flow is working
-  - short Vietnamese preview samples under 10 seconds were regenerated and are usable
-- `f5`
-  - ONNX worker runtime is working
-  - DirectML GPU path is detectable and usable on the current machine
-  - preset reference flow is wired
-  - frontend preview/sample flow is wired
-  - benchmark/sample generation works mechanically end to end
-
-### Important Remaining Issue
-
-- `f5` is still not production-ready for Vietnamese narration quality.
-- The current ONNX text pipeline in [backend/runtime/f5/f5_onnx_worker.py](./backend/runtime/f5/f5_onnx_worker.py) does not preserve Vietnamese text faithfully:
-  - Vietnamese diacritics are normalized poorly
-  - generated phoneme/token behavior is unstable
-  - output can keep the cloned voice color but still sound unnatural or non-human for Vietnamese reading
-- In practice:
-  - reference WAV files under `backend/.models/f5-reference` can sound fine because they are real source audio
-  - generated sample WAV files under `backend/.bench/samples/f5` can still sound wrong because the text-to-speech stage is where the failure happens
-
-### Product Conclusion Right Now
-
-- `vieneu` is the only usable default for actual Vietnamese recap narration right now.
-- `f5` should still be treated as an experimental comparison path, not a user-trusted production voice path.
+- `f5` provider and its backend runtime path
+- F5 ONNX worker bridge and runtime worker code
+- F5 setup instructions and F5 runtime references in the main docs
+- VieNeu turbo preset flow as the active backend production path
 
 ## Active Product Decisions
 
@@ -78,8 +54,9 @@ Verified on `2026-04-21`:
 - Step Script runs through backend Gemini
 - Active script route stays `POST /api/v1/script/generate`
 - Voice generation is backend-only
-- Default TTS path is `vieneu`
-- Secondary TTS path is `f5` for runtime comparison and benchmarking
+- The only supported TTS provider is `vieneu`
+- The only supported TTS model is `VieNeu-TTS-0.3B`
+- The only production voice preset is `voice_default`
 
 ## Active TTS Architecture
 
@@ -89,21 +66,25 @@ Backend voice contract:
 - `POST /api/v1/voice/generate`
 - `GET /api/v1/system/tts`
 
-TTS provider behavior:
+Production runtime behavior:
 
-- `vieneu`
-  - default provider
-  - CPU-first
-  - exposed to frontend as the default preset flow
-- `f5`
-  - ONNX worker provider
-  - supports `cpu` or `gpu` runtime selection through `AI_BACKEND_TTS_RUNTIME`
-  - uses local reference WAV/TXT presets
+- backend loads `pnnbao-ump/VieNeu-TTS-0.3B` in `standard` mode
+- backend loads cached preset data from `backend/.models/vieneu-voices/voices.json`
+- each Step TTS request calls the model with the cached preset
+- backend does not re-encode the reference clip for each request
 
-Diagnostics:
+Canonical project voice assets:
 
-- `GET /api/v1/system/tts?provider=vieneu`
-- `GET /api/v1/system/tts?provider=f5`
+- source cache and reference:
+  - `backend/.models/voice-cache/voice_default/source.mp3`
+  - `backend/.models/voice-cache/voice_default/reference.wav`
+  - `backend/.models/voice-cache/voice_default/reference.txt`
+  - `backend/.models/voice-cache/voice_default/metadata.json`
+- generated preset cache:
+  - `backend/.models/vieneu-voices/voices.json`
+  - `backend/.models/vieneu-voices/clone-cache.json`
+  - `backend/.models/vieneu-voices/voice_default.wav`
+  - `backend/.models/vieneu-voices/voice_default.txt`
 
 ## Current Milestones
 
@@ -112,21 +93,29 @@ Diagnostics:
 | M0 Architecture | Done | FE-BE structure is stable. |
 | M1 Extract | Done | Browser-side upload/extract flow is active. |
 | M2 Script | Done | Backend Gemini route is the active product path. |
-| M3 Voice | Done | Vieneu & F5 presets overhauled with authentic manga recap narration personas. F5 reference text duplication fixed. Static mount race condition resolved. Fresh samples regenerated. |
+| M3 Voice | Done | Production TTS is standardized on `VieNeu-TTS-0.3B` with cached preset `voice_default`. |
 | M4 Timeline | In Progress | Timeline editing remains in active development. |
 | M5 Render | Not started | Browser render/export is still pending. |
 
+## Key Conclusions
+
+1. The repo should expose one TTS path only: `vieneu + voice_default`.
+2. `voice_default` must be treated as a cached preset, not a per-request zero-shot clone.
+3. The correct setup workflow is:
+   - prepare `reference.wav` and `reference.txt`
+   - build preset once
+   - reuse the cached preset in every request
+4. Backend and frontend defaults must stay aligned on `voice_default`.
+
 ## Next Actions
 
-1. Keep `vieneu` as the only trusted default for Vietnamese recap voice until a better `f5` text pipeline exists.
-2. Decide whether `f5` should stay visible in the frontend or be hidden behind an experimental toggle.
-3. If `f5` stays, replace the current Vietnamese text normalization/token path with one that is actually compatible with Vietnamese reading.
-4. Continue hardening the frontend voice UX around preview, preset selection, and per-line generation using the stable `vieneu` path.
-5. Continue hardening the Gemini path with real chapter-scale evaluation.
+1. Keep all new TTS work aligned with `VieNeu-TTS-0.3B standard`.
+2. Rebuild `voice_default` only when the project decides to replace the canonical reference voice.
+3. Keep README and setup steps synchronized with the preset builder script.
+4. Continue product work on timeline editing and final render/export.
 
 ## Open Risks
 
-- `f5` still depends on correct local bundle placement and good reference clips.
-- `f5` can generate mechanically valid WAV output that still sounds wrong for Vietnamese, which is worse than a hard runtime failure because it can look successful while being unusable.
-- DirectML availability is machine-dependent and must be confirmed through `/api/v1/system/tts?provider=f5`.
-- Script generation remains synchronous and cannot be cancelled mid-request.
+- Rebuilding `voice_default` from a different reference clip will change the production narration voice for the whole product.
+- The repo currently still contains some legacy local assets until final cleanup of developer machines is complete.
+- `VieNeu-TTS-0.3B` standard mode depends on a full Python environment with `torch`, `torchaudio`, `transformers`, `neucodec`, and `vieneu`.

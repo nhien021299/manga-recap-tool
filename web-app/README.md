@@ -26,7 +26,7 @@ Use `.env.example` and set:
 ```bash
 VITE_API_BASE_URL=http://127.0.0.1:8000
 VITE_TTS_PROVIDER=vieneu
-VITE_TTS_VOICE_KEY=default
+VITE_TTS_VOICE_KEY=voice_default
 ```
 
 Notes:

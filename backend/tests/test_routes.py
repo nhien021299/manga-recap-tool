@@ -42,17 +42,16 @@ def test_tts_runtime_route_returns_runtime_payload():
         payload = response.json()
         assert payload["provider"] == "vieneu"
         assert payload["resolvedRuntime"] in {"cpu", "gpu"}
-        assert payload["executionProvider"] == "native"
+        assert payload["executionProvider"] in {"torch-cpu", "torch-gpu"}
         assert "deviceName" in payload
+        assert payload["modelBundle"] == "pnnbao-ump/VieNeu-TTS-0.3B"
 
-
-def test_tts_runtime_route_can_target_f5_provider():
+def test_tts_runtime_route_accepts_explicit_vieneu_provider():
     with TestClient(app) as client:
-        response = client.get("/api/v1/system/tts", params={"provider": "f5"})
+        response = client.get("/api/v1/system/tts", params={"provider": "vieneu"})
         assert response.status_code == 200
         payload = response.json()
-        assert payload["provider"] == "f5"
-        assert payload["executionProvider"] in {"CPUExecutionProvider", "DmlExecutionProvider"}
+        assert payload["provider"] == "vieneu"
 
 
 def test_tts_runtime_route_rejects_unknown_provider():

@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "defaultVoiceKey": "voice_default",
+  "fallbacks": {
+    "default": "voice_default",
+    "voice_2_clone": "voice_default",
+    "voice_default": "voice_default"
+  },
+  "voices": {
+    "voice_default": {
+      "sourcePath": "../voice-cache/voice_default/source.mp3",
+      "referencePath": "../voice-cache/voice_default/reference.wav",
+      "transcriptPath": "../voice-cache/voice_default/reference.txt",
+      "modelId": "pnnbao-ump/VieNeu-TTS-0.3B"
+    }
+  }
+}

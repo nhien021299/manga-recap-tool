@@ -103,14 +103,24 @@ const normalizeNumber = (value: unknown, fallback: number): number => {
   return fallback;
 };
 
+const DEFAULT_TTS_PROVIDER = "vieneu";
+const DEFAULT_TTS_VOICE_KEY = "voice_default";
+
 const normalizeVoiceConfig = (config?: Partial<VoiceConfig> | null): VoiceConfig => {
+  const provider = (config?.provider || import.meta.env.VITE_TTS_PROVIDER || DEFAULT_TTS_PROVIDER).trim() || DEFAULT_TTS_PROVIDER;
+  const requestedVoiceKey = (
+    config?.voiceKey ||
+    import.meta.env.VITE_TTS_VOICE_KEY ||
+    DEFAULT_TTS_VOICE_KEY
+  ).trim();
+  const voiceKey =
+    requestedVoiceKey === "default" || requestedVoiceKey === "voice_2_clone"
+      ? DEFAULT_TTS_VOICE_KEY
+      : (requestedVoiceKey || DEFAULT_TTS_VOICE_KEY);
+
   return {
-    provider: (config?.provider || import.meta.env.VITE_TTS_PROVIDER || "vieneu").trim() || "vieneu",
-    voiceKey: (
-      config?.voiceKey ||
-      import.meta.env.VITE_TTS_VOICE_KEY ||
-      "default"
-    ).trim(),
+    provider,
+    voiceKey,
     speed: Math.max(0.8, Math.min(1.15, normalizeNumber(config?.speed, 1))),
   };
 };

@@ -5,9 +5,7 @@ from app.providers.llama_cpp_text import LlamaCppTextProvider
 from app.providers.ollama_text import OllamaTextProvider
 from app.providers.ollama_vision import OllamaVisionProvider
 from app.providers.tts.base import TTSProvider
-from app.providers.tts.f5_provider import F5TtsProvider
 from app.providers.tts.vieneu_provider import VieneuTtsProvider
-from app.services.f5_onnx_worker_bridge import F5OnnxWorkerBridge
 from app.services.vieneu_worker_bridge import VieneuTtsWorkerBridge
 
 
@@ -15,7 +13,6 @@ class ProviderRegistry:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self.vieneu_runtime = VieneuTtsWorkerBridge(settings)
-        self.f5_runtime = F5OnnxWorkerBridge(settings)
 
     def get_text_provider(self) -> OllamaTextProvider | LlamaCppTextProvider:
         if self.settings.text_provider == "llama_cpp":
@@ -57,30 +54,22 @@ class ProviderRegistry:
 
     def get_tts_providers(self) -> dict[str, TTSProvider]:
         vieneu_provider = VieneuTtsProvider(self.vieneu_runtime)
-        f5_provider = F5TtsProvider(self.f5_runtime)
         return {
             "vieneu": vieneu_provider,
-            "f5": f5_provider,
         }
 
     def warm_tts_runtime(self) -> None:
-        if self.settings.tts_provider == "vieneu" and self.settings.tts_warm_on_startup:
+        if self.settings.tts_warm_on_startup:
             self.vieneu_runtime.warm_up()
-        elif self.settings.tts_provider == "f5" and self.settings.tts_warm_on_startup:
-            self.f5_runtime.warm_up()
 
     def get_default_tts_runtime(self):
-        if self.settings.tts_provider == "f5":
-            return self.f5_runtime
         return self.vieneu_runtime
 
     def get_tts_runtime(self, provider_id: str | None = None):
         resolved_provider = (provider_id or self.settings.tts_provider).strip().lower()
-        if resolved_provider == "f5":
-            return self.f5_runtime
         if resolved_provider == "vieneu":
             return self.vieneu_runtime
-        raise ValueError(f"Unsupported TTS provider '{resolved_provider}'. Supported providers: vieneu, f5")
+        raise ValueError(f"Unsupported TTS provider '{resolved_provider}'. Supported providers: vieneu")
 
     def get_provider_info(self) -> dict[str, object]:
         return {

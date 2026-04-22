@@ -26,14 +26,14 @@ class DummyVoiceProvider:
     def get_options(self) -> VoiceProviderOption:
         return VoiceProviderOption(
             id="vieneu",
-            label="VieNeu V2 Turbo",
+            label="VieNeu-TTS-0.3B",
             enabled=self.enabled,
-            defaultVoiceKey="default",
+            defaultVoiceKey="voice_default",
             statusMessage=None if self.enabled else "missing assets",
             voices=[
                 VoiceOption(
-                    key="default",
-                    label="Default",
+                    key="voice_default",
+                    label="Project default",
                     provider="vieneu",
                     isAvailable=self.enabled,
                 )
@@ -66,7 +66,8 @@ def test_voice_options_route_returns_provider_payload(tmp_path: Path):
         assert response.status_code == 200
         payload = VoiceOptionsResponse(**response.json())
         assert payload.defaultProvider == "vieneu"
-        assert payload.providers[0].voices[0].key == "default"
+        assert payload.providers[0].defaultVoiceKey == "voice_default"
+        assert payload.providers[0].voices[0].key == "voice_default"
     finally:
         app.dependency_overrides.clear()
 
@@ -84,7 +85,7 @@ def test_voice_generate_route_returns_wav_bytes(tmp_path: Path):
                 json={
                     "text": "Xin chao",
                     "provider": "vieneu",
-                    "voiceKey": "default",
+                    "voiceKey": "voice_default",
                 },
             )
         assert response.status_code == 200
@@ -107,7 +108,7 @@ def test_voice_generate_route_rejects_empty_text(tmp_path: Path):
                 json={
                     "text": "   ",
                     "provider": "vieneu",
-                    "voiceKey": "default",
+                    "voiceKey": "voice_default",
                 },
             )
         assert response.status_code == 400
@@ -129,7 +130,7 @@ def test_voice_generate_route_returns_missing_asset_error(tmp_path: Path):
                 json={
                     "text": "Xin chao",
                     "provider": "vieneu",
-                    "voiceKey": "default",
+                    "voiceKey": "voice_default",
                 },
             )
         assert response.status_code == 500

@@ -11,7 +11,7 @@ class VieneuTtsProvider:
         self.bridge = bridge
 
     def get_options(self) -> VoiceProviderOption:
-        return self.bridge.get_provider_option("VieNeu V2 Turbo")
+        return self.bridge.get_provider_option("VieNeu-TTS-0.3B")
 
     def generate_audio(self, request: VoiceGenerateRequest) -> bytes:
         return self.bridge.generate_audio(request)

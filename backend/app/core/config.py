@@ -5,6 +5,9 @@ from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
+
+
 def _normalize_secret(value: str | None) -> str:
     if not value:
         return ""
@@ -17,6 +20,13 @@ def _normalize_secret(value: str | None) -> str:
     ):
         return trimmed[1:-1].strip()
     return trimmed
+
+
+def _resolve_backend_path(value: str | Path) -> Path:
+    path = Path(value)
+    if path.is_absolute():
+        return path.resolve()
+    return (BACKEND_ROOT / path).resolve()
 
 
 class Settings(BaseSettings):
@@ -78,22 +88,16 @@ class Settings(BaseSettings):
     tts_warm_on_startup: bool = Field(default=False, alias="AI_BACKEND_TTS_WARM_ON_STARTUP")
     tts_smoke_test_text: str = Field(default="", alias="AI_BACKEND_TTS_SMOKE_TEST_TEXT")
     tts_max_concurrent_jobs: int = Field(default=1, alias="AI_BACKEND_TTS_MAX_CONCURRENT_JOBS")
-    tts_vieneu_default_voice_key: str = Field(default="default", alias="AI_BACKEND_TTS_VIENEU_VOICE_KEY")
-    tts_f5_python_raw: str = Field(
-        default=".bench/f5-venv/Scripts/python.exe",
-        alias="AI_BACKEND_TTS_F5_PYTHON",
+    tts_vieneu_model_id: str = Field(
+        default="pnnbao-ump/VieNeu-TTS-0.3B",
+        alias="AI_BACKEND_TTS_VIENEU_MODEL_ID",
     )
-    tts_f5_model_root_raw: str = Field(default=".models/f5-onnx", alias="AI_BACKEND_TTS_F5_MODEL_ROOT")
-    tts_f5_reference_root_raw: str = Field(
-        default=".models/f5-reference",
-        alias="AI_BACKEND_TTS_F5_REFERENCE_ROOT",
+    tts_vieneu_temperature: float = Field(default=1.0, alias="AI_BACKEND_TTS_VIENEU_TEMPERATURE")
+    tts_vieneu_default_voice_key: str = Field(default="voice_default", alias="AI_BACKEND_TTS_VIENEU_VOICE_KEY")
+    tts_vieneu_voice_root_raw: str = Field(
+        default=".models/vieneu-voices",
+        alias="AI_BACKEND_TTS_VIENEU_VOICE_ROOT",
     )
-    tts_f5_default_voice_key: str = Field(
-        default="nu_review_cuon",
-        alias="AI_BACKEND_TTS_F5_VOICE_KEY",
-    )
-    tts_f5_gpu_bundle: str = Field(default="GPU_CUDA_F16", alias="AI_BACKEND_TTS_F5_GPU_BUNDLE")
-    tts_f5_cpu_bundle: str = Field(default="CPU_F32", alias="AI_BACKEND_TTS_F5_CPU_BUNDLE")
     caption_chunk_size: int = Field(default=1, alias="AI_BACKEND_CAPTION_CHUNK_SIZE")
     caption_max_tokens: int = Field(default=512, alias="AI_BACKEND_CAPTION_MAX_TOKENS")
     script_chunk_size: int = Field(default=10, alias="AI_BACKEND_SCRIPT_CHUNK_SIZE")
@@ -127,9 +131,9 @@ class Settings(BaseSettings):
         if value is None:
             return "vieneu"
         normalized = str(value).strip().lower()
-        if normalized in {"", "vieneu", "f5"}:
+        if normalized in {"", "vieneu"}:
             return normalized or "vieneu"
-        raise ValueError("AI_BACKEND_TTS_PROVIDER must be one of: vieneu, f5.")
+        raise ValueError("AI_BACKEND_TTS_PROVIDER must be 'vieneu'.")
 
     @property
     def cors_origins(self) -> list[str]:
@@ -137,23 +141,15 @@ class Settings(BaseSettings):
 
     @property
     def temp_root(self) -> Path:
-        return Path(self.temp_root_raw).resolve()
+        return _resolve_backend_path(self.temp_root_raw)
 
     @property
     def ocr_debug_root(self) -> Path:
         return self.temp_root.parent / "ocr-debug"
 
     @property
-    def tts_f5_python(self) -> Path:
-        return Path(self.tts_f5_python_raw).resolve()
-
-    @property
-    def tts_f5_model_root(self) -> Path:
-        return Path(self.tts_f5_model_root_raw).resolve()
-
-    @property
-    def tts_f5_reference_root(self) -> Path:
-        return Path(self.tts_f5_reference_root_raw).resolve()
+    def tts_vieneu_voice_root(self) -> Path:
+        return _resolve_backend_path(self.tts_vieneu_voice_root_raw)
 
     @property
     def effective_gemini_api_key(self) -> str:

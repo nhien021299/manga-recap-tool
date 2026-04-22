@@ -2,21 +2,21 @@
 
 Frontend-backend manga recap editor.
 
-## Repo layout
+## Current architecture
 
 - `web-app/`: React + Vite editor for upload, extract, script, voice, and render flow
-- `backend/`: FastAPI service for script generation and backend-owned TTS
+- `backend/`: FastAPI service for Gemini script generation and backend-owned TTS
 - `ai/`: notes and internal references
 
-## Current architecture
+Active product flow:
 
 - Upload and extract stay browser-side
 - Step Script sends extracted panel files from frontend to backend
 - Backend runs Gemini script generation from panel images
-- Voice generation runs through backend routes only
-- Active TTS providers are:
-  - `vieneu` as the default CPU-first path
-  - `f5` as the ONNX worker path for benchmark / comparison
+- Step TTS runs only through backend routes
+- The only active TTS provider is `vieneu`
+- The active TTS model is `pnnbao-ump/VieNeu-TTS-0.3B`
+- The active cached preset is `voice_default`
 
 Active API entrypoints:
 
@@ -26,8 +26,6 @@ GET  /api/v1/voice/options
 POST /api/v1/voice/generate
 GET  /api/v1/system/tts
 ```
-
-`GET /api/v1/system/tts` also accepts `?provider=vieneu` or `?provider=f5`.
 
 ## Setup
 
@@ -46,6 +44,38 @@ cd backend
 python -m pip install -r requirements.txt
 copy .env.example .env
 ```
+
+## TTS setup
+
+The backend is now standardized on `VieNeu-TTS-0.3B` in `standard` mode with a cached preset.
+
+Required files for the canonical project voice:
+
+```text
+backend/.models/voice-cache/voice_default/reference.wav
+backend/.models/voice-cache/voice_default/reference.txt
+```
+
+To rebuild the preset cache:
+
+```bash
+python backend/scripts/build_voice_default_preset.py --source-key voice_default --voice-key voice_default --device cpu
+```
+
+This writes:
+
+```text
+backend/.models/vieneu-voices/voices.json
+backend/.models/vieneu-voices/clone-cache.json
+backend/.models/vieneu-voices/voice_default.wav
+backend/.models/vieneu-voices/voice_default.txt
+```
+
+Runtime behavior:
+
+- The backend loads `voices.json` once
+- `voice_default` is reused for every TTS request
+- The backend does not encode `reference.wav` again on each request
 
 ## Run
 
@@ -70,7 +100,7 @@ Or use:
 VITE_API_BASE_URL=http://127.0.0.1:8000
 VITE_GEMINI_API_KEY=
 VITE_TTS_PROVIDER=vieneu
-VITE_TTS_VOICE_KEY=default
+VITE_TTS_VOICE_KEY=voice_default
 ```
 
 ## Backend env
@@ -88,30 +118,21 @@ AI_BACKEND_TTS_RUNTIME=auto
 AI_BACKEND_TTS_WARM_ON_STARTUP=false
 AI_BACKEND_TTS_SMOKE_TEST_TEXT=
 AI_BACKEND_TTS_MAX_CONCURRENT_JOBS=1
-AI_BACKEND_TTS_VIENEU_VOICE_KEY=default
-AI_BACKEND_TTS_F5_PYTHON=.bench/f5-venv/Scripts/python.exe
-AI_BACKEND_TTS_F5_MODEL_ROOT=.models/f5-onnx
-AI_BACKEND_TTS_F5_REFERENCE_ROOT=.models/f5-reference
-AI_BACKEND_TTS_F5_VOICE_KEY=vietnamese_reference
-AI_BACKEND_TTS_F5_GPU_BUNDLE=GPU_CUDA_F16
-AI_BACKEND_TTS_F5_CPU_BUNDLE=CPU_F32
+AI_BACKEND_TTS_VIENEU_MODEL_ID=pnnbao-ump/VieNeu-TTS-0.3B
+AI_BACKEND_TTS_VIENEU_TEMPERATURE=1.0
+AI_BACKEND_TTS_VIENEU_VOICE_KEY=voice_default
+AI_BACKEND_TTS_VIENEU_VOICE_ROOT=.models/vieneu-voices
 ```
-
-## Local model placement
-
-See [backend/.models/README.md](./backend/.models/README.md).
-
-In short:
-
-- `vieneu` does not need checked-in model assets here
-- `f5` expects ONNX bundles under `backend/.models/f5-onnx/`
-- `f5` also needs at least one reference pair:
-  - `backend/.models/f5-reference/<preset>.wav`
-  - `backend/.models/f5-reference/<preset>.txt`
 
 ## Benchmark
 
-Run the backend first, then execute:
+Generate a production-style sample directly from the cached preset:
+
+```bash
+python backend/.bench/zero_shot_vieneu_test.py
+```
+
+Or benchmark the active backend API:
 
 ```bash
 cd backend
@@ -120,20 +141,19 @@ python .bench/bench_vieneu.py
 
 Default output:
 
+- `backend/.bench/samples/vieneu/vieneu_0_3b_voice_default.wav`
 - `backend/.bench/samples/vieneu/sample.wav`
-- `backend/.bench/samples/f5/sample.wav`
 - `backend/.bench/samples/benchmark.json`
 
 ## Validation status
 
-Verified on `2026-04-21`:
+Validated during this migration:
 
-- `npm --prefix web-app run build`
-- `pytest backend/tests/test_voice_routes.py backend/tests/test_routes.py`
-- `python -m compileall backend/app backend/tests`
+- `python backend/scripts/build_voice_default_preset.py --source-key voice_default --voice-key voice_default --device cpu`
+- `python backend/.bench/zero_shot_vieneu_test.py`
 
-## Open risks
+## Notes
 
-- `f5` quality depends heavily on the reference clip quality and text pairing
-- `f5` GPU acceleration on Windows depends on the external ONNX runtime exposing `DmlExecutionProvider`
-- Gemini script generation is still synchronous
+- `voice_2_clone` is kept only as a legacy alias in `clone-cache.json`
+- persisted frontend state that still holds `voice_2_clone` is normalized to `voice_default`
+- `GET /api/v1/system/tts?provider=vieneu` is the only supported TTS runtime query

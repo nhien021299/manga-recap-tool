@@ -1,0 +1,16 @@
+{
+  "voiceKey": "voice_default",
+  "sourceFileName": "voice-2.MP3",
+  "sourcePath": "source.mp3",
+  "referenceWavPath": "reference.wav",
+  "referenceTextPath": "reference.txt",
+  "providers": [
+    "vieneu"
+  ],
+  "projectDefault": true,
+  "closestPreset": {
+    "provider": "vieneu",
+    "key": "Bích Ngọc (Nữ - Miền Bắc)",
+    "similarity": 0.98080354929
+  }
+}

@@ -136,7 +136,7 @@ export function StepVoice() {
             AI Voiceover
           </h2>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <p>Generate narration clips through the backend voice runtime with VieNeu or F5.</p>
+            <p>Generate narration clips through the backend VieNeu-TTS-0.3B runtime.</p>
             {totalDuration > 0 && !isLoading && (
               <div className="flex items-center gap-1.5 rounded-md border border-primary/20 bg-primary/10 px-2 py-0.5 font-medium text-primary">
                 <Clock className="h-3.5 w-3.5" />
@@ -257,7 +257,7 @@ export function StepVoice() {
           <div className="space-y-2 text-center">
             <h3 className="text-xl font-semibold">Create narration audio</h3>
             <p className="max-w-sm px-4 text-muted-foreground">
-              Turn the generated script into WAV clips from the backend VieNeu or F5 pipeline.
+              Turn the generated script into WAV clips from the backend VieNeu-TTS-0.3B pipeline.
             </p>
           </div>
 

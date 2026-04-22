@@ -1,21 +1,41 @@
 Place local TTS assets here.
 
-Active providers:
+The only supported TTS flow is now:
 
-- `vieneu`
-  - no checked-in local model bundle is required here
-- `f5`
-  - ONNX bundles:
-    - `backend/.models/f5-onnx/CPU_F32.zip`
-    - `backend/.models/f5-onnx/GPU_CUDA_F16.zip`
-    - or extracted folders with the same names
-  - reference presets:
-    - `backend/.models/f5-reference/<preset>.wav`
-    - `backend/.models/f5-reference/<preset>.txt`
+- provider: `vieneu`
+- model: `pnnbao-ump/VieNeu-TTS-0.3B`
+- mode: `standard`
+- cached preset: `voice_default`
 
-The backend extracts F5 bundle zip files on first use if the extracted folder is missing.
+## Required layout
 
-Runtime diagnostics:
+Reference source of truth:
 
+```text
+backend/.models/voice-cache/voice_default/reference.wav
+backend/.models/voice-cache/voice_default/reference.txt
+backend/.models/voice-cache/voice_default/source.mp3      # optional
+backend/.models/voice-cache/voice_default/metadata.json   # optional
+```
+
+Generated preset cache:
+
+```text
+backend/.models/vieneu-voices/voices.json
+backend/.models/vieneu-voices/clone-cache.json
+backend/.models/vieneu-voices/voice_default.wav
+backend/.models/vieneu-voices/voice_default.txt
+```
+
+## Rebuild preset
+
+After replacing the reference clip or transcript, rebuild the cached preset with:
+
+```bash
+python backend/scripts/build_voice_default_preset.py --source-key voice_default --voice-key voice_default --device cpu
+```
+
+## Runtime diagnostics
+
+- `GET /api/v1/system/tts`
 - `GET /api/v1/system/tts?provider=vieneu`
-- `GET /api/v1/system/tts?provider=f5`

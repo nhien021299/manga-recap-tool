@@ -11,7 +11,7 @@ import wave
 from pathlib import Path
 
 
-DEFAULT_TEXT = "Xin chao, day la mau benchmark TTS de so sanh Vieneu va F5 trong flow backend."
+DEFAULT_TEXT = "Xin chào, đây là mẫu benchmark cho flow TTS production của VieNeu-TTS-0.3B."
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -21,7 +21,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--provider",
         action="append",
         dest="providers",
-        help="Provider to benchmark. Repeat to run multiple providers. Defaults to vieneu and f5.",
+        help="Provider to benchmark. Repeat to run multiple providers. Defaults to vieneu only.",
     )
     parser.add_argument("--text", default=DEFAULT_TEXT, help="Benchmark text.")
     parser.add_argument("--speed", type=float, default=1.0, help="Voice speed.")
@@ -67,7 +67,7 @@ def main() -> int:
     base_url = args.base_url.rstrip("/")
     output_root = Path(args.output_root)
     output_root.mkdir(parents=True, exist_ok=True)
-    providers_to_run = args.providers or ["vieneu", "f5"]
+    providers_to_run = args.providers or ["vieneu"]
 
     try:
         options_payload = fetch_json(f"{base_url}/voice/options", timeout=args.timeout)

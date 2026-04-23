@@ -32,16 +32,19 @@ const buildFormData = (
   options?: { reuseCache?: boolean; returnRawOutputs?: boolean }
 ) => {
   const formData = new FormData();
-  const payload: Record<string, string> = {
+  const payload: Record<string, unknown> = {
     language: context.language === "en" ? "en" : "vi",
   };
   const mangaName = context.mangaName?.trim();
   const mainCharacter = context.mainCharacter?.trim();
   const summary = context.summary?.trim();
+  const chapterId = context.chapterId?.trim();
 
   if (mangaName) payload.mangaName = mangaName;
   if (mainCharacter) payload.mainCharacter = mainCharacter;
   if (summary) payload.summary = summary;
+  if (chapterId) payload.chapterId = chapterId;
+  if (context.characterContext) payload.characterContext = context.characterContext;
 
   formData.append(
     "context",

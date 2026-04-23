@@ -114,7 +114,7 @@ export function StepUpload() {
     try {
       const importedPanels = await buildPanelsFromFiles(panelFiles);
       setPanels(importedPanels);
-      setCurrentStep("script");
+      setCurrentStep("characters");
     } catch (error) {
       console.error("Error importing cropped panels:", error);
     } finally {

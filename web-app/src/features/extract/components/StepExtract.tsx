@@ -548,7 +548,7 @@ export function StepExtract() {
     const canReusePrepared = preparedPanelsKey === extractionKey && preparedPanels && preparedPanels.length > 0;
     if (canReusePrepared) {
       setPanels(preparedPanels);
-      setCurrentStep("script");
+      setCurrentStep("characters");
       return;
     }
 
@@ -557,7 +557,7 @@ export function StepExtract() {
     try {
       const allProcessedPanels = await preparePanels(100);
       setPanels(allProcessedPanels);
-      setCurrentStep("script");
+      setCurrentStep("characters");
     } catch (error) {
       console.error(error);
     } finally {

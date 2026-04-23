@@ -166,7 +166,7 @@ export function StepScript() {
               </Button>
             </>
           )}
-          <Button variant="outline" onClick={() => setCurrentStep(virtualStrip.length > 0 ? "extract" : "upload")} className="bg-white/5 border-white/10 text-white hover:bg-white/10 px-6 font-bold">
+          <Button variant="outline" onClick={() => setCurrentStep(panels.length > 0 ? "characters" : virtualStrip.length > 0 ? "extract" : "upload")} className="bg-white/5 border-white/10 text-white hover:bg-white/10 px-6 font-bold">
             <ChevronLeft className="w-4 h-4" /> Quay lại
           </Button>
           <Button onClick={() => setCurrentStep("voice")} disabled={timeline.length === 0} className="group px-8 font-bold">

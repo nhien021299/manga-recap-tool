@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/app/layout/AppLayout";
 import { StepBenchmark } from "@/features/benchmark/components/StepBenchmark";
+import { StepCharacters } from "@/features/characters/components/StepCharacters";
 import { StepExtract } from "@/features/extract/components/StepExtract";
 import { StepRender } from "@/features/render/components/StepRender";
 import { StepScript } from "@/features/script/components/StepScript";
@@ -23,6 +24,8 @@ function App() {
         return <StepUpload />;
       case "extract":
         return <StepExtract />;
+      case "characters":
+        return <StepCharacters />;
       case "script":
         return <StepScript />;
       case "voice":

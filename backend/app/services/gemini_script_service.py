@@ -34,6 +34,7 @@ class IdentityEvidence:
     candidate_pool: list[str]
     confirmed_names: list[str]
     carryover_names: list[str]
+    locked_names: list[str]
     has_text_signal: bool
     use_neutral_fallback: bool
     neutral_fallback_reason: str
@@ -132,7 +133,7 @@ class GeminiScriptService:
                 retryCount=stats.retry_count,
                 rateLimitedCount=stats.rate_limited_count,
                 throttleWaitMs=stats.throttle_wait_ms,
-                identityConfirmedCount=0,
+                identityConfirmedCount=self._count_confirmed_character_mappings(context),
             ),
         )
 
@@ -167,6 +168,7 @@ class GeminiScriptService:
 
             prompt = self._build_unified_prompt(
                 context=context,
+                batch_panels=batch_panels,
                 panel_count=len(batch_paths),
                 start_index=start_index,
                 previous_memory=previous_memory,
@@ -271,18 +273,21 @@ class GeminiScriptService:
                 candidate_pool=[],
                 confirmed_names=[],
                 carryover_names=[],
+                locked_names=[],
                 has_text_signal=False,
                 use_neutral_fallback=True,
                 neutral_fallback_reason="no candidate names available",
             )
 
+        locked_names = self._locked_character_names(context)
         return IdentityEvidence(
             candidate_pool=candidate_pool,
             confirmed_names=[],
             carryover_names=candidate_pool[:MAX_HINT_NAMES],
+            locked_names=locked_names,
             has_text_signal=False,
-            use_neutral_fallback=True,
-            neutral_fallback_reason="using carryover hints only",
+            use_neutral_fallback=not bool(locked_names),
+            neutral_fallback_reason="locked character mapping available" if locked_names else "using carryover hints only",
         )
 
     async def _call_gemini(
@@ -496,6 +501,7 @@ class GeminiScriptService:
         self,
         *,
         context: ScriptContext,
+        batch_panels: list[PanelReference],
         panel_count: int,
         start_index: int,
         previous_memory: StoryMemory | None,
@@ -569,6 +575,9 @@ class GeminiScriptService:
                     ]
                 )
             )
+        character_guidance = self._build_character_guidance(context=context, batch_panels=batch_panels)
+        if character_guidance:
+            sections.append(character_guidance)
         if identity_evidence.use_neutral_fallback:
             sections.append(
                 "\n".join(
@@ -605,6 +614,8 @@ class GeminiScriptService:
             "\n".join(
                 [
                     "Naming rules:",
+                    "- If a panel references a locked canonical name, always use that exact canonical name.",
+                    "- If a panel references an unlocked display label, keep that same label stable across nearby panels unless stronger evidence appears.",
                     "- Use a character name only when the current images or visible dialogue make the identity clear.",
                     "- Never treat carryover names as proof on their own.",
                     "- If identity is unclear, label people by visible age, outfit, role, weapon, job, or standout physical traits before using a generic label.",
@@ -856,8 +867,69 @@ class GeminiScriptService:
         return best_mode if scores[best_mode] > 0 else "mystery"
 
     def _manual_known_names(self, context: ScriptContext) -> list[str]:
-        name = " ".join(context.mainCharacter.split())
-        return [name] if name else []
+        names: list[str] = []
+        main_character = " ".join(context.mainCharacter.split())
+        if main_character:
+            names.append(main_character)
+        if context.characterContext is not None:
+            for character in context.characterContext.characters:
+                canonical = " ".join(character.canonicalName.split())
+                display = " ".join(character.displayLabel.split())
+                if canonical:
+                    names.append(canonical)
+                elif display:
+                    names.append(display)
+        return names
+
+    def _locked_character_names(self, context: ScriptContext) -> list[str]:
+        if context.characterContext is None:
+            return []
+        return [
+            character.canonicalName.strip()
+            for character in context.characterContext.characters
+            if character.lockName and character.canonicalName.strip()
+        ]
+
+    def _build_character_guidance(self, *, context: ScriptContext, batch_panels: list[PanelReference]) -> str:
+        if context.characterContext is None or not context.characterContext.panelCharacterRefs:
+            return ""
+
+        character_by_id = {character.clusterId: character for character in context.characterContext.characters}
+        lines = [
+            "Character consistency rules:",
+            "- If a panel references a character with a canonical name, always use that canonical name.",
+            "- Do not rename the same character with a new descriptive label.",
+            "- If no canonical name exists, use the provided display label consistently.",
+            "- Only invent a new generic description when no character mapping is available.",
+            "Panel character mapping for this batch:",
+        ]
+        has_mapping = False
+        for panel in batch_panels:
+            cluster_ids = context.characterContext.panelCharacterRefs.get(panel.panelId, [])
+            if not cluster_ids:
+                continue
+            labels: list[str] = []
+            for cluster_id in cluster_ids:
+                character = character_by_id.get(cluster_id)
+                if character is None:
+                    continue
+                preferred_label = character.canonicalName.strip() or character.displayLabel.strip()
+                if not preferred_label:
+                    continue
+                labels.append(
+                    f"{preferred_label}{' (locked)' if character.lockName and character.canonicalName.strip() else ''}"
+                )
+            if not labels:
+                continue
+            has_mapping = True
+            lines.append(f"- Panel {panel.orderIndex + 1}: {', '.join(labels)}")
+
+        return "\n".join(lines) if has_mapping else ""
+
+    def _count_confirmed_character_mappings(self, context: ScriptContext) -> int:
+        if context.characterContext is None:
+            return 0
+        return sum(1 for cluster_ids in context.characterContext.panelCharacterRefs.values() if cluster_ids)
 
     def _dedupe_names(self, names: list[str]) -> list[str]:
         deduped: list[str] = []

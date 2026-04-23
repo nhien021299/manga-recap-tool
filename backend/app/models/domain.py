@@ -1,11 +1,14 @@
 from pydantic import BaseModel, Field
 
+from app.models.characters import CharacterScriptContext
+
 
 class ScriptContext(BaseModel):
     mangaName: str = ""
     mainCharacter: str = ""
     summary: str = ""
     language: str = "vi"
+    characterContext: CharacterScriptContext | None = None
 
 
 class PanelReference(BaseModel):

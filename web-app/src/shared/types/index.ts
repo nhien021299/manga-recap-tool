@@ -37,11 +37,63 @@ export interface Panel {
   rect?: { x: number; y: number; width: number; height: number };
 }
 
+export type CharacterClusterStatus = "draft" | "locked" | "review_needed" | "unknown" | "ignored" | "merged";
+export type PanelCharacterSource = "auto_confirmed" | "manual" | "unknown" | "suggested";
+
+export interface CharacterCluster {
+  clusterId: string;
+  chapterId: string;
+  status: CharacterClusterStatus;
+  canonicalName: string;
+  displayLabel: string;
+  lockName: boolean;
+  confidenceScore: number;
+  occurrenceCount: number;
+  anchorPanelIds: string[];
+  samplePanelIds: string[];
+  reviewFlags: string[];
+  mergedIntoClusterId?: string | null;
+}
+
+export interface PanelCharacterRef {
+  panelId: string;
+  clusterIds: string[];
+  source: PanelCharacterSource;
+  confidenceScore: number;
+}
+
+export interface CharacterScriptEntry {
+  clusterId: string;
+  canonicalName: string;
+  displayLabel: string;
+  lockName: boolean;
+}
+
+export interface CharacterScriptContext {
+  chapterId: string;
+  characters: CharacterScriptEntry[];
+  panelCharacterRefs: Record<string, string[]>;
+  unknownPanelIds: string[];
+}
+
+export interface ChapterCharacterState {
+  chapterId: string;
+  chapterContentHash: string;
+  prepassVersion: string;
+  generatedAt: string;
+  updatedAt: string;
+  needsReview: boolean;
+  clusters: CharacterCluster[];
+  panelCharacterRefs: PanelCharacterRef[];
+}
+
 export interface ScriptContext {
   mangaName?: string;
   mainCharacter?: string;
   summary?: string;
   language?: "vi" | "en";
+  chapterId?: string;
+  characterContext?: CharacterScriptContext | null;
 }
 
 export interface PanelUnderstanding {
@@ -268,7 +320,7 @@ export interface BenchmarkRecord {
   warnings: string[];
 }
 
-export type Step = "upload" | "extract" | "script" | "voice" | "render" | "benchmark";
+export type Step = "upload" | "extract" | "characters" | "script" | "voice" | "render" | "benchmark";
 export type LogType = "request" | "result" | "error";
 
 export interface GeminiLog {

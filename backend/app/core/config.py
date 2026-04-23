@@ -44,6 +44,14 @@ class Settings(BaseSettings):
         alias="AI_BACKEND_CORS_ORIGINS",
     )
     temp_root_raw: str = Field(default=".temp/jobs", alias="AI_BACKEND_TEMP_ROOT")
+    character_state_db_raw: str = Field(
+        default=".temp/characters/character-state.sqlite3",
+        alias="AI_BACKEND_CHARACTER_STATE_DB",
+    )
+    character_cache_root_raw: str = Field(
+        default=".temp/characters/cache",
+        alias="AI_BACKEND_CHARACTER_CACHE_ROOT",
+    )
     render_temp_root_raw: str = Field(default=".temp/render-jobs", alias="AI_BACKEND_RENDER_TEMP_ROOT")
     render_ffmpeg_path: str = Field(default="ffmpeg", alias="AI_BACKEND_RENDER_FFMPEG_PATH")
     render_result_ttl_seconds: int = Field(default=3600, alias="AI_BACKEND_RENDER_RESULT_TTL_SECONDS")
@@ -118,6 +126,14 @@ class Settings(BaseSettings):
     @property
     def render_temp_root(self) -> Path:
         return _resolve_backend_path(self.render_temp_root_raw)
+
+    @property
+    def character_state_db(self) -> Path:
+        return _resolve_backend_path(self.character_state_db_raw)
+
+    @property
+    def character_cache_root(self) -> Path:
+        return _resolve_backend_path(self.character_cache_root_raw)
 
     @property
     def tts_vieneu_voice_root(self) -> Path:

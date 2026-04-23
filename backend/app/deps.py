@@ -16,6 +16,18 @@ def get_gemini_script_service(request: Request):
     return request.app.state.gemini_script_service
 
 
+def get_character_prepass_service(request: Request):
+    return request.app.state.character_prepass_service
+
+
+def get_character_review_state_service(request: Request):
+    return request.app.state.character_review_state_service
+
+
+def get_character_script_context_builder(request: Request):
+    return request.app.state.character_script_context_builder
+
+
 def get_voice_service(request: Request):
     return request.app.state.voice_service
 

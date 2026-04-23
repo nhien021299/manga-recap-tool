@@ -68,6 +68,7 @@ async def test_identity_evidence_uses_carryover_and_neutral_fallback():
 
     assert evidence.confirmed_names == []
     assert evidence.carryover_names == ["Elder Mo", "Ly Pham"]
+    assert evidence.locked_names == []
     assert evidence.use_neutral_fallback is True
     assert evidence.neutral_fallback_reason == "using carryover hints only"
 
@@ -80,6 +81,7 @@ def test_identity_evidence_prompt_uses_carryover_only():
     )
     prompt = service._build_unified_prompt(
         context=ScriptContext(summary="A tense chase is already underway."),
+        batch_panels=[],
         panel_count=2,
         start_index=1,
         previous_memory=StoryMemory(
@@ -92,6 +94,7 @@ def test_identity_evidence_prompt_uses_carryover_only():
 
     assert evidence.confirmed_names == []
     assert evidence.carryover_names == ["Elder Mo", "Ly Pham"]
+    assert evidence.locked_names == []
     assert evidence.use_neutral_fallback is True
     assert "Carryover names from previous chunk:" in prompt
     assert "Elder Mo" in prompt
@@ -106,6 +109,7 @@ def test_build_unified_prompt_contains_update_2_1_style_blocks():
             summary="A bloody chase becomes a desperate fight in a dark corridor.",
             mainCharacter="Ly Pham",
         ),
+        batch_panels=[],
         panel_count=3,
         start_index=4,
         previous_memory=StoryMemory(
@@ -117,6 +121,7 @@ def test_build_unified_prompt_contains_update_2_1_style_blocks():
             candidate_pool=["Ly Pham"],
             confirmed_names=["Ly Pham"],
             carryover_names=[],
+            locked_names=["Ly Pham"],
             has_text_signal=True,
             use_neutral_fallback=False,
             neutral_fallback_reason="",
@@ -145,6 +150,7 @@ def test_build_unified_prompt_keeps_json_only_guardrails():
     service = GeminiScriptService(build_settings())
     prompt = service._build_unified_prompt(
         context=ScriptContext(summary="A quiet room hides a clue."),
+        batch_panels=[],
         panel_count=2,
         start_index=1,
         previous_memory=None,
@@ -152,6 +158,7 @@ def test_build_unified_prompt_keeps_json_only_guardrails():
             candidate_pool=[],
             confirmed_names=[],
             carryover_names=[],
+            locked_names=[],
             has_text_signal=False,
             use_neutral_fallback=True,
             neutral_fallback_reason="no candidate names available",
@@ -163,6 +170,45 @@ def test_build_unified_prompt_keeps_json_only_guardrails():
     assert '"voiceover_text": "..."' in prompt
     assert "Return exactly 2 items for 2 images." in prompt
     assert "panel_index starts at 1 and increases by 1." in prompt
+
+
+def test_build_unified_prompt_injects_character_mapping_rules():
+    service = GeminiScriptService(build_settings())
+    prompt = service._build_unified_prompt(
+        context=ScriptContext(
+            summary="A chase through ruined alleys.",
+            characterContext={
+                "chapterId": "chapter_x",
+                "characters": [
+                    {
+                        "clusterId": "char_001",
+                        "canonicalName": "Ly Pham",
+                        "displayLabel": "ga ao den",
+                        "lockName": True,
+                    }
+                ],
+                "panelCharacterRefs": {"panel-1": ["char_001"]},
+                "unknownPanelIds": [],
+            },
+        ),
+        batch_panels=[SimpleNamespace(panelId="panel-1", orderIndex=0)],
+        panel_count=1,
+        start_index=1,
+        previous_memory=None,
+        identity_evidence=gemini_module.IdentityEvidence(
+            candidate_pool=["Ly Pham"],
+            confirmed_names=[],
+            carryover_names=["Ly Pham"],
+            locked_names=["Ly Pham"],
+            has_text_signal=False,
+            use_neutral_fallback=False,
+            neutral_fallback_reason="locked character mapping available",
+        ),
+    )
+
+    assert "Character consistency rules:" in prompt
+    assert "always use that canonical name" in prompt
+    assert "Panel 1: Ly Pham (locked)" in prompt
 
 
 def test_infer_narration_mode_returns_horror():

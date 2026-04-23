@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 from app.models.domain import (
@@ -10,16 +12,12 @@ from app.models.domain import (
     StoryMemory,
 )
 from app.models.jobs import JobLogEntry, JobStatus
+from app.models.render_jobs import RenderJobLogEntry, RenderJobStatus
 
 
 class ScriptJobOptions(BaseModel):
     reuseCache: bool = True
     returnRawOutputs: bool = True
-
-
-class CaptionBatchRequest(BaseModel):
-    context: ScriptContext
-    panels: list[PanelReference]
 
 
 class ScriptJobRequest(BaseModel):
@@ -54,15 +52,6 @@ class JobStatusResponse(BaseModel):
     progress: int
     error: str | None = None
     logs: list[JobLogEntry] = Field(default_factory=list)
-
-
-class ProvidersResponse(BaseModel):
-    textProvider: str
-    textModel: str
-    visionProvider: str
-    visionModel: str
-    ocrEnabled: bool
-    ocrProvider: str
 
 
 class HealthResponse(BaseModel):
@@ -101,7 +90,7 @@ class VoiceGenerateRequest(BaseModel):
     text: str
     provider: str = "vieneu"
     voiceKey: str
-    speed: float = 1.0
+    speed: float = 1.15
 
 
 class TtsRuntimeResponse(BaseModel):
@@ -121,3 +110,44 @@ class TtsRuntimeResponse(BaseModel):
     warm: bool = False
     isAvailable: bool = False
     startupError: str | None = None
+
+
+class RenderClipSpec(BaseModel):
+    clipId: str
+    panelId: str
+    orderIndex: int
+    durationMs: int = Field(gt=0)
+    holdAfterMs: int = Field(default=0, ge=0)
+    captionText: str = ""
+    panelFileKey: str
+    audioFileKey: str | None = None
+    motionPreset: str | None = None
+    motionSeed: int | None = None
+    motionIntensity: float | None = Field(default=None, ge=0.0, le=1.5)
+
+
+class RenderPlanRequest(BaseModel):
+    outputWidth: int = Field(gt=0)
+    outputHeight: int = Field(gt=0)
+    captionMode: Literal["off", "burned"] = "off"
+    frameRate: int = Field(default=30, ge=12, le=60)
+
+
+class RenderJobCreateResponse(BaseModel):
+    jobId: str
+    status: RenderJobStatus
+
+
+class RenderJobStatusResponse(BaseModel):
+    jobId: str
+    status: RenderJobStatus
+    progress: int
+    phase: str
+    detail: str | None = None
+    downloadUrl: str | None = None
+    error: str | None = None
+    logs: list[RenderJobLogEntry] = Field(default_factory=list)
+
+
+class RenderRevealResponse(BaseModel):
+    success: bool = True

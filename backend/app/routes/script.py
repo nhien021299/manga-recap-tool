@@ -12,6 +12,14 @@ from app.utils.temp_files import cleanup_temp_dir, save_uploads
 router = APIRouter(prefix="/script", tags=["script"])
 
 
+@router.get("/generate")
+async def explain_generate_script_method() -> None:
+    raise HTTPException(
+        status_code=405,
+        detail="Use POST /api/v1/script/generate with multipart form-data. GET is not supported for script generation.",
+    )
+
+
 @router.post("/generate", response_model=ScriptGenerationResponse)
 async def generate_script(
     context: str = Form(...),

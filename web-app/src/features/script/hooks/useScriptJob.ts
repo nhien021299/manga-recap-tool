@@ -37,13 +37,14 @@ const mergeTimelineWithExisting = (
         ...existing,
         panelId: panel.id,
         imageBlob: panel.blob,
+        scriptBaseline: generated.voiceover_text,
         scriptSource: {
           panelId: panel.id,
           orderIndex: index,
         },
         scriptSegment: {
-          narration: existing.scriptItem.voiceover_text ?? "",
-          status: "edited",
+          narration: generated.voiceover_text,
+          status: "auto",
           memorySnapshot: memoryForPanel?.summary,
         },
       };
@@ -60,6 +61,7 @@ const mergeTimelineWithExisting = (
       panelId: panel.id,
       imageBlob: panel.blob,
       scriptItem: generated,
+      scriptBaseline: generated.voiceover_text,
       scriptSource: {
         panelId: panel.id,
         orderIndex: index,

@@ -3,7 +3,10 @@ from __future__ import annotations
 import io
 import json
 import logging
+import shutil
+import subprocess
 import sys
+import tempfile
 import threading
 import time
 from pathlib import Path
@@ -27,6 +30,7 @@ class VieneuTtsWorkerBridge:
         self._last_error: str | None = None
         self._voice_presets: list[dict[str, str]] = []
         self._voice_alias_manifest: dict[str, object] | None = None
+        self._ffmpeg_path_cache: str | None = None
 
     def _backend_root(self) -> Path:
         return Path(__file__).resolve().parents[2]
@@ -39,6 +43,24 @@ class VieneuTtsWorkerBridge:
 
     def _runtime_python(self) -> str:
         return sys.executable
+
+    def _resolve_ffmpeg_path(self) -> str | None:
+        if self._ffmpeg_path_cache:
+            return self._ffmpeg_path_cache
+
+        candidate = (self.settings.render_ffmpeg_path or "ffmpeg").strip() or "ffmpeg"
+        direct_path = Path(candidate)
+        if direct_path.is_absolute() or "\\" in candidate or "/" in candidate:
+            resolved = direct_path if direct_path.is_absolute() else (self._backend_root() / direct_path).resolve()
+            if resolved.exists():
+                self._ffmpeg_path_cache = str(resolved)
+                return self._ffmpeg_path_cache
+            return None
+
+        located = shutil.which(candidate)
+        if located:
+            self._ffmpeg_path_cache = located
+        return located
 
     def _install_hint(self) -> str:
         runtime_python = self._runtime_python()
@@ -190,18 +212,22 @@ class VieneuTtsWorkerBridge:
                 )
                 wav_buffer = io.BytesIO()
                 sf.write(wav_buffer, audio_array, getattr(client, "sample_rate", 24000), format="WAV")
+                wav_bytes = wav_buffer.getvalue()
+                if abs(request.speed - 1.0) > 0.001:
+                    wav_bytes = self._apply_speed_to_wav_bytes(wav_bytes, request.speed)
                 elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
                 logger.info(
-                    "VieNeu generation completed voiceKey=%s resolvedVoiceKey=%s chars=%s audioSamples=%s elapsedMs=%s",
+                    "VieNeu generation completed voiceKey=%s resolvedVoiceKey=%s chars=%s audioSamples=%s speed=%.2f elapsedMs=%s",
                     requested_voice_key,
                     resolved_voice_key,
                     len(text),
                     len(audio_array),
+                    request.speed,
                     elapsed_ms,
                 )
                 self._is_warm = True
                 self._last_error = None
-                return wav_buffer.getvalue()
+                return wav_bytes
             except Exception as exc:
                 self._last_error = str(exc)
                 elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
@@ -211,6 +237,43 @@ class VieneuTtsWorkerBridge:
                     elapsed_ms,
                 )
                 raise RuntimeError(f"VieNeu generation failed: {exc}") from exc
+
+    def _apply_speed_to_wav_bytes(self, wav_bytes: bytes, speed: float) -> bytes:
+        ffmpeg_path = self._resolve_ffmpeg_path()
+        if not ffmpeg_path:
+            raise RuntimeError(
+                "FFmpeg is required to apply TTS speed. Set AI_BACKEND_RENDER_FFMPEG_PATH to a valid ffmpeg binary."
+            )
+
+        safe_speed = max(0.5, min(2.0, speed))
+        with tempfile.TemporaryDirectory(prefix="vieneu-speed-") as temp_dir:
+            temp_root = Path(temp_dir)
+            input_path = temp_root / "input.wav"
+            output_path = temp_root / "output.wav"
+            input_path.write_bytes(wav_bytes)
+
+            command = [
+                ffmpeg_path,
+                "-y",
+                "-i",
+                str(input_path),
+                "-filter:a",
+                f"atempo={safe_speed:.4f}",
+                str(output_path),
+            ]
+            process = subprocess.run(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            if process.returncode != 0 or not output_path.exists():
+                stderr_text = process.stderr.decode("utf-8", errors="replace").strip()
+                stdout_text = process.stdout.decode("utf-8", errors="replace").strip()
+                details = stderr_text or stdout_text or f"ffmpeg returned exit code {process.returncode}"
+                raise RuntimeError(f"Failed to apply TTS speed {safe_speed:.2f}x: {details}")
+
+            return output_path.read_bytes()
 
     def _load_local_voice_overrides(self, client) -> None:
         voices_file = self.settings.tts_vieneu_voice_root / "voices.json"

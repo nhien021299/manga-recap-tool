@@ -1,23 +1,13 @@
 from __future__ import annotations
 
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
 import app.services.gemini_script_service as gemini_module
 from app.core.config import Settings
-from app.models.domain import OCRLine, OCRResult, ScriptContext, ScriptItem, StoryMemory
+from app.models.domain import ScriptContext, ScriptItem, StoryMemory
 from app.services.gemini_script_service import GeminiScriptService, GenerationStats
-
-
-class FakeOCRProvider:
-    def __init__(self, result: OCRResult) -> None:
-        self.result = result
-
-    async def extract(self, image_path: Path, panel_id: str) -> OCRResult:
-        assert image_path
-        return self.result.model_copy(update={"panel_id": panel_id})
 
 
 class FakeStatusError(Exception):
@@ -69,74 +59,24 @@ def test_script_context_defaults_allow_missing_optional_fields():
 
 
 @pytest.mark.asyncio
-async def test_identity_evidence_without_ocr_uses_carryover_and_neutral_fallback():
-    service = GeminiScriptService(build_settings(gemini_identity_experiment_enabled=False))
-    evidence = await service._build_identity_evidence(
+async def test_identity_evidence_uses_carryover_and_neutral_fallback():
+    service = GeminiScriptService(build_settings())
+    evidence = service._build_identity_evidence(
         context=ScriptContext(mainCharacter="Ly Pham"),
-        batch_panels=[],
-        batch_paths=[],
         previous_memory=StoryMemory(chunkIndex=0, summary="prev", recentNames=["Elder Mo"]),
-        on_log=None,
     )
 
     assert evidence.confirmed_names == []
     assert evidence.carryover_names == ["Elder Mo", "Ly Pham"]
     assert evidence.use_neutral_fallback is True
-    assert evidence.neutral_fallback_reason == "identity OCR experiment disabled"
+    assert evidence.neutral_fallback_reason == "using carryover hints only"
 
 
-@pytest.mark.asyncio
-async def test_identity_evidence_with_ocr_no_match_does_not_confirm_names(tmp_path: Path):
-    image_path = tmp_path / "panel.png"
-    image_path.write_bytes(b"img")
-    service = GeminiScriptService(
-        build_settings(gemini_identity_experiment_enabled=True),
-        identity_ocr_provider=FakeOCRProvider(
-            OCRResult(
-                panel_id="panel-1",
-                has_text=True,
-                full_text="Unknown fighter",
-                lines=[OCRLine(text="Unknown fighter", confidence=0.95, role="dialogue")],
-            )
-        ),
-    )
-
-    evidence = await service._build_identity_evidence(
+def test_identity_evidence_prompt_uses_carryover_only():
+    service = GeminiScriptService(build_settings())
+    evidence = service._build_identity_evidence(
         context=ScriptContext(mainCharacter="Ly Pham"),
-        batch_panels=[SimpleNamespace(panelId="panel-1")],
-        batch_paths=[image_path],
         previous_memory=StoryMemory(chunkIndex=0, summary="prev", recentNames=["Elder Mo"]),
-        on_log=None,
-    )
-
-    assert evidence.confirmed_names == []
-    assert evidence.carryover_names == ["Elder Mo", "Ly Pham"]
-    assert evidence.use_neutral_fallback is True
-    assert evidence.has_text_signal is True
-
-
-@pytest.mark.asyncio
-async def test_identity_evidence_with_ocr_match_confirms_candidate_name(tmp_path: Path):
-    image_path = tmp_path / "panel.png"
-    image_path.write_bytes(b"img")
-    service = GeminiScriptService(
-        build_settings(gemini_identity_experiment_enabled=True),
-        identity_ocr_provider=FakeOCRProvider(
-            OCRResult(
-                panel_id="panel-1",
-                has_text=True,
-                full_text="Ly Pham, retreat now",
-                lines=[OCRLine(text="Ly Pham", confidence=0.99, role="dialogue")],
-            )
-        ),
-    )
-
-    evidence = await service._build_identity_evidence(
-        context=ScriptContext(mainCharacter="Ly Pham"),
-        batch_panels=[SimpleNamespace(panelId="panel-1")],
-        batch_paths=[image_path],
-        previous_memory=StoryMemory(chunkIndex=0, summary="prev", recentNames=["Elder Mo"]),
-        on_log=None,
     )
     prompt = service._build_unified_prompt(
         context=ScriptContext(summary="A tense chase is already underway."),
@@ -150,11 +90,9 @@ async def test_identity_evidence_with_ocr_match_confirms_candidate_name(tmp_path
         identity_evidence=evidence,
     )
 
-    assert evidence.confirmed_names == ["Ly Pham"]
-    assert evidence.carryover_names == ["Elder Mo"]
-    assert evidence.use_neutral_fallback is False
-    assert "Confirmed from visible text/dialogue in this batch:" in prompt
-    assert "Ly Pham" in prompt
+    assert evidence.confirmed_names == []
+    assert evidence.carryover_names == ["Elder Mo", "Ly Pham"]
+    assert evidence.use_neutral_fallback is True
     assert "Carryover names from previous chunk:" in prompt
     assert "Elder Mo" in prompt
     assert "Naming rules:" in prompt
@@ -191,7 +129,7 @@ def test_build_unified_prompt_contains_update_2_1_style_blocks():
     assert "Lexical rules:" in prompt
     assert "Batch flow rules:" in prompt
     assert "Return raw JSON only with this schema:" in prompt
-    assert "Prefer 1 to 2 short sentences per panel." in prompt
+    assert "Default to the shortest phrasing that still sounds cinematic and clear." in prompt
     assert "Do not mechanically describe each image in isolation." in prompt
     assert "Make adjacent panels flow like one seamless recap." in prompt
     assert "Every voiceover_text should flow logically into the next one as part of a continuous chapter recap." in prompt

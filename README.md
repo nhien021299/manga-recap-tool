@@ -5,7 +5,7 @@ Frontend-backend manga recap editor.
 ## Current architecture
 
 - `web-app/`: React + Vite editor for upload, extract, script, voice, and render flow
-- `backend/`: FastAPI service for Gemini script generation and backend-owned TTS
+- `backend/`: FastAPI service for Gemini script generation, backend-owned TTS, and native render jobs
 - `ai/`: notes and internal references
 
 Active product flow:
@@ -14,6 +14,8 @@ Active product flow:
 - Step Script sends extracted panel files from frontend to backend
 - Backend runs Gemini script generation from panel images
 - Step TTS runs only through backend routes
+- Official MP4 export runs through backend async render jobs with native `ffmpeg`
+- Browser export remains available as a cinematic fallback path
 - The only active TTS provider is `vieneu`
 - The active TTS model is `pnnbao-ump/VieNeu-TTS-0.3B`
 - The active cached preset is `voice_default`
@@ -25,6 +27,10 @@ POST /api/v1/script/generate
 GET  /api/v1/voice/options
 POST /api/v1/voice/generate
 GET  /api/v1/system/tts
+POST /api/v1/render/jobs
+GET  /api/v1/render/jobs/{job_id}
+GET  /api/v1/render/jobs/{job_id}/result
+POST /api/v1/render/jobs/{job_id}/cancel
 ```
 
 ## Setup
@@ -113,6 +119,9 @@ AI_BACKEND_PORT=8000
 AI_BACKEND_GEMINI_API_KEY=
 AI_BACKEND_GEMINI_MODEL=gemini-2.5-flash
 AI_BACKEND_GEMINI_API_ENDPOINT=
+AI_BACKEND_RENDER_TEMP_ROOT=.temp/render-jobs
+AI_BACKEND_RENDER_FFMPEG_PATH=ffmpeg
+AI_BACKEND_RENDER_RESULT_TTL_SECONDS=3600
 AI_BACKEND_TTS_PROVIDER=vieneu
 AI_BACKEND_TTS_RUNTIME=auto
 AI_BACKEND_TTS_WARM_ON_STARTUP=false
@@ -123,6 +132,21 @@ AI_BACKEND_TTS_VIENEU_TEMPERATURE=0.7
 AI_BACKEND_TTS_VIENEU_VOICE_KEY=voice_default
 AI_BACKEND_TTS_VIENEU_VOICE_ROOT=.models/vieneu-voices
 ```
+
+## Export runtime
+
+Official export requires a native `ffmpeg` binary reachable by the backend.
+
+Defaults:
+
+- `AI_BACKEND_RENDER_FFMPEG_PATH=ffmpeg`
+- render jobs store temporary assets under `backend/.temp/render-jobs`
+- completed MP4 files are kept for 1 hour by default before lazy cleanup
+
+Frontend behavior:
+
+- `Render MP4` creates a backend render job, polls progress, and previews the backend `/result` video on completion
+- `Browser fallback` keeps a local WASM export path with deterministic cinematic keyframed panel motion
 
 ## Benchmark
 

@@ -82,6 +82,14 @@ export type ScriptDraftStatus = "idle" | "generated" | "edited" | "outdated";
 export type ScriptPipeline = "backend-gemini-unified";
 export type AudioStatus = "missing" | "ready" | "stale" | "generating" | "error";
 export type CaptionMode = "off" | "burned";
+export type RenderMotionPreset =
+  | "push_in_center"
+  | "push_in_upper_focus"
+  | "push_in_lower_focus"
+  | "drift_left_to_right"
+  | "drift_right_to_left"
+  | "rise_up_focus"
+  | "pull_back_reveal";
 
 export interface StoryMemory {
   chunkIndex: number;
@@ -103,6 +111,7 @@ export interface TimelineItem {
   panelId: string;
   imageBlob: Blob;
   scriptItem: ScriptItem;
+  scriptBaseline?: string;
   scriptSource?: ScriptSourceUnit;
   scriptSegment?: ScriptSegment;
   scriptStatus?: "auto" | "edited";
@@ -179,12 +188,18 @@ export interface RenderConfig {
 }
 
 export interface CompiledRenderClip {
+  clipId: string;
   panelId: string;
   orderIndex: number;
   startMs: number;
   durationMs: number;
   holdAfterMs: number;
   captionText: string;
+  panelFileKey: string;
+  audioFileKey?: string;
+  motionPreset: RenderMotionPreset;
+  motionSeed: number;
+  motionIntensity: number;
   panel: Panel;
   imageBlob: Blob;
   audioBlob?: Blob;
@@ -196,6 +211,37 @@ export interface RenderPlan {
   outputWidth: number;
   outputHeight: number;
   captionMode: CaptionMode;
+  frameRate: number;
+}
+
+export type RenderJobStatus = "queued" | "running" | "completed" | "failed" | "cancelled";
+
+export interface RenderJobLogEntry {
+  id: string;
+  type: string;
+  message: string;
+  timestamp: string;
+  details?: string | null;
+}
+
+export interface RenderJobCreateResponse {
+  jobId: string;
+  status: RenderJobStatus;
+}
+
+export interface RenderJobStatusResponse {
+  jobId: string;
+  status: RenderJobStatus;
+  progress: number;
+  phase: string;
+  detail?: string | null;
+  downloadUrl?: string | null;
+  error?: string | null;
+  logs: RenderJobLogEntry[];
+}
+
+export interface RenderRevealResponse {
+  success: boolean;
 }
 
 export interface BenchmarkDimensionScore {
@@ -242,8 +288,6 @@ export interface Metrics {
   panelCount: number;
   totalMs: number;
   captionMs: number;
-  ocrMs: number;
-  mergeMs: number;
   scriptMs: number;
   avgPanelMs: number;
   captionSource: string;
@@ -254,7 +298,6 @@ export interface Metrics {
   retryCount: number;
   rateLimitedCount: number;
   throttleWaitMs: number;
-  identityOcrMs: number;
   identityConfirmedCount: number;
 }
 

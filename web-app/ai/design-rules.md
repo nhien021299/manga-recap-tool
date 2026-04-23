@@ -1,108 +1,88 @@
 # UI Design Rules
 
 ## Theme
-Use the "Midnight Studio" visual style.
+Use a premium dark creator-workstation style.
 
 ## Visual direction
 - Dark-first interface.
-- Editorial and creator-tool feel.
-- Calm, focused, premium.
-- Minimal visual noise.
-- Functional beauty over decorative flair.
+- Dense but readable workstation layout.
+- Premium editorial feel, not casual consumer-app chrome.
+- Modular panels and tool surfaces should feel intentional, not floating randomly.
+- Use restrained glow and glass only to reinforce hierarchy.
 
 ## Color rules
-- Use dark neutral backgrounds and slightly lighter surfaces.
-- Use one primary accent color only.
-- Use accent colors sparingly for actions, focus, and selected states.
-- Avoid rainbow UIs or multiple competing accent colors.
-- Keep destructive and warning colors muted, not neon.
+- Base the app on deep neutral backgrounds with cool-toned surfaces.
+- Use one main accent system for primary actions and selection states.
+- Reserve stronger saturation for important actions such as Generate, Export, or active focus.
+- Keep warnings and destructive states clear, but avoid neon red/orange overload.
+- Avoid rainbow accents and avoid default purple-heavy gradients.
 
 ## Typography rules
-- Prioritize readability over personality.
-- Use clear hierarchy with 3-4 text levels maximum.
-- Avoid oversized hero text in tool screens.
-- Use medium weight for important labels, regular for body text.
+- Prioritize clarity under dense workflows.
+- Use clear hierarchy for section labels, panel titles, controls, and supporting text.
+- Hero text is acceptable only for major step headings, not inside tool panels.
+- Favor strong section headers with restrained body copy.
 
 ## Spacing rules
-- Use generous spacing.
-- Prefer consistent spacing scales.
-- Avoid cramped toolbars and crowded sidebars.
+- Keep workstation panels compact enough for serious use, but do not crowd controls.
+- Prefer consistent interior spacing inside cards, toolbars, and side rails.
+- Dense screens should still maintain visual breathing room between functional regions.
 
 ## Shape rules
-- Use medium radius, not overly round.
-- Keep borders subtle.
-- Use soft shadows sparingly.
-- Prefer layering through contrast, not heavy effects.
+- Rounded surfaces are acceptable, but keep them disciplined.
+- Use medium-to-large radius selectively for major cards and media containers.
+- Borders should remain subtle and cool.
+- Shadows should support depth, not dominate the composition.
 
 ## Component rules
-- Panels, sidebars, and toolbars should feel modular.
-- Keep actions grouped logically.
-- Primary actions should stand out clearly.
-- Secondary actions should be visually quiet.
-- Use cards only when they improve grouping, not everywhere.
+- Treat the app as a creator workstation with modular control surfaces.
+- Group controls by workflow: inputs, generation actions, review surfaces, output surfaces.
+- Primary actions must read immediately.
+- Secondary actions should stay visible without competing.
+- Cards should justify grouping or separation, not become the default for every row.
 
 ## Interaction rules
-- Selected regions must be obvious.
-- Hover states should be subtle.
-- Drag handles must remain visible and usable.
-- Focus states must be clear and accessible.
+- Selection, active generation, and blocking states must be immediately legible.
+- Progress UI must expose the active phase, not only a spinner.
+- Hover states should be subtle and modern.
+- Focus states must be visible and accessible.
 
 ## Screen-specific guidance
 
 ### Sidebar
-- Use a surface one step lighter than the app background.
-- Keep borders light and cool.
-- Use small section titles with restrained uppercase styling.
-- Show selected items with muted accent emphasis, not neon fills.
+- Sidebar should feel like a navigation rail for a workstation, not a marketing landing page.
+- Active step state should be obvious with restrained emphasis.
+- Use compact labels and calm section framing.
 
-### Toolbar
-- Keep density compact but breathable.
-- Prefer ghost or subtle icon buttons for secondary tools.
-- Use a solid accent treatment for the primary action such as Extract.
+### Workspace panels
+- Prefer multi-column workstation layouts on desktop when the task benefits from side-by-side review and controls.
+- Let media previews dominate where appropriate, especially extraction and export screens.
+- Keep utility controls close to the content they affect.
 
-### Canvas / Image viewport
-- Keep the viewport darker than the sidebar so images remain the focal layer.
-- Let images remain visually dominant.
-- Make overlay box borders crisp with very light fills.
-- Keep selection states obvious without high-glare color.
+### Toolbar and action rows
+- High-value actions should be easy to scan.
+- Secondary actions can use quieter outline or ghost treatments.
+- Avoid long rows of equally loud buttons.
 
-### Modal / Dialog
-- Use dialogs only when truly needed.
-- Keep padding generous.
-- Make the primary CTA clear.
-- Avoid overloading a single dialog with too much content.
+### Render / export surfaces
+- Export screens should feel heavier and more output-oriented than lightweight edit panes.
+- Progress cards, logs, result preview, and fallback actions should read as one coordinated system.
+- Preview surfaces should feel cinematic but still production-focused.
 
-### Lists / Scene suggestions
-- Prefer line-based or row-based grouping before defaulting to cards.
-- Make selected rows very clear.
-- Avoid card-heavy layouts that compete with the image workspace.
+### Dialogs
+- Use dialogs sparingly.
+- Keep them scoped to one decision or one focused task.
+- Avoid stuffing workstation-level editing flows into modals.
 
 ## Tokens
-- Use token-based styling only.
-- Approved tokens:
-  - `--background`
-  - `--surface`
-  - `--surface-2`
-  - `--border`
-  - `--text-primary`
-  - `--text-secondary`
-  - `--accent`
-  - `--accent-foreground`
-  - `--success`
-  - `--warning`
-  - `--danger`
-  - `--radius-sm`
-  - `--radius-md`
-  - `--radius-lg`
+- Prefer token-based styling when adding or adjusting theme values.
+- Keep surface, border, text, accent, status, and radius tokens aligned with the premium dark workstation direction.
 
 ## Avoid
-- glossy gradients everywhere
-- glassmorphism-heavy layouts
-- overly playful illustrations
-- loud color contrast in editor screens
-- giant empty hero sections inside tool pages
-- gradient purple-blue everywhere
-- heavy shadows
-- very large radius across the whole app
-- multiple accent colors on the same screen
-- display fonts that make tool UI harder to read
+- generic SaaS white-label layouts
+- overly soft, playful editor styling
+- flat single-surface screens with no hierarchy
+- uncontrolled glow, blur, or glass everywhere
+- giant empty spacing that wastes workstation real estate
+- multiple competing accent colors
+- decorative gradients that reduce readability

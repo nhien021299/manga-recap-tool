@@ -4,7 +4,6 @@ import wasmURL from "@ffmpeg/core/wasm?url";
 
 import type { CompiledRenderClip, RenderPlan } from "@/shared/types";
 
-const FRAME_RATE = 30;
 const SILENT_AUDIO_RATE = 24000;
 
 type FFmpegInstance = InstanceType<(typeof import("@ffmpeg/ffmpeg"))["FFmpeg"]>;
@@ -15,14 +14,33 @@ export interface RenderProgressUpdate {
   detail?: string;
 }
 
+interface MotionTransform {
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+}
+
 let ffmpegSingleton: FFmpegInstance | null = null;
 let ffmpegLoadPromise: Promise<FFmpegInstance> | null = null;
 let ffmpegLogsBound = false;
 const ffmpegLogHistory: string[] = [];
 
+const resetFfmpegState = (): void => {
+  ffmpegSingleton = null;
+  ffmpegLoadPromise = null;
+  ffmpegLogsBound = false;
+};
+
+export const cancelBrowserRenderSession = (): void => {
+  if (ffmpegSingleton) {
+    ffmpegSingleton.terminate();
+  }
+  resetFfmpegState();
+};
+
 const pushFfmpegLog = (message: string): void => {
   ffmpegLogHistory.push(message);
-  if (ffmpegLogHistory.length > 40) {
+  if (ffmpegLogHistory.length > 60) {
     ffmpegLogHistory.shift();
   }
 };
@@ -37,6 +55,21 @@ const normalizeError = (error: unknown): Error => {
     return new Error(JSON.stringify(error));
   } catch {
     return new Error(String(error));
+  }
+};
+
+const isAbortError = (error: unknown): boolean =>
+  error instanceof DOMException
+    ? error.name === "AbortError"
+    : error instanceof Error
+      ? /abort|terminated/i.test(error.message)
+      : typeof error === "string"
+        ? /abort|terminated/i.test(error)
+        : false;
+
+const throwIfAborted = (signal?: AbortSignal): void => {
+  if (signal?.aborted) {
+    throw new DOMException("Browser render cancelled by user.", "AbortError");
   }
 };
 
@@ -107,7 +140,80 @@ const wrapCaptionLines = (
   return lines.slice(0, 4);
 };
 
-const composeFrame = async (clip: CompiledRenderClip, plan: RenderPlan): Promise<Blob> => {
+const easeInOut = (progress: number): number => 0.5 - Math.cos(Math.PI * progress) / 2;
+
+const getMotionTransform = (
+  clip: CompiledRenderClip,
+  progress: number,
+  drawWidth: number,
+  drawHeight: number
+): MotionTransform => {
+  const eased = easeInOut(progress);
+  const intensity = clip.motionIntensity;
+  const panX = drawWidth * (0.04 + intensity * 0.03);
+  const panY = drawHeight * (0.03 + intensity * 0.025);
+
+  switch (clip.motionPreset) {
+    case "push_in_upper_focus":
+      return {
+        scale: 1.04 + intensity * 0.09 * eased,
+        offsetX: 0,
+        offsetY: panY * eased,
+      };
+    case "push_in_lower_focus":
+      return {
+        scale: 1.04 + intensity * 0.09 * eased,
+        offsetX: 0,
+        offsetY: -panY * eased,
+      };
+    case "drift_left_to_right":
+      return {
+        scale: 1.05 + intensity * 0.05 * eased,
+        offsetX: panX * (eased * 2 - 1),
+        offsetY: 0,
+      };
+    case "drift_right_to_left":
+      return {
+        scale: 1.05 + intensity * 0.05 * eased,
+        offsetX: -panX * (eased * 2 - 1),
+        offsetY: 0,
+      };
+    case "rise_up_focus":
+      return {
+        scale: 1.04 + intensity * 0.07 * eased,
+        offsetX: 0,
+        offsetY: panY * (0.4 - eased),
+      };
+    case "pull_back_reveal":
+      return {
+        scale: 1.12 - intensity * 0.08 * eased,
+        offsetX: 0,
+        offsetY: -panY * 0.25 * eased,
+      };
+    case "push_in_center":
+    default:
+      return {
+        scale: 1.04 + intensity * 0.08 * eased,
+        offsetX: 0,
+        offsetY: 0,
+      };
+  }
+};
+
+const drawVignette = (ctx: CanvasRenderingContext2D, width: number, height: number): void => {
+  const gradient = ctx.createRadialGradient(width / 2, height / 2, width * 0.22, width / 2, height / 2, width * 0.72);
+  gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
+  gradient.addColorStop(1, "rgba(0, 0, 0, 0.22)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+};
+
+const composeFrame = async (
+  clip: CompiledRenderClip,
+  plan: RenderPlan,
+  image: HTMLImageElement,
+  progress: number
+): Promise<Blob> => {
   const canvas = document.createElement("canvas");
   canvas.width = plan.outputWidth;
   canvas.height = plan.outputHeight;
@@ -116,14 +222,12 @@ const composeFrame = async (clip: CompiledRenderClip, plan: RenderPlan): Promise
     throw new Error("Failed to create render canvas context.");
   }
 
-  const image = await loadImageElement(clip.panel.blob);
   const width = canvas.width;
   const height = canvas.height;
+  const imageAspect = image.width / Math.max(image.height, 1);
 
   ctx.fillStyle = "#080b12";
   ctx.fillRect(0, 0, width, height);
-
-  const imageAspect = image.width / Math.max(image.height, 1);
 
   let bgWidth = width;
   let bgHeight = width / Math.max(imageAspect, 0.1);
@@ -133,9 +237,13 @@ const composeFrame = async (clip: CompiledRenderClip, plan: RenderPlan): Promise
   }
   const bgX = (width - bgWidth) / 2;
   const bgY = (height - bgHeight) / 2;
+  const bgTransform = getMotionTransform(clip, Math.min(1, progress * 0.85), bgWidth, bgHeight);
 
   ctx.save();
   ctx.filter = "blur(28px) brightness(0.32)";
+  ctx.translate(width / 2, height / 2);
+  ctx.scale(Math.max(1, bgTransform.scale * 1.01), Math.max(1, bgTransform.scale * 1.01));
+  ctx.translate(-width / 2 + bgTransform.offsetX * 0.3, -height / 2 + bgTransform.offsetY * 0.3);
   ctx.drawImage(image, bgX, bgY, bgWidth, bgHeight);
   ctx.restore();
 
@@ -151,16 +259,25 @@ const composeFrame = async (clip: CompiledRenderClip, plan: RenderPlan): Promise
     drawWidth = safeHeight * imageAspect;
   }
 
-  const drawX = (width - drawWidth) / 2;
-  const drawY = plan.captionMode === "burned" && clip.captionText
-    ? Math.max(height * 0.1, (height - drawHeight) / 2 - height * 0.06)
-    : (height - drawHeight) / 2;
+  const baseDrawX = (width - drawWidth) / 2;
+  const baseDrawY =
+    plan.captionMode === "burned" && clip.captionText
+      ? Math.max(height * 0.1, (height - drawHeight) / 2 - height * 0.06)
+      : (height - drawHeight) / 2;
+
+  const transform = getMotionTransform(clip, progress, drawWidth, drawHeight);
+  const animatedWidth = drawWidth * transform.scale;
+  const animatedHeight = drawHeight * transform.scale;
+  const drawX = baseDrawX - (animatedWidth - drawWidth) / 2 + transform.offsetX;
+  const drawY = baseDrawY - (animatedHeight - drawHeight) / 2 + transform.offsetY;
 
   ctx.save();
   ctx.shadowColor = "rgba(0, 0, 0, 0.38)";
   ctx.shadowBlur = 32;
-  ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+  ctx.drawImage(image, drawX, drawY, animatedWidth, animatedHeight);
   ctx.restore();
+
+  drawVignette(ctx, width, height);
 
   if (plan.captionMode === "burned" && clip.captionText) {
     const paddingX = Math.round(width * 0.075);
@@ -173,7 +290,9 @@ const composeFrame = async (clip: CompiledRenderClip, plan: RenderPlan): Promise
     const boxY = height - boxHeight - Math.round(height * 0.06);
 
     ctx.fillStyle = "rgba(4, 8, 15, 0.78)";
-    ctx.fillRect(paddingX - 18, boxY - 14, maxTextWidth + 36, boxHeight);
+    ctx.beginPath();
+    ctx.roundRect(paddingX - 18, boxY - 14, maxTextWidth + 36, boxHeight, 24);
+    ctx.fill();
 
     ctx.fillStyle = "#f4f7fb";
     lines.forEach((line, index) => {
@@ -185,8 +304,10 @@ const composeFrame = async (clip: CompiledRenderClip, plan: RenderPlan): Promise
 };
 
 const loadFfmpeg = async (
-  onProgress?: (update: RenderProgressUpdate) => void
+  onProgress?: (update: RenderProgressUpdate) => void,
+  signal?: AbortSignal
 ): Promise<FFmpegInstance> => {
+  throwIfAborted(signal);
   if (ffmpegSingleton) {
     return ffmpegSingleton;
   }
@@ -208,15 +329,21 @@ const loadFfmpeg = async (
       ffmpegLogsBound = true;
     }
 
-    await ffmpeg.load({
-      coreURL,
-      wasmURL,
-    });
+    await ffmpeg.load(
+      {
+        coreURL,
+        wasmURL,
+      },
+      { signal }
+    );
 
     ffmpegSingleton = ffmpeg;
-    emitProgress(onProgress, "Loading FFmpeg", 15, "FFmpeg ready");
+    emitProgress(onProgress, "Loading FFmpeg", 12, "FFmpeg ready");
     return ffmpeg;
-  })();
+  })().catch((error) => {
+    resetFfmpegState();
+    throw error;
+  });
 
   return ffmpegLoadPromise;
 };
@@ -237,22 +364,51 @@ const safeDeleteFile = async (ffmpeg: FFmpegInstance, path: string | null): Prom
   }
 };
 
+const writeClipFrames = async (
+  ffmpeg: FFmpegInstance,
+  clip: CompiledRenderClip,
+  plan: RenderPlan,
+  image: HTMLImageElement,
+  sessionId: string,
+  clipIndex: number,
+  onProgress?: (update: RenderProgressUpdate) => void,
+  signal?: AbortSignal
+): Promise<string[]> => {
+  const totalFrames = Math.max(1, Math.round((clip.durationMs / 1000) * plan.frameRate));
+  const framePaths: string[] = [];
+  const baseProgress = 15 + ((clipIndex - 1) / Math.max(plan.clips.length, 1)) * 52;
+  const clipProgressSpan = 52 / Math.max(plan.clips.length, 1);
+
+  for (let frameIndex = 0; frameIndex < totalFrames; frameIndex += 1) {
+    throwIfAborted(signal);
+    const progress = totalFrames === 1 ? 1 : frameIndex / (totalFrames - 1);
+    const frameBlob = await composeFrame(clip, plan, image, progress);
+    const framePath = `${sessionId}-clip-${clipIndex}-frame-${String(frameIndex + 1).padStart(5, "0")}.png`;
+    framePaths.push(framePath);
+    await ffmpeg.writeFile(framePath, await fetchFile(frameBlob), { signal });
+
+    if (frameIndex === totalFrames - 1 || frameIndex % Math.max(1, Math.round(plan.frameRate / 2)) === 0) {
+      emitProgress(
+        onProgress,
+        "Browser fallback render",
+        baseProgress + (frameIndex / Math.max(totalFrames, 1)) * clipProgressSpan * 0.72,
+        `Animating clip ${clipIndex}/${plan.clips.length}`
+      );
+    }
+  }
+
+  return framePaths;
+};
+
 const buildClipArgs = (
   clip: CompiledRenderClip,
-  frameFile: string,
+  plan: RenderPlan,
+  framePattern: string,
   audioFile: string | null,
   segmentFile: string
 ): string[] => {
   const clipSeconds = (clip.durationMs / 1000).toFixed(3);
-  const baseArgs = [
-    "-y",
-    "-loop",
-    "1",
-    "-framerate",
-    String(FRAME_RATE),
-    "-i",
-    frameFile,
-  ];
+  const baseArgs = ["-y", "-framerate", String(plan.frameRate), "-i", framePattern];
 
   if (audioFile) {
     return [
@@ -266,7 +422,7 @@ const buildClipArgs = (
       "-t",
       clipSeconds,
       "-vf",
-      `fps=${FRAME_RATE},format=yuv420p`,
+      `fps=${plan.frameRate},format=yuv420p`,
       "-c:v",
       "libx264",
       "-pix_fmt",
@@ -292,7 +448,7 @@ const buildClipArgs = (
     "-t",
     clipSeconds,
     "-vf",
-    `fps=${FRAME_RATE},format=yuv420p`,
+    `fps=${plan.frameRate},format=yuv420p`,
     "-c:v",
     "libx264",
     "-pix_fmt",
@@ -305,54 +461,62 @@ const buildClipArgs = (
 
 export const renderPlanToMp4 = async (
   plan: RenderPlan,
-  onProgress?: (update: RenderProgressUpdate) => void
+  onProgress?: (update: RenderProgressUpdate) => void,
+  signal?: AbortSignal
 ): Promise<Blob> => {
-  const ffmpeg = await loadFfmpeg(onProgress);
+  const ffmpeg = await loadFfmpeg(onProgress, signal);
   const sessionId = `render-${Date.now()}`;
   const segmentFiles: string[] = [];
   const tempFiles: string[] = [];
+  const handleAbort = () => {
+    cancelBrowserRenderSession();
+  };
+
+  signal?.addEventListener("abort", handleAbort, { once: true });
 
   try {
     for (let index = 0; index < plan.clips.length; index += 1) {
-      const clip = plan.clips[index];
-      emitProgress(
-        onProgress,
-        "Preparing clips",
-        15 + (index / Math.max(plan.clips.length, 1)) * 55,
-        `Preparing clip ${index + 1}/${plan.clips.length}`
-      );
+      throwIfAborted(signal);
+      const clip = plan.clips[index]!;
+      const clipNumber = index + 1;
+      const image = await loadImageElement(clip.panel.blob);
+      const framePaths = await writeClipFrames(ffmpeg, clip, plan, image, sessionId, clipNumber, onProgress, signal);
+      tempFiles.push(...framePaths);
 
-      const frameBlob = await composeFrame(clip, plan);
-      const frameFile = `${sessionId}-frame-${index}.png`;
-      const audioFile = clip.audioBlob ? `${sessionId}-audio-${index}.wav` : null;
-      const segmentFile = `${sessionId}-segment-${index}.mp4`;
-      const command = buildClipArgs(clip, frameFile, audioFile, segmentFile);
+      const framePattern = `${sessionId}-clip-${clipNumber}-frame-%05d.png`;
+      const audioFile = clip.audioBlob ? `${sessionId}-audio-${clipNumber}.wav` : null;
+      const segmentFile = `${sessionId}-segment-${clipNumber}.mp4`;
+      const command = buildClipArgs(clip, plan, framePattern, audioFile, segmentFile);
 
-      tempFiles.push(frameFile, segmentFile);
+      tempFiles.push(segmentFile);
       if (audioFile) {
         tempFiles.push(audioFile);
+        await ffmpeg.writeFile(audioFile, await fetchFile(clip.audioBlob!), { signal });
       }
 
-      await ffmpeg.writeFile(frameFile, await fetchFile(frameBlob));
-      if (audioFile && clip.audioBlob) {
-        await ffmpeg.writeFile(audioFile, await fetchFile(clip.audioBlob));
-      }
-
-      const exitCode = await ffmpeg.exec(command);
-      assertExecSucceeded(exitCode, `Clip ${index + 1} render`, command);
+      emitProgress(
+        onProgress,
+        "Browser fallback render",
+        15 + (clipNumber / Math.max(plan.clips.length, 1)) * 52,
+        `Encoding clip ${clipNumber}/${plan.clips.length}`
+      );
+      const exitCode = await ffmpeg.exec(command, -1, { signal });
+      assertExecSucceeded(exitCode, `Clip ${clipNumber} encode`, command);
       segmentFiles.push(segmentFile);
 
-      await safeDeleteFile(ffmpeg, frameFile);
+      for (const framePath of framePaths) {
+        await safeDeleteFile(ffmpeg, framePath);
+      }
       if (audioFile) {
         await safeDeleteFile(ffmpeg, audioFile);
       }
     }
 
-    emitProgress(onProgress, "Muxing video", 78, "Concatenating segments");
+    emitProgress(onProgress, "Browser fallback render", 80, "Concatenating final MP4");
     const concatFile = `${sessionId}-concat.txt`;
     const concatText = segmentFiles.map((file) => `file '${file}'`).join("\n");
     tempFiles.push(concatFile);
-    await ffmpeg.writeFile(concatFile, new TextEncoder().encode(concatText));
+    await ffmpeg.writeFile(concatFile, new TextEncoder().encode(concatText), { signal });
 
     const outputFile = `${sessionId}-output.mp4`;
     tempFiles.push(outputFile);
@@ -370,18 +534,22 @@ export const renderPlanToMp4 = async (
       "+faststart",
       outputFile,
     ];
-    const concatExitCode = await ffmpeg.exec(concatCommand);
-    assertExecSucceeded(concatExitCode, "Video mux", concatCommand);
+    const concatExitCode = await ffmpeg.exec(concatCommand, -1, { signal });
+    assertExecSucceeded(concatExitCode, "Final concat", concatCommand);
 
-    emitProgress(onProgress, "Finalizing export", 96, "Reading output");
-    const data = await ffmpeg.readFile(outputFile);
+    emitProgress(onProgress, "Browser fallback render", 96, "Reading rendered MP4");
+    const data = await ffmpeg.readFile(outputFile, "binary", { signal });
     const outputBytes = data instanceof Uint8Array ? data : new TextEncoder().encode(String(data));
     const finalizedBytes = new Uint8Array(outputBytes);
-    emitProgress(onProgress, "Done", 100, "MP4 ready");
+    emitProgress(onProgress, "Browser fallback render", 100, "Cinematic fallback MP4 ready");
     return new Blob([finalizedBytes], { type: "video/mp4" });
   } catch (error) {
+    if (isAbortError(error) || signal?.aborted) {
+      throw new DOMException("Browser render cancelled by user.", "AbortError");
+    }
     throw normalizeError(error);
   } finally {
+    signal?.removeEventListener("abort", handleAbort);
     for (const file of tempFiles) {
       await safeDeleteFile(ffmpeg, file);
     }

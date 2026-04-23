@@ -4,11 +4,6 @@ from fastapi import Request
 def get_provider_registry(request: Request):
     return request.app.state.provider_registry
 
-
-def get_caption_service(request: Request):
-    return request.app.state.caption_service
-
-
 def get_job_queue(request: Request):
     return request.app.state.job_queue
 
@@ -27,3 +22,11 @@ def get_voice_service(request: Request):
 
 def get_tts_runtime(request: Request):
     return request.app.state.tts_runtime
+
+
+def get_render_service(request: Request):
+    return request.app.state.render_service
+
+
+def get_render_queue(request: Request):
+    return request.app.state.render_queue

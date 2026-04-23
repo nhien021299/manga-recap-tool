@@ -6,7 +6,6 @@ This project is the AI backend for a manga/webtoon recap tool.
 Current active product flow on `2026-04-16`:
 - Step Script runs through backend Gemini
 - Active entrypoint is `POST /api/v1/script/generate`
-- Legacy Ollama / llama.cpp / OCR / async job queue code still exists in the repo, but is not the active Step Script product path
 
 Priorities:
 - API-first backend architecture

@@ -1,9 +1,6 @@
 from __future__ import annotations
 
 from app.core.config import Settings
-from app.providers.llama_cpp_text import LlamaCppTextProvider
-from app.providers.ollama_text import OllamaTextProvider
-from app.providers.ollama_vision import OllamaVisionProvider
 from app.providers.tts.base import TTSProvider
 from app.providers.tts.vieneu_provider import VieneuTtsProvider
 from app.services.vieneu_worker_bridge import VieneuTtsWorkerBridge
@@ -30,28 +27,6 @@ class ProviderRegistry:
             max_height=self.settings.vision_max_height,
         )
 
-    def get_ocr_provider(self) -> PaddleOCRProvider | None:
-        if not self.settings.ocr_enabled:
-            return None
-        from app.providers.ocr.paddleocr_provider import PaddleOCRProvider
-
-        return PaddleOCRProvider(
-            min_confidence=self.settings.ocr_min_confidence,
-            max_text_lines=self.settings.ocr_max_text_lines,
-            prefer_sfx=self.settings.ocr_prefer_sfx,
-        )
-
-    def get_identity_ocr_provider(self) -> PaddleOCRProvider | None:
-        if not self.settings.gemini_identity_experiment_enabled:
-            return None
-        from app.providers.ocr.paddleocr_provider import PaddleOCRProvider
-
-        return PaddleOCRProvider(
-            min_confidence=self.settings.gemini_identity_ocr_min_confidence,
-            max_text_lines=self.settings.gemini_identity_ocr_max_text_lines,
-            prefer_sfx=self.settings.ocr_prefer_sfx,
-        )
-
     def get_tts_providers(self) -> dict[str, TTSProvider]:
         vieneu_provider = VieneuTtsProvider(self.vieneu_runtime)
         return {
@@ -71,12 +46,3 @@ class ProviderRegistry:
             return self.vieneu_runtime
         raise ValueError(f"Unsupported TTS provider '{resolved_provider}'. Supported providers: vieneu")
 
-    def get_provider_info(self) -> dict[str, object]:
-        return {
-            "textProvider": self.settings.text_provider,
-            "textModel": self.settings.text_model,
-            "visionProvider": self.settings.vision_provider,
-            "visionModel": self.settings.vision_model,
-            "ocrEnabled": self.settings.ocr_enabled,
-            "ocrProvider": "paddleocr" if self.settings.ocr_enabled else "disabled",
-        }

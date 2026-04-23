@@ -80,6 +80,67 @@ describe("renderPlan", () => {
     expect(plan.clips[1]?.startMs).toBe(1100);
   });
 
+  it("assigns deterministic motion presets and file keys", () => {
+    const panels = [createPanel("panel-1"), createPanel("panel-2")];
+    const timeline = [
+      createTimelineItem("panel-1", { audioDuration: 1.8 }),
+      createTimelineItem("panel-2", { audioDuration: 2.6 }),
+    ];
+
+    const firstPlan = buildRenderPlan(timeline, panels, renderConfig);
+    const secondPlan = buildRenderPlan(timeline, panels, renderConfig);
+
+    expect(firstPlan.frameRate).toBe(30);
+    expect(firstPlan.clips.map((clip) => clip.motionPreset)).toEqual(
+      secondPlan.clips.map((clip) => clip.motionPreset)
+    );
+    expect(firstPlan.clips[0]?.panelFileKey).toBe("panel-1");
+    expect(firstPlan.clips[0]?.audioFileKey).toBe("audio-1");
+    expect(firstPlan.clips[1]?.motionSeed).toBe(secondPlan.clips[1]?.motionSeed);
+  });
+
+  it("keeps preset sequencing stable even when disabled clips are present", () => {
+    const panels = [createPanel("panel-1"), createPanel("panel-2"), createPanel("panel-3")];
+    const baseTimeline = [
+      createTimelineItem("panel-1", { audioDuration: 2 }),
+      createTimelineItem("panel-2", { audioDuration: 2.2 }),
+      createTimelineItem("panel-3", { audioDuration: 2.4 }),
+    ];
+
+    const withDisabledMiddle = [
+      createTimelineItem("panel-1", { audioDuration: 2 }),
+      createTimelineItem("panel-2", { enabled: false, audioDuration: 2.2 }),
+      createTimelineItem("panel-3", { audioDuration: 2.4 }),
+    ];
+
+    const basePlan = buildRenderPlan([baseTimeline[0]!, baseTimeline[2]!], [panels[0]!, panels[2]!], renderConfig);
+    const disabledPlan = buildRenderPlan(withDisabledMiddle, panels, renderConfig);
+
+    expect(disabledPlan.clips.map((clip) => clip.panelId)).toEqual(["panel-1", "panel-3"]);
+    expect(disabledPlan.clips.map((clip) => clip.motionPreset)).toEqual(
+      basePlan.clips.map((clip) => clip.motionPreset)
+    );
+  });
+
+  it("reduces motion intensity for short silent clips", () => {
+    const plan = buildRenderPlan(
+      [
+        createTimelineItem("panel-1", {
+          scriptItem: { panel_index: 1, voiceover_text: "" },
+          audioBlob: undefined,
+          audioDuration: undefined,
+          audioStatus: "missing",
+          holdAfterMs: 800,
+        }),
+      ],
+      [createPanel("panel-1")],
+      renderConfig
+    );
+
+    expect(plan.clips[0]?.motionIntensity).toBeLessThan(0.7);
+    expect(plan.clips[0]?.audioFileKey).toBeUndefined();
+  });
+
   it("blocks export when narration changed and audio is stale", () => {
     const errors = validateRenderPlan(
       [createTimelineItem("panel-1", { audioStatus: "stale" })],

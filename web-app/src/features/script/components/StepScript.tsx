@@ -17,7 +17,6 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ScriptLogs } from "@/features/script/components/ScriptLogs";
 import { useScriptJob } from "@/features/script/hooks/useScriptJob";
 import { createBenchmarkRecord } from "@/features/benchmark/lib/benchmarkScore";
 import { useRecapStore } from "@/shared/storage/useRecapStore";
@@ -34,8 +33,6 @@ const parseMetricsFromLogDetails = (details?: string | null): Metrics | null => 
       panelCount: parsed.panelCount,
       totalMs: parsed.totalMs,
       captionMs: parsed.captionMs ?? 0,
-      ocrMs: parsed.ocrMs ?? 0,
-      mergeMs: parsed.mergeMs ?? 0,
       scriptMs: parsed.scriptMs ?? 0,
       avgPanelMs: parsed.avgPanelMs ?? 0,
       captionSource: parsed.captionSource ?? "unknown",
@@ -46,7 +43,6 @@ const parseMetricsFromLogDetails = (details?: string | null): Metrics | null => 
       retryCount: parsed.retryCount ?? 0,
       rateLimitedCount: parsed.rateLimitedCount ?? 0,
       throttleWaitMs: parsed.throttleWaitMs ?? 0,
-      identityOcrMs: parsed.identityOcrMs ?? 0,
       identityConfirmedCount: parsed.identityConfirmedCount ?? 0,
     };
   } catch {
@@ -56,7 +52,6 @@ const parseMetricsFromLogDetails = (details?: string | null): Metrics | null => 
 
 export function StepScript() {
   const {
-    config,
     logs,
     timeline,
     panels,
@@ -67,7 +62,6 @@ export function StepScript() {
     scriptMeta,
     scriptContext,
     setScriptContext,
-    updateTimelineItem,
     addBenchmarkRecord,
     setCurrentStep,
     clearScriptData,
@@ -117,8 +111,7 @@ export function StepScript() {
 
   const generateDisabled =
     isLoading ||
-    panels.length === 0 ||
-    !config.apiBaseUrl;
+    panels.length === 0;
 
   const handleSaveBenchmark = () => {
     if (!availableMetrics || timeline.length === 0) return;
@@ -182,19 +175,8 @@ export function StepScript() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid grid-cols-1 gap-8">
         <Card className="glass space-y-6 rounded-3xl border-white/10 bg-white/5 p-8 shadow-2xl">
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/45">Pipeline</p>
-              <p className="mt-2 text-sm font-bold text-white">Backend Gemini</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/45">Backend URL</p>
-              <p className="mt-2 truncate text-sm font-bold text-white">{config.apiBaseUrl || "Missing"}</p>
-            </div>
-          </div>
-
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="mangaName" className="text-[10px] font-semibold uppercase tracking-wide text-white/80">Tên truyện (tùy chọn)</Label>
@@ -231,10 +213,6 @@ export function StepScript() {
             </div>
           )}
         </Card>
-
-        <Card className="glass rounded-3xl border-white/10 bg-white/5 p-6">
-          <ScriptLogs />
-        </Card>
       </div>
 
       {timeline.length > 0 && (
@@ -242,7 +220,7 @@ export function StepScript() {
           {timeline.map((item, index) => {
             const panel = panelById.get(item.panelId);
             return (
-              <Card key={item.panelId} className="glass group overflow-hidden rounded-3xl border-white/10 bg-white/5 p-5 transition-all duration-300 hover:bg-white/10 hover:border-white/20">
+              <Card key={`${item.panelId}-${index}`} className="glass group overflow-hidden rounded-3xl border-white/10 bg-white/5 p-5 transition-all duration-300 hover:bg-white/10 hover:border-white/20">
                 <div className="flex flex-col gap-5">
                   <div className="flex items-center gap-4">
                     <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-2xl font-black text-primary-foreground">
@@ -270,11 +248,10 @@ export function StepScript() {
 
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold uppercase tracking-widest text-white/40">Nội dung thuyết minh</Label>
-                    <Textarea
-                      value={item.scriptItem.voiceover_text || ""}
-                      onChange={(e) => updateTimelineItem(index, { scriptItem: { ...item.scriptItem, voiceover_text: e.target.value } })}
-                      className="min-h-[140px] resize-none rounded-xl border-white/10 bg-black/30 p-4 text-sm font-medium leading-relaxed text-white focus:ring-primary/50"
-                    />
+                    <div className="min-h-[140px] rounded-xl border border-white/10 bg-black/30 p-4 text-sm font-medium leading-relaxed text-white/90">
+                      {item.scriptItem.voiceover_text || "No narration generated."}
+                    </div>
+                    <p className="text-xs text-white/45">Edit narration, timing, and clip state in Timeline & Render.</p>
                   </div>
                 </div>
               </Card>

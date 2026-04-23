@@ -44,25 +44,25 @@ export function useVoiceGeneration() {
     [updateTimelineItem]
   );
 
-  const generateAllVoices = useCallback(async () => {
+  const generateVoicesByIndexes = useCallback(async (indexes: number[]) => {
     setIsLoading(true);
     setProgress(0);
     setCurrentVoiceGeneration(null);
     setError(null);
 
     try {
-      const queuedItems = timeline
-        .map((item, index) => ({ item, index }))
+      const queuedItems = indexes
+        .map((index) => ({ item: timeline[index], index }))
+        .filter((entry): entry is { item: (typeof timeline)[number]; index: number } => !!entry.item)
         .filter(({ item }) => !!item.scriptItem?.voiceover_text?.trim());
 
-      for (let index = 0; index < timeline.length; index += 1) {
-        const item = timeline[index];
+      for (let queueIndex = 0; queueIndex < queuedItems.length; queueIndex += 1) {
+        const { item, index } = queuedItems[queueIndex]!;
         const text = item.scriptItem?.voiceover_text?.trim();
         if (!text) continue;
 
-        const queuedIndex = queuedItems.findIndex((entry) => entry.index === index);
         setCurrentVoiceGeneration({
-          currentIndex: queuedIndex + 1,
+          currentIndex: queueIndex + 1,
           totalCount: queuedItems.length,
           panelId: item.panelId,
           panelOrder: index + 1,
@@ -74,7 +74,7 @@ export function useVoiceGeneration() {
         updateTimelineItem(index, { audioStatus: "generating" });
         const audioBlob = await generateVoiceAudio(config.apiBaseUrl, buildRequest(text));
         await attachAudioToTimeline(index, audioBlob);
-        setProgress(Math.round(((index + 1) / timeline.length) * 100));
+        setProgress(Math.round(((queueIndex + 1) / Math.max(queuedItems.length, 1)) * 100));
       }
 
       // Hold 100% briefly so the user can see completion before the list view settles.
@@ -100,6 +100,20 @@ export function useVoiceGeneration() {
     updateTimelineItem,
     voiceConfig.voiceKey,
   ]);
+
+  const generateAllVoices = useCallback(async () => {
+    await generateVoicesByIndexes(timeline.map((_, index) => index));
+  }, [generateVoicesByIndexes, timeline]);
+
+  const generateStaleVoices = useCallback(async () => {
+    const staleIndexes = timeline
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) => item.audioStatus === "stale")
+      .map(({ index }) => index);
+
+    if (staleIndexes.length === 0) return;
+    await generateVoicesByIndexes(staleIndexes);
+  }, [generateVoicesByIndexes, timeline]);
 
   const generateSingleVoice = useCallback(
     async (index: number) => {
@@ -143,5 +157,5 @@ export function useVoiceGeneration() {
     setTimeline(newTimeline);
   }, [timeline, setTimeline]);
 
-  return { generateAllVoices, generateSingleVoice, clearAllVoices, error };
+  return { generateAllVoices, generateStaleVoices, generateSingleVoice, clearAllVoices, error };
 }

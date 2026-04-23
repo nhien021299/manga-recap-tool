@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from time import perf_counter
+from typing import Any
 
 import openai
 
@@ -37,6 +38,9 @@ class IdentityEvidence:
     has_text_signal: bool
     use_neutral_fallback: bool
     neutral_fallback_reason: str
+    ocr_line_count: int = 0
+    ocr_provider: str = "disabled"
+    ocr_elapsed_ms: int = 0
 
 
 @dataclass
@@ -47,6 +51,8 @@ class GenerationStats:
     retry_count: int = 0
     rate_limited_count: int = 0
     throttle_wait_ms: int = 0
+    identity_ocr_ms: int = 0
+    identity_confirmed_count: int = 0
     batch_size_used: int = 0
 
 
@@ -55,9 +61,11 @@ class GeminiScriptService:
         self,
         settings: Settings,
         *,
+        identity_ocr_provider: Any | None = None,
         gemini_request_gate: GeminiRequestGate | None = None,
     ) -> None:
         self.settings = settings
+        self.identity_ocr_provider = identity_ocr_provider
         self.gemini_request_gate = gemini_request_gate
 
     async def run_job(self, job: JobRecord) -> ScriptJobResult:
@@ -122,6 +130,8 @@ class GeminiScriptService:
                 panelCount=len(panels),
                 totalMs=script_ms,
                 captionMs=0,
+                ocrMs=0,
+                mergeMs=0,
                 scriptMs=script_ms,
                 avgPanelMs=round(script_ms / len(panels), 2) if panels else 0.0,
                 captionSource="gemini_unified_backend",
@@ -132,7 +142,8 @@ class GeminiScriptService:
                 retryCount=stats.retry_count,
                 rateLimitedCount=stats.rate_limited_count,
                 throttleWaitMs=stats.throttle_wait_ms,
-                identityConfirmedCount=0,
+                identityOcrMs=stats.identity_ocr_ms,
+                identityConfirmedCount=stats.identity_confirmed_count,
             ),
         )
 
@@ -160,10 +171,15 @@ class GeminiScriptService:
             batch_panels = panels[start:end]
             start_index = start + 1
 
-            identity_evidence = self._build_identity_evidence(
+            identity_evidence = await self._build_identity_evidence(
                 context=context,
+                batch_panels=batch_panels,
+                batch_paths=batch_paths,
                 previous_memory=previous_memory,
+                on_log=on_log,
             )
+            stats.identity_ocr_ms += identity_evidence.ocr_elapsed_ms
+            stats.identity_confirmed_count += len(identity_evidence.confirmed_names)
 
             prompt = self._build_unified_prompt(
                 context=context,
@@ -202,6 +218,9 @@ class GeminiScriptService:
                         "hasTextSignal": identity_evidence.has_text_signal,
                         "useNeutralFallback": identity_evidence.use_neutral_fallback,
                         "neutralFallbackReason": identity_evidence.neutral_fallback_reason,
+                        "ocrLineCount": identity_evidence.ocr_line_count,
+                        "ocrProvider": identity_evidence.ocr_provider,
+                        "identityOcrMs": identity_evidence.ocr_elapsed_ms,
                     },
                     ensure_ascii=False,
                     indent=2,
@@ -254,11 +273,14 @@ class GeminiScriptService:
 
         return all_results, story_memories, "\n\n---\n\n".join(raw_outputs), stats
 
-    def _build_identity_evidence(
+    async def _build_identity_evidence(
         self,
         *,
         context: ScriptContext,
+        batch_panels: list[PanelReference],
+        batch_paths: list[Path],
         previous_memory: StoryMemory | None,
+        on_log: JobLogger | None,
     ) -> IdentityEvidence:
         candidate_pool = self._dedupe_names(
             [
@@ -276,13 +298,92 @@ class GeminiScriptService:
                 neutral_fallback_reason="no candidate names available",
             )
 
+        if not self.settings.gemini_identity_experiment_enabled:
+            return IdentityEvidence(
+                candidate_pool=candidate_pool,
+                confirmed_names=[],
+                carryover_names=candidate_pool[:MAX_HINT_NAMES],
+                has_text_signal=False,
+                use_neutral_fallback=True,
+                neutral_fallback_reason="identity OCR experiment disabled",
+            )
+
+        if self.identity_ocr_provider is None:
+            return IdentityEvidence(
+                candidate_pool=candidate_pool,
+                confirmed_names=[],
+                carryover_names=candidate_pool[:MAX_HINT_NAMES],
+                has_text_signal=False,
+                use_neutral_fallback=True,
+                neutral_fallback_reason="identity OCR provider unavailable",
+                ocr_provider="paddleocr",
+            )
+
+        started_at = perf_counter()
+        ocr_texts: list[str] = []
+        ocr_line_count = 0
+        has_text_signal = False
+        provider_name = "paddleocr"
+
+        try:
+            for panel, path in zip(batch_panels, batch_paths):
+                result = await self.identity_ocr_provider.extract(path, panel.panelId)
+                ocr_line_count += len(result.lines)
+                if result.has_text or result.full_text.strip() or result.lines:
+                    has_text_signal = True
+                if result.full_text.strip():
+                    ocr_texts.append(result.full_text)
+                ocr_texts.extend(line.text for line in result.lines if line.text.strip())
+        except Exception as exc:
+            elapsed_ms = int((perf_counter() - started_at) * 1000)
+            self._log(
+                on_log,
+                "error",
+                "Identity OCR experiment failed; falling back to carryover hints.",
+                json.dumps(
+                    {
+                        "provider": provider_name,
+                        "error": str(exc),
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                ),
+            )
+            return IdentityEvidence(
+                candidate_pool=candidate_pool,
+                confirmed_names=[],
+                carryover_names=candidate_pool[:MAX_HINT_NAMES],
+                has_text_signal=False,
+                use_neutral_fallback=True,
+                neutral_fallback_reason="identity OCR experiment failed",
+                ocr_provider=provider_name,
+                ocr_elapsed_ms=elapsed_ms,
+            )
+
+        confirmed_names = [
+            name
+            for name in candidate_pool
+            if any(self._contains_name(text, name) for text in ocr_texts)
+        ][:MAX_HINT_NAMES]
+        carryover_names = [name for name in candidate_pool if name not in confirmed_names][:MAX_HINT_NAMES]
+
+        if confirmed_names:
+            neutral_reason = ""
+        elif has_text_signal:
+            neutral_reason = "ocr text found but no candidate names were confirmed"
+        else:
+            neutral_reason = "no usable text signal in current batch"
+
         return IdentityEvidence(
             candidate_pool=candidate_pool,
-            confirmed_names=[],
-            carryover_names=candidate_pool[:MAX_HINT_NAMES],
-            has_text_signal=False,
-            use_neutral_fallback=True,
-            neutral_fallback_reason="using carryover hints only",
+            confirmed_names=confirmed_names,
+            carryover_names=carryover_names,
+            has_text_signal=has_text_signal,
+            use_neutral_fallback=not confirmed_names,
+            neutral_fallback_reason=neutral_reason,
+            ocr_line_count=ocr_line_count,
+            ocr_provider=provider_name,
+            ocr_elapsed_ms=int((perf_counter() - started_at) * 1000),
         )
 
     async def _call_gemini(
@@ -506,33 +607,28 @@ class GeminiScriptService:
         previous_summary = self._compact_summary(previous_memory.summary if previous_memory else "")
         language_label = "Vietnamese" if context.language == "vi" else "English"
         narration_mode = self._infer_narration_mode(context, previous_memory)
+
         neutral_examples = (
-            '"ga trai tre", "ong lao ao den", "nu sat thu", "ten linh canh", "ga thay tu", or "doi thu kia"'
+            '"ga trai tre", "ong lao ao den", "nu sat thu", "ten linh canh", or "doi thu kia"'
             if context.language == "vi"
-            else '"the man", "the woman", "the opponent", "the figure", or "the other person"'
+            else '"the young man", "the old man in black", "the assassin", "the guard", or "the other figure"'
         )
         mode_guide_map = {
-            "horror": "Use dread, unease, and disturbing detail. Make the threat feel immediate and visceral.",
-            "combat": "Use speed, impact, danger, and split-second reactions. Keep the energy sharp and forceful.",
-            "escape": "Use urgency, pursuit, panic, and survival pressure. Make it feel like stopping means death.",
-            "investigation": "Focus on clues, suspicion, evidence, and the danger hiding behind discovery.",
-            "aftermath": "Use exhaustion, silence, damage, and lingering pressure without going flat.",
-            "mystery": "Use curiosity, strange detail, hidden meaning, and unresolved danger.",
+            "horror": "Use dread, unease, and immediate threat. Keep it sharp, specific, and unsettling.",
+            "combat": "Use impact, speed, danger, and split-second consequences. Keep the blows clean and fast.",
+            "escape": "Use urgency, pursuit, panic, and survival pressure. Make every beat feel costly.",
+            "investigation": "Focus on clues, suspicion, hidden meaning, and the risk behind discovery.",
+            "aftermath": "Use exhaustion, silence, damage, and pressure that still lingers after the peak.",
+            "mystery": "Use strange detail, curiosity, withheld meaning, and tension that keeps pulling forward.",
         }
         mode_guide = mode_guide_map.get(narration_mode, mode_guide_map["mystery"])
 
         sections: list[str] = [
             f"You write final {language_label} manga recap narration for YouTube.",
-            "Your job is to maximize viewer retention.",
-            "Every panel should create tension, curiosity, escalation, or emotional payoff.",
-            "\n".join(
-                [
-                    "Current mode:",
-                    f"- {narration_mode}",
-                    f"- Mode behavior: {mode_guide}",
-                ]
-            ),
+            "Goal: maximize viewer retention with compressed, cinematic narration.",
+            f"Current mode: {narration_mode}. {mode_guide}",
         ]
+
         if title or setup_summary:
             series_lines = ["Series context:"]
             if title:
@@ -540,50 +636,42 @@ class GeminiScriptService:
             if setup_summary:
                 series_lines.append(f"- Setup summary: {setup_summary}")
             sections.append("\n".join(series_lines))
+
         if previous_summary:
             sections.append(
                 "\n".join(
                     [
                         "Previous context:",
                         previous_summary,
-                        "If the current images do not show a clear scene change, keep continuity with that context.",
+                        "If the current images do not clearly change scenes, keep continuity.",
                     ]
                 )
             )
+
         if identity_evidence.confirmed_names:
+            sections.append(f"Confirmed in this batch: {', '.join(identity_evidence.confirmed_names)}")
+        elif identity_evidence.carryover_names:
             sections.append(
                 "\n".join(
                     [
-                        "Confirmed from visible text/dialogue in this batch:",
-                        f"- {', '.join(identity_evidence.confirmed_names)}",
+                        f"Carryover hints only: {', '.join(identity_evidence.carryover_names)}",
+                        "Use these as hints, not proof, unless the current batch clearly confirms them.",
                     ]
                 )
             )
-        if identity_evidence.carryover_names:
-            sections.append(
-                "\n".join(
-                    [
-                        "Carryover names from previous chunk:",
-                        f"- {', '.join(identity_evidence.carryover_names)}",
-                        "Use these only as continuity hints, not as proof of identity in the current images.",
-                    ]
-                )
-            )
+
         if identity_evidence.use_neutral_fallback:
-            sections.append(
-                "\n".join(
-                    [
-                        "Identity confidence is low for this batch.",
-                        "Use neutral labels for people instead of names unless the visible dialogue in this batch clearly names them.",
-                    ]
-                )
-            )
+            sections.append("If identity is unclear, use neutral labels instead of names.")
+
         sections.append(
             "\n".join(
                 [
-                    "Truth rules:",
-                    "- Only describe what the current images support.",
-                    "- Do not invent identity, motive, outcome, or twist that the current images do not support.",
+                    "Truth and naming rules:",
+                    "- Only state what the current images support.",
+                    "- Do not invent identity, motive, or outcomes.",
+                    "- Use a name only when the current batch clearly supports it.",
+                    f"- If identity is unclear, use specific neutral labels such as {neutral_examples}.",
+                    "- Keep the same unnamed descriptor across nearby panels unless better evidence appears.",
                 ]
             )
         )
@@ -591,80 +679,46 @@ class GeminiScriptService:
         sections.append(
             "\n".join(
                 [
-                    "Compression rules:",
-                    "- Default to the shortest phrasing that still sounds cinematic and clear.",
-                    "- Remove filler transitions unless they add rhythm or contrast.",
-                    "- Do not explain the same beat twice in different words.",
-                    "- One panel, one narrative function: advance plot, intensify emotion, or create curiosity.",
-                    "- When possible, imply dread or danger instead of fully spelling it out.",
-                ]
-            )
-        )
-
-        sections.append(
-            "\n".join(
-                [
-                    "Naming rules:",
-                    "- Use a character name only when the current images or visible dialogue make the identity clear.",
-                    "- Never treat carryover names as proof on their own.",
-                    "- If identity is unclear, label people by visible age, outfit, role, weapon, job, or standout physical traits before using a generic label.",
-                    f"- Prefer specific neutral labels such as {neutral_examples}.",
-                    '- Avoid overusing flat labels like "nam nhan" when the images support something more precise.',
-                    "- If adjacent panels likely show the same unnamed person, keep the same descriptor unless the images clearly reveal better identity detail.",
-                    "- Do not switch an unnamed character from one guessed role or job to another across nearby panels without strong visual proof.",
-                    "- Do not infer a profession such as herb picker, worker, guard, or servant unless the current images make that role genuinely clear.",
-                ]
-            )
-        )
-        sections.append(
-            "\n".join(
-                [
-                    "Output rules:",
+                    "Narration rules:",
                     f"- Write direct final narration in {language_label}.",
-                    '- No greeting, no intro, no outro, no "tap truoc", and no trailer-style filler.',
-                    "- Do not mechanically describe each image in isolation.",
-                    "- Make adjacent panels flow like one seamless recap.",
-                    "- Clearly establish the subject of the sentence to avoid pronoun confusion.",
-                    "- Keep sentences concise, punchy, high-rhythm, and easy for TTS.",
-                    "- Prefer 1 short sentence per panel. Use 2 short sentences only when the second sentence adds new tension, consequence, or curiosity.",
-                    "- Compress wording by about 10-15% versus a normal recap style.",
-                    "- Cut any phrase that only restates what is already obvious in the image.",
-                    "- Do not narrate camera framing, pose, facial expression, clothing, or object placement unless that detail changes the plot, emotion, or danger.",
-                    "- Focus on what is happening, what changes, and why it matters.",
-                    "- If a sentence only describes the visible image without adding narrative value, rewrite or remove it.",
-                    "- Vary rhythm: hit, breathe, then hit harder.",
-                    "- Not every panel should sound maximum intensity.",
-                    "- Add light curiosity when appropriate, but stay grounded in the images.",
-                    "- Add a very light touch of modern Vietnamese Gen Z phrasing only when it sounds natural, brief, and does not break the current cinematic recap tone.",
+                    '- No greeting, no intro, no outro, no "tap truoc", no filler.',
+                    "- Make adjacent panels read like one continuous recap, not isolated captions.",
+                    "- Default to 1 short sentence per panel. Use 2 only if the second adds new tension, consequence, or curiosity.",
+                    "- Compress wording by about 10-15% compared with a normal recap style.",
+                    "- Cut any phrase that only repeats what is already obvious in the image.",
+                    "- Do not narrate framing, pose, facial expression, clothing, or object placement unless it changes plot, emotion, or danger.",
+                    "- Focus on change: what happens, what shifts, and why it matters.",
+                    "- Prefer verbs, consequences, and momentum over visual listing.",
+                    "- Keep the subject clear so pronouns never become confusing.",
+                    "- Vary rhythm: hit, breathe, hit harder.",
+                    "- Keep any Gen Z flavor subtle, brief, and compatible with the cinematic tone.",
                 ]
             )
         )
+
         sections.append(
             "\n".join(
                 [
-                    "Lexical rules:",
-                    "- Do not repeat the same emotional keywords across nearby panels unless the scene clearly escalates.",
-                    '- Avoid generic lines like "mot canh tuong kinh hoang xuat hien" or equally vague phrasing.',
-                    "- If a line feels generic, rewrite it to be more specific and engaging.",
-                    "- Avoid repeatedly calling someone 'nam nhan' or an equally flat label when their look or role is visually clear.",
-                    "- Prefer verbs and consequences over visual listing.",
-                    "- Avoid opening too many lines with direct visual description such as 'truoc mat', 'luc nay', 'canh tuong nay', 'tren mat dat', 'phia truoc la'.",
-                    "- Avoid redundant visual narration like describing blood, fear, darkness, weapons, or shock again if the same idea was already established in nearby panels.",
-                    "- Any Gen Z flavor must stay subtle, short, and fully compatible with the current narration style.",
+                    "Style guardrails:",
+                    "- Avoid repeating nearby emotional keywords unless the scene truly escalates.",
+                    '- Avoid vague lines like "mot canh tuong kinh hoang xuat hien".',
+                    "- If a line sounds generic, rewrite it to be more specific or more tense.",
+                    "- Avoid opening too many lines with direct visual setup such as 'truoc mat', 'luc nay', 'canh tuong nay', or similar.",
+                    "- If a line only restates the image, rewrite or remove it.",
                 ]
             )
         )
+
         sections.append(
             "\n".join(
                 [
-                    "Batch flow rules:",
-                    "- Build momentum across the batch instead of treating each panel as equal.",
-                    "- Save the strongest unresolved beat for the final line when the images support it.",
-                    "- If the final panel suggests unresolved danger, discovery, confrontation, or a sudden change, end with a short cliffhanger-style line that pulls the viewer forward.",
-                    "- The final line should raise tension or curiosity, not merely summarize what is visible.",
+                    "Batch ending rule:",
+                    "- If the final panel suggests danger, discovery, confrontation, or sudden change, end with a short natural cliffhanger.",
+                    "- The final line should pull the viewer forward, not just summarize the image.",
                 ]
             )
         )
+
         sections.append(
             "\n".join(
                 [
@@ -678,16 +732,15 @@ class GeminiScriptService:
                 ]
             )
         )
+
         sections.append(
             "\n".join(
                 [
                     "Requirements:",
                     f"- Return exactly {panel_count} items for {panel_count} images.",
                     f"- panel_index starts at {start_index} and increases by 1.",
-                    "- Every voiceover_text must read like a compelling recap line, not a dry description.",
-                    "- Every voiceover_text should flow logically into the next one as part of a continuous chapter recap.",
-                    "- Across the batch, prioritize narrative compression over exhaustive visual description.",
-                    "- The last 1-2 items should feel slightly more hook-driven when the scene supports it.",
+                    "- Every voiceover_text must sound like compelling recap narration, not dry description.",
+                    "- Across the batch, prioritize compression and momentum over exhaustive visual detail.",
                 ]
             )
         )

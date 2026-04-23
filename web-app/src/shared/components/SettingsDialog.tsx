@@ -235,7 +235,7 @@ export function SettingsDialog() {
               onChange={(e) =>
                 setLocalVoiceConfig({
                   ...localVoiceConfig,
-                  speed: Number(e.target.value) || 1,
+                  speed: Number(e.target.value) || 1.15,
                 })
               }
               className="border-white/10 bg-white/5"

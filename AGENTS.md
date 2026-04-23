@@ -22,7 +22,6 @@ Active product architecture on `2026-04-16`:
 - FE-BE structure is active
 - Step Script runs through backend Gemini
 - Active backend route is `POST /api/v1/script/generate`
-- Local Ollama / llama.cpp / OCR are not part of the active Step Script product flow
 
 ---
 

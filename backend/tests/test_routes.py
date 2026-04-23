@@ -17,22 +17,6 @@ def test_healthcheck():
         assert response.json()["status"] == "ok"
 
 
-def test_providers_route_includes_ocr_fields(monkeypatch):
-    monkeypatch.setenv("AI_BACKEND_OCR_ENABLED", "true")
-    get_settings.cache_clear()
-
-    from app.services.provider_registry import ProviderRegistry
-
-    monkeypatch.setattr(ProviderRegistry, "get_ocr_provider", lambda self: None)
-    try:
-        with TestClient(app) as client:
-            response = client.get("/api/v1/system/providers")
-            assert response.status_code == 200
-            payload = response.json()
-            assert payload["ocrEnabled"] is True
-            assert payload["ocrProvider"] == "paddleocr"
-    finally:
-        get_settings.cache_clear()
 
 
 def test_tts_runtime_route_returns_runtime_payload():
@@ -108,7 +92,6 @@ def test_script_generate_route_returns_metrics_and_result(tmp_path: Path):
             retryCount=1,
             rateLimitedCount=0,
             throttleWaitMs=750,
-            identityOcrMs=0,
             identityConfirmedCount=0,
         ),
     )
@@ -134,6 +117,14 @@ def test_script_generate_route_returns_metrics_and_result(tmp_path: Path):
         assert payload["result"]["metrics"]["throttleWaitMs"] == 750
     finally:
         app.dependency_overrides.clear()
+
+
+def test_script_generate_get_returns_actionable_method_error():
+    with TestClient(app) as client:
+        response = client.get("/api/v1/script/generate")
+
+    assert response.status_code == 405
+    assert "Use POST /api/v1/script/generate" in response.json()["detail"]
 
 
 def test_script_generate_route_returns_error_body_with_logs(tmp_path: Path):

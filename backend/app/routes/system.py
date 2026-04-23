@@ -1,14 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.deps import get_provider_registry
-from app.models.api import ProvidersResponse, TtsRuntimeResponse
+from app.models.api import TtsRuntimeResponse
 
 router = APIRouter(prefix="/system", tags=["system"])
-
-
-@router.get("/providers", response_model=ProvidersResponse)
-async def providers(registry=Depends(get_provider_registry)) -> ProvidersResponse:
-    return ProvidersResponse(**registry.get_provider_info())
 
 
 @router.get("/tts", response_model=TtsRuntimeResponse)

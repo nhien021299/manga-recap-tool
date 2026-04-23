@@ -14,15 +14,24 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { fetchVoiceOptions, generateVoiceAudio, resolveVoiceSampleUrl } from "@/features/voice/api/voiceApi";
+import { Slider } from "@/components/ui/slider";
+import { fetchVoiceOptions, generateVoiceAudio } from "@/features/voice/api/voiceApi";
 import { useVoiceGeneration } from "@/features/voice/hooks/useVoiceGeneration";
 import { useRecapStore } from "@/shared/storage/useRecapStore";
 import type { VoiceOptionsResponse } from "@/shared/types";
 
 const PREVIEW_TEXT =
   "Xin chào, đây là đoạn nghe thử để kiểm tra chất giọng kể chuyện, độ cuốn và nhịp review truyện của preset này.";
+
+const MIN_VOICE_SPEED = 0.8;
+const MAX_VOICE_SPEED = 1.15;
+const SPEED_STEP = 0.05;
+
+const clampVoiceSpeed = (value: number): number =>
+  Math.min(MAX_VOICE_SPEED, Math.max(MIN_VOICE_SPEED, Number(value.toFixed(2))));
 
 export function StepVoice() {
   const { config, voiceConfig, setVoiceConfig, timeline, panels, setCurrentStep, isLoading, progress, currentVoiceGeneration } =
@@ -71,6 +80,11 @@ export function StepVoice() {
   const activeProvider =
     voiceOptions?.providers.find((provider) => provider.id === voiceConfig.provider) || voiceOptions?.providers[0] || null;
   const activeVoices = activeProvider?.voices || [];
+  const staleClipCount = timeline.filter((item) => item.audioStatus === "stale").length;
+
+  const handleSpeedChange = (nextSpeed: number) => {
+    setVoiceConfig({ speed: clampVoiceSpeed(nextSpeed) });
+  };
 
   const handlePreviewVoice = async (voiceKey: string, event: React.MouseEvent) => {
     event.stopPropagation();
@@ -95,20 +109,14 @@ export function StepVoice() {
 
       let url = previewCacheRef.current[cacheKey];
       if (!url) {
-        const selectedVoice = activeVoices.find((voice) => voice.key === voiceKey) || null;
-        const sampleUrl = resolveVoiceSampleUrl(config.apiBaseUrl, selectedVoice?.sampleUrl);
-        if (sampleUrl) {
-          url = sampleUrl;
-        } else {
-          const blob = await generateVoiceAudio(config.apiBaseUrl, {
-            text: PREVIEW_TEXT,
-            provider: activeProvider?.id || voiceConfig.provider,
-            voiceKey,
-            speed: voiceConfig.speed,
-          });
-          url = URL.createObjectURL(blob);
-          previewCacheRef.current[cacheKey] = url;
-        }
+        const blob = await generateVoiceAudio(config.apiBaseUrl, {
+          text: PREVIEW_TEXT,
+          provider: activeProvider?.id || voiceConfig.provider,
+          voiceKey,
+          speed: voiceConfig.speed,
+        });
+        url = URL.createObjectURL(blob);
+        previewCacheRef.current[cacheKey] = url;
       }
 
       if (previewAudioRef.current) {
@@ -128,6 +136,17 @@ export function StepVoice() {
   const activePanel = currentVoiceGeneration
     ? panels.find((entry) => entry.id === currentVoiceGeneration.panelId) || null
     : null;
+
+  useEffect(() => {
+    return () => {
+      previewAudioRef.current?.pause();
+      Object.values(previewCacheRef.current).forEach((url) => {
+        if (url.startsWith("blob:")) {
+          URL.revokeObjectURL(url);
+        }
+      });
+    };
+  }, []);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -179,6 +198,18 @@ export function StepVoice() {
             <span className="font-medium text-muted-foreground">Select Voice Preset</span>
             <span className="text-xs uppercase tracking-[0.2em] text-white/45">{activeProvider?.label || "Voice"}</span>
           </div>
+          <div className="flex items-center justify-between px-1 text-sm">
+            <span className="font-medium text-muted-foreground">
+              Tap a preset to keep it active, then press play to preview at {voiceConfig.speed.toFixed(2)}x.
+            </span>
+            {staleClipCount > 0 ? (
+              <span className="text-xs text-amber-200/85">
+                {staleClipCount} stale clip{staleClipCount === 1 ? "" : "s"}
+              </span>
+            ) : (
+              <span className="text-xs uppercase tracking-[0.2em] text-white/45">Preview follows current speed</span>
+            )}
+          </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {activeVoices.map((voice) => {
               const isSelected = voiceConfig.voiceKey === voice.key;
@@ -205,7 +236,14 @@ export function StepVoice() {
                   )}
 
                   <div className="relative z-10 mb-6 space-y-1">
-                    <h4 className="font-semibold text-white">{voice.label}</h4>
+                    <div className="flex items-start justify-between gap-3">
+                      <h4 className="font-semibold text-white">{voice.label}</h4>
+                      {isSelected ? (
+                        <span className="rounded-full border border-cyan-300/25 bg-cyan-400/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-100">
+                          {voiceConfig.speed.toFixed(2)}x
+                        </span>
+                      ) : null}
+                    </div>
                     {voice.styleTag && (
                       <p className="text-[10px] uppercase tracking-[0.2em] text-primary/80">{voice.styleTag}</p>
                     )}
@@ -214,6 +252,37 @@ export function StepVoice() {
                     </p>
                     {!voice.isAvailable && <p className="text-[10px] text-destructive">Missing assets</p>}
                   </div>
+
+                  {isSelected ? (
+                    <div className="relative z-10 mb-5 space-y-2 rounded-2xl border border-white/10 bg-black/20 p-3">
+                      <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.2em] text-white/45">
+                        <span>Speed</span>
+                        <span>{voiceConfig.speed.toFixed(2)}x</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Slider
+                          value={[voiceConfig.speed]}
+                          min={MIN_VOICE_SPEED}
+                          max={MAX_VOICE_SPEED}
+                          step={SPEED_STEP}
+                          onValueChange={(value) =>
+                            handleSpeedChange(Array.isArray(value) ? (value[0] ?? 1) : value)
+                          }
+                          className="flex-1"
+                        />
+                        <Input
+                          type="number"
+                          min={MIN_VOICE_SPEED}
+                          max={MAX_VOICE_SPEED}
+                          step={SPEED_STEP}
+                          value={voiceConfig.speed}
+                          onChange={(event) => handleSpeedChange(Number(event.target.value) || 1)}
+                          onClick={(event) => event.stopPropagation()}
+                          className="h-9 w-20 rounded-xl border-white/10 bg-black/30 px-2 text-sm text-white"
+                        />
+                      </div>
+                    </div>
+                  ) : null}
 
                   <div className="relative z-10 flex items-center justify-between">
                     <div className="flex h-4 w-8 items-center justify-start gap-1">
@@ -329,7 +398,7 @@ export function StepVoice() {
               const isCurrentGenerating = currentVoiceGeneration?.panelId === item.panelId;
               return (
                 <Card
-                  key={item.panelId}
+                  key={`${item.panelId}-${index}`}
                   className="group flex items-center gap-4 rounded-2xl border-white/5 bg-background p-3 transition-all hover:border-primary/20"
                 >
                   <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-white/5 bg-black">

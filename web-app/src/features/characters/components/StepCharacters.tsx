@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Scissors, UserPlus } from "lucide-react";
 
 import {
@@ -36,6 +36,7 @@ export function StepCharacters() {
   const [splitCropSelections, setSplitCropSelections] = useState<SplitSelections>({});
   const [splitPanelSelections, setSplitPanelSelections] = useState<SplitSelections>({});
   const [splitName, setSplitName] = useState("");
+  const prepassRequestKeyRef = useRef<string>("");
 
   const chapterId = useMemo(() => buildChapterId(panels), [panels]);
   const panelById = useMemo(() => new Map(panels.map((panel) => [panel.id, panel])), [panels]);
@@ -117,24 +118,29 @@ export function StepCharacters() {
 
   useEffect(() => {
     if (panels.length === 0 || !config.apiBaseUrl) return;
-    if (loading) return;
     if (characterState?.chapterId === chapterId) return;
+    const requestKey = `${chapterId}:${panels.length}`;
+    if (prepassRequestKeyRef.current === requestKey) return;
 
-    let cancelled = false;
+    const controller = new AbortController();
+    prepassRequestKeyRef.current = requestKey;
     const load = async () => {
       setLoading(true);
       setError(null);
       try {
-        const state = await runCharacterPrepass(config.apiBaseUrl, chapterId, panels);
-        if (!cancelled) {
+        const state = await runCharacterPrepass(config.apiBaseUrl, chapterId, panels, {
+          signal: controller.signal,
+        });
+        if (!controller.signal.aborted) {
           setCharacterState(state);
         }
       } catch (prepassError) {
-        if (!cancelled) {
+        if (!controller.signal.aborted) {
           setError(prepassError instanceof Error ? prepassError.message : "Character prepass failed.");
+          prepassRequestKeyRef.current = "";
         }
       } finally {
-        if (!cancelled) {
+        if (!controller.signal.aborted) {
           setLoading(false);
         }
       }
@@ -142,9 +148,9 @@ export function StepCharacters() {
 
     void load();
     return () => {
-      cancelled = true;
+      controller.abort();
     };
-  }, [chapterId, characterState?.chapterId, config.apiBaseUrl, loading, panels, setCharacterState]);
+  }, [chapterId, characterState?.chapterId, config.apiBaseUrl, panels, setCharacterState]);
 
   const applyState = (state: typeof characterState) => {
     if (!state) return;
@@ -162,6 +168,7 @@ export function StepCharacters() {
     try {
       requireApiBaseUrl();
       setLoading(true);
+      prepassRequestKeyRef.current = "";
       setError(null);
       clearCharacterState();
       setDraftNames({});

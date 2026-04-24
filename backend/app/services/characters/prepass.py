@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 
+import cv2
 import numpy as np
 from PIL import Image
 
@@ -36,6 +37,13 @@ from app.services.characters.repository import CharacterStateRepository
 
 PREPASS_VERSION = "character-hybrid-v4"
 
+IDENTITY_KINDS = {"face", "head"}
+MIN_FACE_SIZE = 48
+MIN_HEAD_SIZE = 64
+MIN_FACE_QUALITY = 0.58
+MIN_HEAD_QUALITY = 0.62
+MIN_DETECTOR_CONFIDENCE = 0.45
+
 
 class CharacterPrepassService:
     def __init__(self, settings: Settings, repository: CharacterStateRepository) -> None:
@@ -45,7 +53,9 @@ class CharacterPrepassService:
         self.quality_scorer = CharacterCropQualityScorer()
         self.embedder = CharacterCropEmbedder(
             settings.character_cache_root,
+            embedder=settings.character_embedder,
             dino_model_path=settings.character_dino_model_resolved_path,
+            arcface_model_path=settings.character_arcface_model_resolved_path,
             embed_device=settings.character_embed_device,
         )
         self.clusterer = CharacterClusterer(
@@ -95,7 +105,16 @@ class CharacterPrepassService:
         panel_order = {panel.panelId: panel.orderIndex for panel in panels}
         crops: list[CharacterCrop] = []
         cluster_inputs: list[ClusterInputCrop] = []
+        pending_embeddings: list[dict[str, object]] = []
         panel_diagnostics: dict[str, object] = {}
+        metrics = {
+            "totalDetectedCrops": 0,
+            "identityEligibleCrops": 0,
+            "rejectedLowQualityCrops": 0,
+            "rejectedKindCrops": 0,
+            "rejectedMonsterCrops": 0,
+            "unknownCrops": 0,
+        }
 
         for panel, path in zip(panels, file_paths, strict=True):
             with Image.open(path) as image:
@@ -108,21 +127,41 @@ class CharacterPrepassService:
                     "detectorMode": self.settings.character_detector_mode,
                     "detectorRuntime": self._detector_runtime_diagnostics(),
                 }
+                metrics["totalDetectedCrops"] += len(detections)
                 for detection_index, detection in enumerate(detections, start=1):
                     crop_id = f"{panel.panelId}::crop::{detection_index:02d}"
                     x, y, w, h = detection.bbox
                     crop_image = panel_image.crop((x, y, x + w, y + h))
+                    crop_kind = detection.kind
+                    monster_like = self._is_monster_like_crop(panel_rgb=panel_rgb, bbox=detection.bbox)
+                    if monster_like:
+                        crop_kind = "monster"
                     quality = self.quality_scorer.score(
                         panel_rgb=panel_rgb,
                         bbox=detection.bbox,
                         detection_score=detection.detection_score,
                     )
+                    identity_eligible, rejection_reason = self._identity_gate(
+                        crop_kind=crop_kind,
+                        bbox=detection.bbox,
+                        quality_score=quality.score,
+                        detection_score=detection.detection_score,
+                    )
+                    if identity_eligible:
+                        metrics["identityEligibleCrops"] += 1
+                    elif crop_kind == "monster":
+                        metrics["rejectedMonsterCrops"] += 1
+                    elif crop_kind not in IDENTITY_KINDS:
+                        metrics["rejectedKindCrops"] += 1
+                    elif rejection_reason in {"quality", "size", "detector_confidence"}:
+                        metrics["rejectedLowQualityCrops"] += 1
+                    metrics["unknownCrops"] += 0 if identity_eligible else 1
                     cache_hint = ":".join(
                         [
                             self.detector.version,
                             detection.detector_source,
                             detection.detector_model,
-                            detection.kind,
+                            crop_kind,
                             self.settings.character_detector_mode,
                             self.settings.character_device,
                             self.settings.character_object_model,
@@ -135,24 +174,17 @@ class CharacterPrepassService:
                             str(quality.score),
                         ]
                     )
-                    embedding = None
-                    if quality.bucket in {"good", "medium"} and detection.kind != "accessory":
-                        embedding = self.embedder.embed(
-                            chapter_id=chapter_id,
-                            crop_id=crop_id,
-                            crop_kind=detection.kind,
-                            crop_image=crop_image,
-                            cache_hint=cache_hint,
-                        )
-                        cluster_inputs.append(
-                            ClusterInputCrop(
-                                crop_id=crop_id,
-                                panel_id=panel.panelId,
-                                order_index=panel.orderIndex,
-                                vector=embedding.vector,
-                                quality_bucket=quality.bucket,
-                                crop_kind=detection.kind,
-                            )
+                    if identity_eligible:
+                        pending_embeddings.append(
+                            {
+                                "crop_id": crop_id,
+                                "panel_id": panel.panelId,
+                                "order_index": panel.orderIndex,
+                                "crop_kind": crop_kind,
+                                "quality_bucket": quality.bucket,
+                                "crop_image": crop_image.copy(),
+                                "cache_hint": cache_hint,
+                            }
                         )
 
                     crops.append(
@@ -162,7 +194,7 @@ class CharacterPrepassService:
                             orderIndex=panel.orderIndex,
                             bbox=[x, y, w, h],
                             detectionScore=detection.detection_score,
-                            kind=detection.kind,
+                            kind=crop_kind,
                             detectorSource=detection.detector_source,
                             detectorModel=detection.detector_model,
                             qualityScore=quality.score,
@@ -175,18 +207,43 @@ class CharacterPrepassService:
                                 **quality.diagnostics,
                                 "detectorSource": detection.detector_source,
                                 "detectorModel": detection.detector_model,
-                                "cropKind": detection.kind,
-                                "embeddingKey": embedding.cache_key if embedding is not None else "",
-                                "embeddingVersion": self.embedder.version if embedding is not None else "",
-                                "embeddingDiagnostics": embedding.diagnostics if embedding is not None else {},
+                                "cropKind": crop_kind,
+                                "identityEligible": identity_eligible,
+                                "identityRejectionReason": rejection_reason,
+                                "monsterLike": monster_like,
+                                "embeddingKey": "",
+                                "embeddingVersion": "",
+                                "embeddingDiagnostics": {},
                             },
                         )
                     )
 
+        crop_by_id = {crop.cropId: crop for crop in crops}
+        embeddings = self.embedder.embed_batch(chapter_id=chapter_id, items=pending_embeddings)
+        for item, embedding in zip(pending_embeddings, embeddings, strict=False):
+            crop_id = str(item["crop_id"])
+            crop = crop_by_id.get(crop_id)
+            if crop is None:
+                continue
+            crop.diagnostics = {
+                **crop.diagnostics,
+                "embeddingKey": embedding.cache_key,
+                "embeddingVersion": self.embedder.version,
+                "embeddingDiagnostics": embedding.diagnostics,
+            }
+            cluster_inputs.append(
+                ClusterInputCrop(
+                    crop_id=crop_id,
+                    panel_id=str(item["panel_id"]),
+                    order_index=int(item["order_index"]),
+                    vector=embedding.vector,
+                    quality_bucket=str(item["quality_bucket"]),
+                    crop_kind=str(item["crop_kind"]),
+                )
+            )
+
         raw_clusters, raw_assignments = self.clusterer.cluster(cluster_inputs)
         cluster_id_by_index = {cluster.cluster_index: f"char_{index:03d}" for index, cluster in enumerate(raw_clusters, start=1)}
-
-        crop_by_id = {crop.cropId: crop for crop in crops}
         candidate_assignments: list[CharacterCandidateAssignment] = []
         for assignment in raw_assignments:
             crop = crop_by_id.get(assignment.crop_id)
@@ -283,6 +340,11 @@ class CharacterPrepassService:
                     "clusterer": self.settings.character_clusterer,
                     "objectModel": self.settings.character_object_model,
                     "minClusterSize": self.settings.character_min_cluster_size,
+                    "embedder": self.settings.character_embedder,
+                    "dinoModelPath": self.settings.character_dino_model_path,
+                    "arcfaceModelPath": self.settings.character_arcface_model_path,
+                    "embedDevice": self.settings.character_embed_device,
+                    "animeFaceModelPath": getattr(self.settings, "character_anime_face_model_path", ""),
                 },
                 "thresholds": {
                     "anchorDistance": ANCHOR_DISTANCE_THRESHOLD,
@@ -293,6 +355,15 @@ class CharacterPrepassService:
                     "faceAttachSimilarity": FACE_ATTACH_SIMILARITY_THRESHOLD,
                     "faceAttachMargin": FACE_ATTACH_MARGIN_THRESHOLD,
                 },
+                "characterMetrics": {
+                    **metrics,
+                    "confirmedClusters": len(clusters),
+                    "candidateClusters": len([cluster for cluster in clusters if cluster.status == "review_needed"]),
+                    "impureClustersAfterClean": len(
+                        [cluster for cluster in clusters if "impure_cluster" in cluster.reviewFlags or "outliers_rejected" in cluster.reviewFlags]
+                    ),
+                },
+                "embedderRuntime": self.embedder.runtime_diagnostics(),
             },
             "panels": panel_diagnostics,
             "pairs": [],
@@ -419,7 +490,7 @@ class CharacterPrepassService:
                 prev_crop = previous_crops.get(crop_id)
                 if prev_crop is None:
                     continue
-                if prev_crop.kind not in {"face", "head", "heuristic"}:
+                if prev_crop.kind not in IDENTITY_KINDS:
                     continue
                 embedding_key = prev_crop.diagnostics.get("embeddingKey", "")
                 if not embedding_key:
@@ -666,6 +737,46 @@ class CharacterPrepassService:
     def _detector_runtime_diagnostics(self) -> dict[str, object]:
         return self.detector.runtime_diagnostics()
 
+    def _identity_gate(
+        self,
+        *,
+        crop_kind: str,
+        bbox: tuple[int, int, int, int],
+        quality_score: float,
+        detection_score: float,
+    ) -> tuple[bool, str]:
+        if crop_kind not in IDENTITY_KINDS:
+            return False, "kind"
+        _x, _y, width, height = bbox
+        min_size = MIN_FACE_SIZE if crop_kind == "face" else MIN_HEAD_SIZE
+        min_quality = MIN_FACE_QUALITY if crop_kind == "face" else MIN_HEAD_QUALITY
+        if width < min_size or height < min_size:
+            return False, "size"
+        if quality_score < min_quality:
+            return False, "quality"
+        if detection_score < MIN_DETECTOR_CONFIDENCE:
+            return False, "detector_confidence"
+        return True, ""
+
+    def _is_monster_like_crop(self, *, panel_rgb: np.ndarray, bbox: tuple[int, int, int, int]) -> bool:
+        x, y, width, height = bbox
+        crop = panel_rgb[y : y + height, x : x + width]
+        if crop.size == 0:
+            return False
+        hsv = np.asarray(Image.fromarray(crop).convert("HSV"), dtype=np.uint8)
+        hue = hsv[:, :, 0].astype(np.float32) * 2.0
+        saturation = hsv[:, :, 1].astype(np.float32) / 255.0
+        value = hsv[:, :, 2].astype(np.float32) / 255.0
+        green_mask = (hue >= 70.0) & (hue <= 170.0) & (saturation > 0.28) & (value > 0.18)
+        skin_like_mask = (hue >= 8.0) & (hue <= 52.0) & (saturation > 0.10) & (saturation < 0.62) & (value > 0.32)
+        gray = cv2.cvtColor(crop, cv2.COLOR_RGB2GRAY)
+        edge_density = float(np.mean(cv2.Canny(gray, 70, 170) > 0))
+        green_ratio = float(np.mean(green_mask))
+        skin_like_ratio = float(np.mean(skin_like_mask))
+        aspect_ratio = width / max(1.0, float(height))
+        long_shape = aspect_ratio > 1.85 or aspect_ratio < 0.20
+        return bool((green_ratio > 0.42 and skin_like_ratio < 0.18) or (edge_density > 0.38 and long_shape))
+
     def _count_buckets(self, crops: list[CharacterCrop]) -> dict[str, int]:
         counts: dict[str, int] = {"good": 0, "medium": 0, "poor": 0}
         for crop in crops:
@@ -722,6 +833,7 @@ class CharacterPrepassService:
             "device": self.settings.character_device,
             "embedder": self.settings.character_embedder,
             "dinoModelPath": self.settings.character_dino_model_path,
+            "arcfaceModelPath": self.settings.character_arcface_model_path,
             "embedDevice": self.settings.character_embed_device,
             "animeFaceModelPath": getattr(self.settings, "character_anime_face_model_path", ""),
         }

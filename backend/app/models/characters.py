@@ -9,7 +9,7 @@ CharacterClusterStatus = Literal["draft", "locked", "review_needed", "unknown", 
 PanelCharacterSource = Literal["auto_confirmed", "manual", "unknown", "suggested"]
 CharacterQualityBucket = Literal["good", "medium", "poor"]
 CharacterCropAssignmentState = Literal["auto_confirmed", "suggested", "manual", "unknown"]
-CharacterCropKind = Literal["face", "head", "upper_body", "person", "accessory", "heuristic"]
+CharacterCropKind = Literal["face", "head", "upper_body", "person", "accessory", "heuristic", "monster", "unknown"]
 
 
 class CharacterPanelReference(BaseModel):

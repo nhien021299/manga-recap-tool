@@ -41,7 +41,7 @@ export type CharacterClusterStatus = "draft" | "locked" | "review_needed" | "unk
 export type PanelCharacterSource = "auto_confirmed" | "manual" | "unknown" | "suggested";
 export type CharacterQualityBucket = "good" | "medium" | "poor";
 export type CharacterCropAssignmentState = "auto_confirmed" | "suggested" | "manual" | "unknown";
-export type CharacterCropKind = "face" | "head" | "upper_body" | "person" | "accessory" | "heuristic";
+export type CharacterCropKind = "face" | "head" | "upper_body" | "person" | "accessory" | "heuristic" | "monster" | "unknown";
 
 export interface CharacterCluster {
   clusterId: string;

@@ -59,6 +59,7 @@ class Settings(BaseSettings):
     character_min_cluster_size: int = Field(default=2, alias="AI_BACKEND_CHARACTER_MIN_CLUSTER_SIZE")
     character_embedder: str = Field(default="handcrafted", alias="AI_BACKEND_CHARACTER_EMBEDDER")
     character_dino_model_path: str = Field(default="", alias="AI_BACKEND_CHARACTER_DINO_MODEL_PATH")
+    character_arcface_model_path: str = Field(default="", alias="AI_BACKEND_CHARACTER_ARCFACE_MODEL_PATH")
     character_embed_device: str = Field(default="auto", alias="AI_BACKEND_CHARACTER_EMBED_DEVICE")
     character_anime_face_model_path: str = Field(default="", alias="AI_BACKEND_CHARACTER_ANIME_FACE_MODEL_PATH")
     render_temp_root_raw: str = Field(default=".temp/render-jobs", alias="AI_BACKEND_RENDER_TEMP_ROOT")
@@ -115,6 +116,22 @@ class Settings(BaseSettings):
         if normalized in {"hdbscan", "agglomerative"}:
             return normalized
         raise ValueError("AI_BACKEND_CHARACTER_CLUSTERER must be one of: hdbscan, agglomerative.")
+
+    @field_validator("character_embedder", mode="before")
+    @classmethod
+    def _normalize_character_embedder(cls, value: object) -> str:
+        normalized = str(value or "handcrafted").strip().lower()
+        aliases = {
+            "directml": "arcface-directml",
+            "dml": "arcface-directml",
+            "onnx-directml": "arcface-directml",
+        }
+        normalized = aliases.get(normalized, normalized)
+        if normalized in {"handcrafted", "arcface", "arcface-directml", "dinov2", "hybrid-dinov2"}:
+            return normalized
+        raise ValueError(
+            "AI_BACKEND_CHARACTER_EMBEDDER must be one of: handcrafted, arcface, arcface-directml, dinov2, hybrid-dinov2."
+        )
 
     @field_validator("character_min_cluster_size", mode="before")
     @classmethod
@@ -181,6 +198,12 @@ class Settings(BaseSettings):
         if not self.character_dino_model_path:
             return ""
         return str(_resolve_backend_path(self.character_dino_model_path))
+
+    @property
+    def character_arcface_model_resolved_path(self) -> str:
+        if not self.character_arcface_model_path:
+            return ""
+        return str(_resolve_backend_path(self.character_arcface_model_path))
 
     @property
     def character_anime_face_model_resolved_path(self) -> str:

@@ -46,13 +46,33 @@ export async function runCharacterPrepass(
   apiBaseUrl: string,
   chapterId: string,
   panels: Panel[],
-  options?: { force?: boolean }
+  options?: { force?: boolean; signal?: AbortSignal; timeoutMs?: number }
 ): Promise<ChapterCharacterState> {
-  const response = await fetch(`${normalizeBaseUrl(apiBaseUrl)}/api/v1/characters/prepass`, {
-    method: "POST",
-    body: buildPrepassFormData(chapterId, panels, options),
-  });
-  return parseJsonResponse<ChapterCharacterState>(response);
+  const timeoutMs = options?.timeoutMs ?? 180_000;
+  const controller = new AbortController();
+  let timedOut = false;
+  const abortFromCaller = () => controller.abort();
+  options?.signal?.addEventListener("abort", abortFromCaller, { once: true });
+  const timeoutId = window.setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+  try {
+    const response = await fetch(`${normalizeBaseUrl(apiBaseUrl)}/api/v1/characters/prepass`, {
+      method: "POST",
+      body: buildPrepassFormData(chapterId, panels, options),
+      signal: controller.signal,
+    });
+    return await parseJsonResponse<ChapterCharacterState>(response);
+  } catch (error) {
+    if (timedOut) {
+      throw new Error("Character prepass timed out. Backend may still be processing; retry after checking the backend log.");
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
+    options?.signal?.removeEventListener("abort", abortFromCaller);
+  }
 }
 
 export async function createCharacterCluster(

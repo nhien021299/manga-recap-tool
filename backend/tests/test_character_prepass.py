@@ -6,6 +6,7 @@ from PIL import Image, ImageDraw
 
 from app.core.config import Settings
 from app.models.characters import ChapterCharacterState, CharacterPanelReference, PanelCharacterRef
+from app.services.characters.detector import DetectedCrop
 from app.services.characters.prepass import PREPASS_VERSION, CharacterPrepassService
 from app.services.characters.repository import CharacterStateRepository
 
@@ -82,6 +83,29 @@ def draw_multi_character_panel(path: Path) -> None:
     image.save(path, format="PNG")
 
 
+def install_synthetic_face_detector(
+    service: CharacterPrepassService,
+    bboxes_by_panel: dict[str, tuple[int, int, int, int]],
+) -> None:
+    def detect(*, panel_id: str, order_index: int, path: Path):
+        bbox = bboxes_by_panel[panel_id]
+        return [
+            DetectedCrop(
+                panel_id=panel_id,
+                order_index=order_index,
+                bbox=bbox,
+                detection_score=0.96,
+                kind="head",
+                detector_source="synthetic-test",
+                detector_model="synthetic-head-v1",
+                diagnostics={"synthetic": True},
+            )
+        ]
+
+    service.detector.detect = detect  # type: ignore[method-assign]
+    service.detector.version = "synthetic-head-detector-v1"
+
+
 def test_prepass_groups_same_character_across_different_backgrounds(tmp_path: Path):
     settings = build_settings(tmp_path)
     repository = CharacterStateRepository(settings.character_state_db)
@@ -101,6 +125,16 @@ def test_prepass_groups_same_character_across_different_backgrounds(tmp_path: Pa
         panels.append(CharacterPanelReference(panelId=panel_id, orderIndex=order_index))
         file_paths.append(path)
 
+    install_synthetic_face_detector(
+        service,
+        {
+            "panel-1": (54, 54, 78, 86),
+            "panel-2": (64, 58, 78, 86),
+            "panel-3": (46, 56, 78, 86),
+            "panel-4": (34, 72, 118, 72),
+        },
+    )
+
     state = service.run(chapter_id="chapter-auto-group", panels=panels, file_paths=file_paths, force=True)
 
     assert state.prepassVersion == PREPASS_VERSION
@@ -112,19 +146,19 @@ def test_prepass_groups_same_character_across_different_backgrounds(tmp_path: Pa
     assert {"panel-1", "panel-2"}.issubset(set(largest_cluster.samplePanelIds))
 
     refs_by_panel = {item.panelId: item for item in state.panelCharacterRefs}
-    assert refs_by_panel["panel-1"].clusterIds == []
-    assert refs_by_panel["panel-2"].clusterIds == []
+    assert refs_by_panel["panel-1"].clusterIds == [largest_cluster.clusterId]
+    assert refs_by_panel["panel-2"].clusterIds == [largest_cluster.clusterId]
     
     panel_1_candidates = [assignment for assignment in state.candidateAssignments if assignment.panelId == "panel-1"]
     hero_cluster_id = panel_1_candidates[0].clusterId
-    assert panel_1_candidates[0].state == "suggested"
+    assert panel_1_candidates[0].state == "auto_confirmed"
     
     panel_2_candidates = [assignment for assignment in state.candidateAssignments if assignment.panelId == "panel-2"]
-    assert any(assignment.clusterId == hero_cluster_id and assignment.state == "suggested" for assignment in panel_2_candidates)
+    assert any(assignment.clusterId == hero_cluster_id and assignment.state == "auto_confirmed" for assignment in panel_2_candidates)
     
     panel_3_candidates = [assignment for assignment in state.candidateAssignments if assignment.panelId == "panel-3"]
-    assert any(assignment.clusterId == hero_cluster_id and assignment.state == "suggested" for assignment in panel_3_candidates)
-    assert refs_by_panel["panel-3"].clusterIds == []
+    assert any(assignment.clusterId == hero_cluster_id and assignment.state == "auto_confirmed" for assignment in panel_3_candidates)
+    assert refs_by_panel["panel-3"].clusterIds == [hero_cluster_id]
 
 
 def test_prepass_keeps_visually_different_characters_separate(tmp_path: Path):
@@ -145,12 +179,20 @@ def test_prepass_keeps_visually_different_characters_separate(tmp_path: Path):
         panels.append(CharacterPanelReference(panelId=panel_id, orderIndex=order_index))
         file_paths.append(path)
 
+    install_synthetic_face_detector(
+        service,
+        {
+            "panel-a": (54, 54, 78, 86),
+            "panel-b": (48, 62, 88, 88),
+            "panel-c": (56, 62, 88, 88),
+        },
+    )
+
     state = service.run(chapter_id="chapter-separate", panels=panels, file_paths=file_paths, force=True)
 
     refs_by_panel = {item.panelId: item for item in state.panelCharacterRefs}
-    assert refs_by_panel["panel-a"].clusterIds == []
-    assert refs_by_panel["panel-b"].clusterIds == []
-    assert refs_by_panel["panel-c"].clusterIds == []
+    assert refs_by_panel["panel-b"].clusterIds
+    assert refs_by_panel["panel-c"].clusterIds
 
     panel_b_candidates = [assignment for assignment in state.candidateAssignments if assignment.panelId == "panel-b"]
     panel_c_candidates = [assignment for assignment in state.candidateAssignments if assignment.panelId == "panel-c"]
@@ -165,6 +207,7 @@ def test_prepass_keeps_visually_different_characters_separate(tmp_path: Path):
     assert "panel-b" in anchor_panel_ids
     assert "panel-c" in anchor_panel_ids
     assert "panel-a" not in anchor_panel_ids
+    assert artifact_cluster_id not in refs_by_panel["panel-a"].clusterIds
 
 
 def test_prepass_recomputes_when_cached_state_uses_old_version(tmp_path: Path):

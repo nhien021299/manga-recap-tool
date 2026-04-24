@@ -9,12 +9,13 @@ import numpy as np
 from PIL import Image
 
 from app.core.config import Settings
+from app.services.characters.directml_runtime import create_onnx_session, session_diagnostics
 
 
 DETECTOR_VERSION = "hybrid-detector-v4"
 HEURISTIC_DETECTOR_VERSION = "heuristic-multi-crop-v1"
 
-CropKind = Literal["face", "head", "upper_body", "person", "accessory", "heuristic"]
+CropKind = Literal["face", "head", "upper_body", "person", "accessory", "heuristic", "monster", "unknown"]
 
 
 @dataclass(frozen=True)
@@ -41,6 +42,7 @@ class CharacterCropDetector:
         self._anime_error = ""
         self._anime_loaded = False
         self._anime_provider = ""  # "onnx" or "anime-face-detector"
+        self._anime_runtime: dict[str, object] = {}
         self._object_model = None
         self._object_error = ""
         self._total_face_count = 0
@@ -370,6 +372,7 @@ class CharacterCropDetector:
             "animeProviderLoaded": self._anime_loaded,
             "animeProvider": self._anime_provider,
             "animeProviderError": self._anime_error,
+            "animeRuntime": self._anime_runtime,
             "animeFaceModelPath": self.anime_face_model_path,
             "objectProviderLoaded": self._object_model is not None,
             "objectProviderError": self._object_error,
@@ -386,13 +389,10 @@ class CharacterCropDetector:
         onnx_path = Path(self.anime_face_model_path) if self.anime_face_model_path else None
         if onnx_path and onnx_path.exists() and onnx_path.suffix == ".onnx":
             try:
-                import onnxruntime as ort
-                session = ort.InferenceSession(
-                    str(onnx_path),
-                    providers=["CPUExecutionProvider"],
-                )
+                session = create_onnx_session(onnx_path, device=self.settings.character_device)
                 self._anime_detector = session
                 self._anime_provider = "onnx"
+                self._anime_runtime = session_diagnostics(session)
                 self._anime_loaded = True
                 return self._anime_detector
             except Exception as exc:

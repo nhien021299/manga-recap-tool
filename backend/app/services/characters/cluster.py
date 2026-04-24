@@ -6,13 +6,16 @@ import numpy as np
 from sklearn.cluster import AgglomerativeClustering, HDBSCAN
 
 
-CLUSTER_VERSION = "hybrid-hdbscan-v4"
+CLUSTER_VERSION = "hybrid-hdbscan-v5"
 GREEN_SIMILARITY_THRESHOLD = 0.82
 GREEN_MARGIN_THRESHOLD = 0.10
 SUGGEST_SIMILARITY_THRESHOLD = 0.68
 SUGGEST_MARGIN_THRESHOLD = 0.05
-ANCHOR_DISTANCE_THRESHOLD = 0.32
-FACE_ATTACH_SIMILARITY_THRESHOLD = 0.78
+ANCHOR_DISTANCE_THRESHOLD = 0.14
+STRICT_SPLIT_DISTANCE_THRESHOLD = 0.12
+OUTLIER_DISTANCE_THRESHOLD = 0.18
+MAX_CLUSTER_INTERNAL_DISTANCE = 0.30
+FACE_ATTACH_SIMILARITY_THRESHOLD = 0.86
 FACE_ATTACH_MARGIN_THRESHOLD = 0.08
 
 IDENTITY_STRONG_KINDS = {"face", "head"}
@@ -97,17 +100,19 @@ class CharacterClusterer:
         try:
             hdbscan = HDBSCAN(
                 min_cluster_size=self.min_cluster_size,
-                min_samples=1,
+                min_samples=2,
                 metric="precomputed",
                 cluster_selection_method="leaf",
                 cluster_selection_epsilon=ANCHOR_DISTANCE_THRESHOLD,
-                allow_single_cluster=True,
+                allow_single_cluster=False,
             )
             labels = hdbscan.fit_predict(distances)
         except Exception:
             labels = self._cluster_with_agglomerative(distances)
         if not np.any(labels >= 0) and self._has_close_pair(distances):
             labels = self._cluster_with_agglomerative(distances)
+        labels = self._mark_small_groups_as_noise(labels)
+        labels = self._enforce_purity(labels=labels, distances=distances, anchors=anchors)
         return self._mark_small_groups_as_noise(labels)
 
     def _cluster_with_agglomerative(self, distances: np.ndarray) -> np.ndarray:
@@ -131,6 +136,39 @@ class CharacterClusterer:
         for label in set(int(value) for value in normalized.tolist() if value >= 0):
             if int(np.sum(normalized == label)) < self.min_cluster_size:
                 normalized[normalized == label] = -1
+        return normalized
+
+    def _enforce_purity(self, *, labels: np.ndarray, distances: np.ndarray, anchors: list[ClusterInputCrop]) -> np.ndarray:
+        normalized = labels.astype(np.int32, copy=True)
+        next_label = (max((int(value) for value in normalized.tolist()), default=-1) + 1)
+        for label in sorted({int(value) for value in normalized.tolist() if value >= 0}):
+            indexes = np.where(normalized == label)[0]
+            if indexes.size < self.min_cluster_size:
+                normalized[indexes] = -1
+                continue
+            sub_distances = distances[np.ix_(indexes, indexes)]
+            upper = sub_distances[np.triu_indices(sub_distances.shape[0], k=1)]
+            max_distance = float(np.max(upper)) if upper.size else 0.0
+            if max_distance > MAX_CLUSTER_INTERNAL_DISTANCE:
+                sub_labels = AgglomerativeClustering(
+                    n_clusters=None,
+                    metric="precomputed",
+                    linkage="complete",
+                    distance_threshold=STRICT_SPLIT_DISTANCE_THRESHOLD,
+                ).fit_predict(sub_distances)
+                normalized[indexes] = -1
+                for sub_label in sorted({int(value) for value in sub_labels.tolist() if value >= 0}):
+                    sub_indexes = indexes[sub_labels == sub_label]
+                    if sub_indexes.size >= self.min_cluster_size:
+                        normalized[sub_indexes] = next_label
+                        next_label += 1
+                continue
+
+            vectors = np.stack([anchors[index].vector for index in indexes], axis=0)
+            centroid = self._centroid(vectors)
+            outlier_mask = np.asarray([1.0 - float(np.dot(anchors[index].vector, centroid)) > OUTLIER_DISTANCE_THRESHOLD for index in indexes])
+            if np.any(outlier_mask):
+                normalized[indexes[outlier_mask]] = -1
         return normalized
 
     def _build_clusters(
@@ -169,6 +207,9 @@ class CharacterClusterer:
                         "noiseCropIds": noise_crop_ids,
                         "clusterer": self.clusterer,
                         "minClusterSize": self.min_cluster_size,
+                        "maxInternalDistance": self._max_pairwise_distance(cluster_anchor_vectors[cluster_index]),
+                        "outlierDistanceThreshold": OUTLIER_DISTANCE_THRESHOLD,
+                        "maxClusterInternalDistance": MAX_CLUSTER_INTERNAL_DISTANCE,
                     },
                 )
             )
@@ -291,6 +332,8 @@ class CharacterClusterer:
                 review_flags.append("possible_merge")
             if cluster.confidence < 0.78 and "low_confidence" not in review_flags:
                 review_flags.append("low_confidence")
+            if float(cluster.diagnostics.get("maxInternalDistance", 0.0) or 0.0) > MAX_CLUSTER_INTERNAL_DISTANCE and "impure_cluster" not in review_flags:
+                review_flags.append("impure_cluster")
             normalized.append(
                 ClusterSummary(
                     cluster_index=cluster.cluster_index,
@@ -391,3 +434,11 @@ class CharacterClusterer:
                     distances[right_index, left_index] = 1.0
         np.fill_diagonal(distances, 0.0)
         return distances
+
+    def _max_pairwise_distance(self, vectors: np.ndarray) -> float:
+        if vectors.shape[0] < 2:
+            return 0.0
+        similarity = np.clip(vectors @ vectors.T, -1.0, 1.0)
+        distances = 1.0 - similarity
+        upper = distances[np.triu_indices(distances.shape[0], k=1)]
+        return round(float(np.max(upper)) if upper.size else 0.0, 4)

@@ -2,6 +2,7 @@ fastapi==0.115.12
 httpx==0.28.1
 numpy==2.2.6
 opencv-python==4.11.0.86
+onnxruntime-directml>=1.18.0
 scikit-learn==1.6.1
 ultralytics==8.3.159
 torch==2.11.0

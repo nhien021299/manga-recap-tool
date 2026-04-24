@@ -325,7 +325,7 @@ export function StepRender() {
         : "border-cyan-300/25 bg-cyan-400/15 text-cyan-50";
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-6">
       <audio ref={audioRef} className="hidden" />
 
       <div className="flex items-center justify-between">

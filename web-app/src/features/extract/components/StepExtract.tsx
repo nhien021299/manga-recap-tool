@@ -617,7 +617,7 @@ export function StepExtract() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)] animate-in fade-in duration-500 gap-4">
+    <div className="flex flex-col h-[calc(100vh-140px)] gap-4">
       <div className="flex items-center justify-between bg-white/5 p-4 rounded-3xl border border-white/5 glass shrink-0">
         <div className="flex items-center gap-3">
           <h2 className="text-xl font-bold tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">

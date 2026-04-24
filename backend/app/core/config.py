@@ -52,6 +52,11 @@ class Settings(BaseSettings):
         default=".temp/characters/cache",
         alias="AI_BACKEND_CHARACTER_CACHE_ROOT",
     )
+    character_detector_mode: str = Field(default="hybrid", alias="AI_BACKEND_CHARACTER_DETECTOR_MODE")
+    character_device: str = Field(default="auto", alias="AI_BACKEND_CHARACTER_DEVICE")
+    character_clusterer: str = Field(default="hdbscan", alias="AI_BACKEND_CHARACTER_CLUSTERER")
+    character_object_model: str = Field(default="yolov8n.pt", alias="AI_BACKEND_CHARACTER_OBJECT_MODEL")
+    character_min_cluster_size: int = Field(default=2, alias="AI_BACKEND_CHARACTER_MIN_CLUSTER_SIZE")
     render_temp_root_raw: str = Field(default=".temp/render-jobs", alias="AI_BACKEND_RENDER_TEMP_ROOT")
     render_ffmpeg_path: str = Field(default="ffmpeg", alias="AI_BACKEND_RENDER_FFMPEG_PATH")
     render_result_ttl_seconds: int = Field(default=3600, alias="AI_BACKEND_RENDER_RESULT_TTL_SECONDS")
@@ -83,6 +88,38 @@ class Settings(BaseSettings):
         alias="AI_BACKEND_TTS_VIENEU_VOICE_ROOT",
     )
 
+    @field_validator("character_detector_mode", mode="before")
+    @classmethod
+    def _normalize_character_detector_mode(cls, value: object) -> str:
+        normalized = str(value or "hybrid").strip().lower()
+        if normalized in {"hybrid", "heuristic", "anime", "object"}:
+            return normalized
+        raise ValueError("AI_BACKEND_CHARACTER_DETECTOR_MODE must be one of: hybrid, heuristic, anime, object.")
+
+    @field_validator("character_device", mode="before")
+    @classmethod
+    def _normalize_character_device(cls, value: object) -> str:
+        normalized = str(value or "auto").strip().lower()
+        if normalized in {"auto", "cpu", "gpu"}:
+            return normalized
+        raise ValueError("AI_BACKEND_CHARACTER_DEVICE must be one of: auto, cpu, gpu.")
+
+    @field_validator("character_clusterer", mode="before")
+    @classmethod
+    def _normalize_character_clusterer(cls, value: object) -> str:
+        normalized = str(value or "hdbscan").strip().lower()
+        if normalized in {"hdbscan", "agglomerative"}:
+            return normalized
+        raise ValueError("AI_BACKEND_CHARACTER_CLUSTERER must be one of: hdbscan, agglomerative.")
+
+    @field_validator("character_min_cluster_size", mode="before")
+    @classmethod
+    def _normalize_character_min_cluster_size(cls, value: object) -> int:
+        try:
+            parsed = int(value or 2)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("AI_BACKEND_CHARACTER_MIN_CLUSTER_SIZE must be an integer.") from exc
+        return max(2, parsed)
 
     @field_validator("tts_runtime", mode="before")
     @classmethod

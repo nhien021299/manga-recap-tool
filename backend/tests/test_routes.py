@@ -15,6 +15,7 @@ from app.deps import (
 )
 from app.main import app, build_services
 from app.models.api import ScriptJobResult
+from app.models.characters import ChapterCharacterState, CharacterCluster, CharacterCrop, PanelCharacterRef
 from app.models.domain import Metrics, RawOutputs
 from app.services.characters.prepass import CharacterPrepassService
 from app.services.characters.repository import CharacterStateRepository
@@ -213,6 +214,12 @@ def test_character_routes_support_prepass_review_and_script_context(tmp_path: Pa
                 ],
             )
             assert prepass_response.status_code == 200
+            prepass_payload = prepass_response.json()
+            assert "diagnostics" in prepass_payload
+            assert "summary" in prepass_payload["diagnostics"]
+            assert "pairs" in prepass_payload["diagnostics"]
+            assert "crops" in prepass_payload
+            assert "candidateAssignments" in prepass_payload
 
             create_response = client.post(
                 "/api/v1/characters/clusters",
@@ -222,6 +229,7 @@ def test_character_routes_support_prepass_review_and_script_context(tmp_path: Pa
                     "displayLabel": "Ly Pham",
                     "lockName": True,
                     "panelIds": ["panel-1"],
+                    "cropIds": [],
                 },
             )
             assert create_response.status_code == 200
@@ -245,5 +253,92 @@ def test_character_routes_support_prepass_review_and_script_context(tmp_path: Pa
             assert script_context["characters"][0]["canonicalName"] == "Ly Pham"
             assert script_context["panelCharacterRefs"]["panel-1"] == [cluster_id]
             assert script_context["panelCharacterRefs"]["panel-2"] == [cluster_id]
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_character_split_route_moves_crop_and_rebuilds_script_refs(tmp_path: Path):
+    settings = build_route_settings(tmp_path)
+    repository = CharacterStateRepository(settings.character_state_db)
+    review_service = CharacterReviewStateService(repository)
+    script_context_builder = CharacterScriptContextBuilder()
+    state = ChapterCharacterState(
+        chapterId="chapter_split",
+        chapterContentHash="split-hash",
+        prepassVersion="character-hybrid-v3",
+        generatedAt="2026-04-24T00:00:00+00:00",
+        updatedAt="2026-04-24T00:00:00+00:00",
+        needsReview=True,
+        clusters=[
+            CharacterCluster(
+                clusterId="char_001",
+                chapterId="chapter_split",
+                status="locked",
+                canonicalName="Ly Pham",
+                displayLabel="Ly Pham",
+                lockName=True,
+                confidenceScore=1.0,
+                occurrenceCount=2,
+                anchorCropIds=["panel-1::crop::01", "panel-2::crop::01"],
+                anchorPanelIds=["panel-1", "panel-2"],
+                samplePanelIds=["panel-1", "panel-2"],
+            )
+        ],
+        crops=[
+            CharacterCrop(
+                cropId="panel-1::crop::01",
+                panelId="panel-1",
+                orderIndex=0,
+                bbox=[0, 0, 20, 20],
+                qualityScore=1.0,
+                qualityBucket="good",
+                assignedClusterId="char_001",
+                assignmentState="manual",
+            ),
+            CharacterCrop(
+                cropId="panel-2::crop::01",
+                panelId="panel-2",
+                orderIndex=1,
+                bbox=[0, 0, 20, 20],
+                qualityScore=1.0,
+                qualityBucket="good",
+                assignedClusterId="char_001",
+                assignmentState="manual",
+            ),
+        ],
+        panelCharacterRefs=[
+            PanelCharacterRef(panelId="panel-1", clusterIds=["char_001"], source="manual", confidenceScore=1.0),
+            PanelCharacterRef(panelId="panel-2", clusterIds=["char_001"], source="manual", confidenceScore=1.0),
+        ],
+    )
+    repository.save(state)
+
+    app.dependency_overrides[get_character_review_state_service] = lambda: review_service
+    app.dependency_overrides[get_character_script_context_builder] = lambda: script_context_builder
+
+    try:
+        with TestClient(app) as client:
+            split_response = client.post(
+                "/api/v1/characters/split",
+                json={
+                    "chapterId": "chapter_split",
+                    "sourceClusterId": "char_001",
+                    "cropIds": ["panel-2::crop::01"],
+                    "panelIds": [],
+                    "canonicalName": "Minh",
+                },
+            )
+            assert split_response.status_code == 200
+            split_payload = split_response.json()
+            new_cluster = next(cluster for cluster in split_payload["clusters"] if cluster["canonicalName"] == "Minh")
+            moved_crop = next(crop for crop in split_payload["crops"] if crop["cropId"] == "panel-2::crop::01")
+            assert moved_crop["assignedClusterId"] == new_cluster["clusterId"]
+            assert moved_crop["assignmentState"] == "manual"
+
+            script_context_response = client.get("/api/v1/characters/script-context/chapter_split")
+            assert script_context_response.status_code == 200
+            script_context = script_context_response.json()
+            assert script_context["panelCharacterRefs"]["panel-1"] == ["char_001"]
+            assert script_context["panelCharacterRefs"]["panel-2"] == [new_cluster["clusterId"]]
     finally:
         app.dependency_overrides.clear()

@@ -11,11 +11,13 @@ from app.deps import (
 from app.models.characters import (
     ChapterCharacterState,
     CharacterCreateClusterRequest,
+    CharacterCropMappingRequest,
     CharacterMergeRequest,
     CharacterPanelMappingRequest,
     CharacterPrepassRequest,
     CharacterRenameRequest,
     CharacterScriptContext,
+    CharacterSplitRequest,
     CharacterStatusRequest,
 )
 from app.utils.temp_files import cleanup_temp_dir, save_uploads
@@ -90,6 +92,17 @@ def merge_character_clusters(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+@router.post("/split", response_model=ChapterCharacterState)
+def split_character_cluster(
+    request: CharacterSplitRequest,
+    character_review_state_service=Depends(get_character_review_state_service),
+) -> ChapterCharacterState:
+    try:
+        return character_review_state_service.split_cluster(request)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
 @router.post("/panel-mapping", response_model=ChapterCharacterState)
 def update_character_panel_mapping(
     request: CharacterPanelMappingRequest,
@@ -97,6 +110,17 @@ def update_character_panel_mapping(
 ) -> ChapterCharacterState:
     try:
         return character_review_state_service.update_panel_mapping(request)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post("/crop-mapping", response_model=ChapterCharacterState)
+def update_character_crop_mapping(
+    request: CharacterCropMappingRequest,
+    character_review_state_service=Depends(get_character_review_state_service),
+) -> ChapterCharacterState:
+    try:
+        return character_review_state_service.update_crop_mapping(request)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 

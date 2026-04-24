@@ -149,7 +149,7 @@ export function StepVoice() {
   }, []);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-6">
       <audio ref={audioRef} className="hidden" />
       <audio ref={previewAudioRef} className="hidden" />
 

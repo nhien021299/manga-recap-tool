@@ -39,6 +39,9 @@ export interface Panel {
 
 export type CharacterClusterStatus = "draft" | "locked" | "review_needed" | "unknown" | "ignored" | "merged";
 export type PanelCharacterSource = "auto_confirmed" | "manual" | "unknown" | "suggested";
+export type CharacterQualityBucket = "good" | "medium" | "poor";
+export type CharacterCropAssignmentState = "auto_confirmed" | "suggested" | "manual" | "unknown";
+export type CharacterCropKind = "face" | "head" | "upper_body" | "person" | "accessory" | "heuristic";
 
 export interface CharacterCluster {
   clusterId: string;
@@ -49,10 +52,12 @@ export interface CharacterCluster {
   lockName: boolean;
   confidenceScore: number;
   occurrenceCount: number;
+  anchorCropIds: string[];
   anchorPanelIds: string[];
   samplePanelIds: string[];
   reviewFlags: string[];
   mergedIntoClusterId?: string | null;
+  diagnostics?: Record<string, unknown>;
 }
 
 export interface PanelCharacterRef {
@@ -60,6 +65,35 @@ export interface PanelCharacterRef {
   clusterIds: string[];
   source: PanelCharacterSource;
   confidenceScore: number;
+  diagnostics?: Record<string, unknown>;
+}
+
+export interface CharacterCrop {
+  cropId: string;
+  panelId: string;
+  orderIndex: number;
+  bbox: number[];
+  detectionScore: number;
+  kind: CharacterCropKind;
+  detectorSource: string;
+  detectorModel: string;
+  qualityScore: number;
+  qualityBucket: CharacterQualityBucket;
+  previewImage: string;
+  assignedClusterId?: string | null;
+  assignmentState: CharacterCropAssignmentState;
+  diagnostics?: Record<string, unknown>;
+}
+
+export interface CharacterCandidateAssignment {
+  cropId: string;
+  panelId: string;
+  clusterId: string;
+  rank: number;
+  score: number;
+  marginScore: number;
+  state: CharacterCropAssignmentState;
+  diagnostics?: Record<string, unknown>;
 }
 
 export interface CharacterScriptEntry {
@@ -84,7 +118,12 @@ export interface ChapterCharacterState {
   updatedAt: string;
   needsReview: boolean;
   clusters: CharacterCluster[];
+  crops: CharacterCrop[];
+  candidateAssignments: CharacterCandidateAssignment[];
   panelCharacterRefs: PanelCharacterRef[];
+  unresolvedPanelIds: string[];
+  clusterDiagnostics?: Record<string, unknown>;
+  diagnostics?: Record<string, unknown>;
 }
 
 export interface ScriptContext {

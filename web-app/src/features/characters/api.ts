@@ -62,6 +62,7 @@ export async function createCharacterCluster(
     canonicalName?: string;
     displayLabel?: string;
     lockName?: boolean;
+    cropIds?: string[];
     panelIds?: string[];
   }
 ): Promise<ChapterCharacterState> {
@@ -97,11 +98,41 @@ export async function mergeCharacterClusters(
   return parseJsonResponse<ChapterCharacterState>(response);
 }
 
+export async function splitCharacterCluster(
+  apiBaseUrl: string,
+  payload: {
+    chapterId: string;
+    sourceClusterId: string;
+    cropIds?: string[];
+    panelIds?: string[];
+    canonicalName?: string;
+  }
+): Promise<ChapterCharacterState> {
+  const response = await fetch(`${normalizeBaseUrl(apiBaseUrl)}/api/v1/characters/split`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return parseJsonResponse<ChapterCharacterState>(response);
+}
+
 export async function updateCharacterPanelMapping(
   apiBaseUrl: string,
   payload: { chapterId: string; panelId: string; clusterIds: string[] }
 ): Promise<ChapterCharacterState> {
   const response = await fetch(`${normalizeBaseUrl(apiBaseUrl)}/api/v1/characters/panel-mapping`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return parseJsonResponse<ChapterCharacterState>(response);
+}
+
+export async function updateCharacterCropMapping(
+  apiBaseUrl: string,
+  payload: { chapterId: string; cropId: string; clusterId?: string | null }
+): Promise<ChapterCharacterState> {
+  const response = await fetch(`${normalizeBaseUrl(apiBaseUrl)}/api/v1/characters/crop-mapping`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(payload),

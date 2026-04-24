@@ -2,6 +2,7 @@ import { useEffect } from "react";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/app/layout/AppLayout";
+import { ErrorBoundary } from "@/app/ErrorBoundary";
 import { StepBenchmark } from "@/features/benchmark/components/StepBenchmark";
 import { StepCharacters } from "@/features/characters/components/StepCharacters";
 import { StepExtract } from "@/features/extract/components/StepExtract";
@@ -50,9 +51,11 @@ function App() {
   };
 
   return (
-    <TooltipProvider>
-      <AppLayout>{renderCurrentStep()}</AppLayout>
-    </TooltipProvider>
+    <ErrorBoundary>
+      <TooltipProvider>
+        <AppLayout>{renderCurrentStep()}</AppLayout>
+      </TooltipProvider>
+    </ErrorBoundary>
   );
 }
 

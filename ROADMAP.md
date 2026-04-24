@@ -23,11 +23,134 @@ Active architecture as of `2026-04-22`:
 
 - FE-BE structure is the active product shape
 - Upload and extraction stay browser-side
+- Step Characters now exists between Extract and Script
 - Step Script runs through backend Gemini
 - Step Voice runs only through backend routes
 - Timeline state lives in frontend store
 - Official MP4 export now runs through backend async native `ffmpeg`
 - Browser FFmpeg export remains as fallback/preview with deterministic motion
+
+## Checkpoint: Character System V2 WIP Save (2026-04-24)
+
+This is the saved handoff state for the crop-level rewrite. Character V2 is **not finished yet** and should not be treated as production-complete.
+
+### Already implemented
+
+- Backend character state moved from panel-only grouping toward crop-level review data.
+- New backend modules added for the V2 pipeline:
+  - `detector.py`
+  - `quality.py`
+  - `embedder.py`
+  - `cluster.py`
+- `prepass.py` was rewritten to orchestrate:
+  - multi-crop detection
+  - crop quality scoring
+  - embedding cache
+  - agglomerative clustering
+  - panel-ref aggregation
+- Review state now supports crop-level manual assignment through:
+  - `POST /api/v1/characters/crop-mapping`
+- Frontend `StepCharacters` was rewritten around crop previews and crop candidate review instead of full-panel-only merge review.
+
+### Current validation snapshot
+
+- Passing:
+  - `pytest backend/tests/test_routes.py -q`
+  - `pytest backend/tests/test_character_prepass.py -q`
+  - `npm run build:web`
+
+### Latest refinement
+
+- `backend/app/services/characters/cluster.py` now includes a singleton-anchor refinement pass.
+- Non-anchor crop candidate scoring now rejects same-panel cluster collapse, so separate crops in one mixed panel can confirm separate `panelCharacterRefs`.
+- Prepass cache version was bumped to `character-crop-v2` and cluster version to `crop-cluster-v2` so older crop-level results are recomputed.
+
+### Main unfinished item
+
+- Character V2 still needs real-chapter threshold tuning and UI diagnostics polish before it should be treated as production-complete.
+
+### Source of truth for continuation
+
+- Continue from [PLAN_CHARACTER.md](./PLAN_CHARACTER.md)
+
+## Checkpoint: Character System Integration (2026-04-24)
+
+### Completed
+
+- Integrated a dedicated character review step into the main pipeline:
+  - `Extract -> Characters -> Script -> Voice -> Render`
+- Added backend-owned character prepass and review state handling:
+  - cluster generation
+  - rename / merge / panel mapping actions
+  - script-context generation for downstream prompt enforcement
+- Added active character API surface:
+  - `POST /api/v1/characters/prepass`
+  - `GET /api/v1/characters/review`
+  - `POST /api/v1/characters/review/rename`
+  - `POST /api/v1/characters/review/merge`
+  - `POST /api/v1/characters/review/panel-mapping`
+  - `POST /api/v1/characters/review/create-cluster`
+  - `POST /api/v1/characters/review/status`
+  - `GET /api/v1/characters/script-context`
+- Added frontend character workflow and storage wiring:
+  - new `StepCharacters`
+  - chapter-scoped prepass loading
+  - character review state persisted in frontend store
+  - script request now forwards `characterContext`
+- Updated script generation contract so locked or reviewed character names are enforced through backend Gemini prompt context.
+- Moved the selected panel preview to the left column under `Character List` to keep review flow tighter and reduce inspection friction.
+
+### Prepass Evolution
+
+- Initial prepass was intentionally conservative and favored `unknown` over risky merges.
+- Prepass was then upgraded to a more proactive heuristic clusterer:
+  - pairwise match scoring
+  - multi-region perceptual hashes
+  - shape profile comparison
+  - Hu moments
+  - foreground bbox and center-of-mass features
+  - orientation histogram comparison
+  - graph connected-components clustering
+  - singleton attach for near-miss panels
+- Current backend prepass version is:
+  - `character-crop-v2`
+
+### Diagnostics And Observability
+
+- Added diagnostics payloads to character state so prepass decisions are inspectable:
+  - `state.diagnostics.summary`
+  - `cluster.diagnostics`
+  - `panelCharacterRef.diagnostics`
+  - `crop.diagnostics`
+  - `candidateAssignment.diagnostics`
+- Diagnostics now expose:
+  - panel and cluster counts
+  - auto-assigned vs unknown counts
+  - threshold values
+  - crop detection and quality metadata
+  - candidate cluster scores
+  - singleton refinement decisions
+
+### Cache / Stale State Fix
+
+- Fixed a real backend bug where `POST /api/v1/characters/prepass` could return stale cached state even after prepass logic changed.
+- Root cause:
+  - cache reuse previously depended only on `chapterContentHash`
+  - old state with the same chapter content but older `prepassVersion` or missing diagnostics was still treated as valid
+- Current invalidation rule now requires:
+  - matching `chapterContentHash`
+  - matching `prepassVersion`
+  - non-empty diagnostics payload
+- This prevents the frontend from silently receiving old prepass results after backend upgrades.
+
+### Verification
+
+- Backend tests passed after character-system work and stale-cache invalidation:
+  - `python -m pytest tests`
+  - `python -m pytest backend/tests/test_character_prepass.py backend/tests/test_routes.py`
+- Frontend build passed after character workflow integration:
+  - `npm --prefix web-app run build`
+- Frontend lint passed with only pre-existing unrelated warnings in `StepVoice.tsx`.
 
 ## Checkpoint: TTS Runtime Hardening (2026-04-22)
 
@@ -158,9 +281,18 @@ Implemented:
 | M5 Browser Export | Done | Browser export remains available as fallback with deterministic keyframed motion. |
 | M6 Native Export | Done | Backend async render jobs with native `ffmpeg` are now the official export path. |
 | M7 Motion Polish | Done | Browser fallback now ships cinematic panel motion with hard cuts. |
+| M8 Character System | In Progress | V1 integration exists and the crop-level mixed-panel refinement now passes tests; real-chapter tuning and diagnostics UI are still open. |
 
 ## Active API Surface
 
+- `POST /api/v1/characters/prepass`
+- `GET /api/v1/characters/review`
+- `POST /api/v1/characters/review/rename`
+- `POST /api/v1/characters/review/merge`
+- `POST /api/v1/characters/review/panel-mapping`
+- `POST /api/v1/characters/review/create-cluster`
+- `POST /api/v1/characters/review/status`
+- `GET /api/v1/characters/script-context`
 - `POST /api/v1/script/generate`
 - `GET /api/v1/voice/options`
 - `POST /api/v1/voice/generate`
@@ -205,22 +337,32 @@ Implemented:
 
 ## Current Product Conclusions
 
-1. One TTS path only should remain active: `vieneu + voice_default`.
-2. `voice_default` must continue to be treated as a cached preset, not a per-request clone.
-3. Backend-native render is now the official export engine.
-4. Browser render remains useful as fallback/preview, but stays the heavier path for long timelines.
-5. Frontend workflow guidance and design guidance are now aligned more closely with the live workstation-style UI.
-6. Timeline editing is now consolidated around the Timeline & Render step, with reset/duplicate/remove clip actions and bulk stale-audio regeneration.
+1. Character review is now a first-class step between extraction and script generation.
+2. Backend prepass should prefer helping the user by clustering aggressively enough to be useful, while preserving manual override as the final source of truth.
+3. Character naming consistency now depends on backend-supplied script context, not prompt luck alone.
+4. Cache invalidation for character prepass must stay version-aware to avoid stale UI state.
+5. One TTS path only should remain active: `vieneu + voice_default`.
+6. `voice_default` must continue to be treated as a cached preset, not a per-request clone.
+7. Backend-native render is now the official export engine.
+8. Browser render remains useful as fallback/preview, but stays the heavier path for long timelines.
+9. Frontend workflow guidance and design guidance are now aligned more closely with the live workstation-style UI.
+10. Timeline editing is now consolidated around the Timeline & Render step, with reset/duplicate/remove clip actions and bulk stale-audio regeneration.
 
 ## Next Actions
 
-1. Continue narration polish and usability improvements on top of the now-stable timeline editor and export architecture.
-2. Keep README, ROADMAP, setup scripts, and active env defaults synchronized whenever TTS or export decisions change.
-3. Decide later whether backend-native render should adopt the same motion spec as browser fallback for parity.
-4. Monitor render-job stability, ffmpeg availability, and TTL cleanup behavior in longer real-world exports.
+1. Surface character diagnostics directly in the UI so users can see why panels were grouped or left unknown.
+2. Continue tuning character prepass thresholds on real chapter data to improve grouping recall without introducing destructive merges.
+3. Continue narration polish and usability improvements on top of the now-stable timeline editor and export architecture.
+4. Keep README, ROADMAP, setup scripts, and active env defaults synchronized whenever TTS, character-system, or export decisions change.
+5. Decide later whether backend-native render should adopt the same motion spec as browser fallback for parity.
+6. Monitor render-job stability, ffmpeg availability, and TTL cleanup behavior in longer real-world exports.
 
 ## Open Risks
 
+- Heuristic character grouping is stronger now, but still depends on panel crops rather than a learned identity embedding model.
+- More aggressive auto-grouping increases usefulness, but also increases the risk of false merges on visually similar silhouettes.
+- Diagnostics exist in API payloads, but are not yet surfaced clearly in the frontend review UI.
+- Character review state correctness depends on keeping `chapterId`, extracted panel order, and prepass cache invalidation aligned.
 - Browser-side FFmpeg remains memory-heavy for long timelines even as fallback.
 - Backend-native export depends on a valid local `ffmpeg` binary path and host runtime availability.
 - Browser and backend render paths now share plan structure, but visual parity is not yet exact because motion is currently implemented only in browser fallback.

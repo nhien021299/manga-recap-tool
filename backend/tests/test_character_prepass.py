@@ -112,8 +112,16 @@ def test_prepass_groups_same_character_across_different_backgrounds(tmp_path: Pa
     assert {"panel-1", "panel-2"}.issubset(set(largest_cluster.samplePanelIds))
 
     refs_by_panel = {item.panelId: item for item in state.panelCharacterRefs}
-    hero_cluster_id = refs_by_panel["panel-1"].clusterIds[0]
-    assert refs_by_panel["panel-2"].clusterIds == [hero_cluster_id]
+    assert refs_by_panel["panel-1"].clusterIds == []
+    assert refs_by_panel["panel-2"].clusterIds == []
+    
+    panel_1_candidates = [assignment for assignment in state.candidateAssignments if assignment.panelId == "panel-1"]
+    hero_cluster_id = panel_1_candidates[0].clusterId
+    assert panel_1_candidates[0].state == "suggested"
+    
+    panel_2_candidates = [assignment for assignment in state.candidateAssignments if assignment.panelId == "panel-2"]
+    assert any(assignment.clusterId == hero_cluster_id and assignment.state == "suggested" for assignment in panel_2_candidates)
+    
     panel_3_candidates = [assignment for assignment in state.candidateAssignments if assignment.panelId == "panel-3"]
     assert any(assignment.clusterId == hero_cluster_id and assignment.state == "suggested" for assignment in panel_3_candidates)
     assert refs_by_panel["panel-3"].clusterIds == []
@@ -140,10 +148,23 @@ def test_prepass_keeps_visually_different_characters_separate(tmp_path: Path):
     state = service.run(chapter_id="chapter-separate", panels=panels, file_paths=file_paths, force=True)
 
     refs_by_panel = {item.panelId: item for item in state.panelCharacterRefs}
-    if refs_by_panel["panel-a"].clusterIds:
-        assert refs_by_panel["panel-b"].clusterIds != refs_by_panel["panel-a"].clusterIds
-    assert refs_by_panel["panel-b"].clusterIds
-    assert refs_by_panel["panel-c"].clusterIds == refs_by_panel["panel-b"].clusterIds
+    assert refs_by_panel["panel-a"].clusterIds == []
+    assert refs_by_panel["panel-b"].clusterIds == []
+    assert refs_by_panel["panel-c"].clusterIds == []
+
+    panel_b_candidates = [assignment for assignment in state.candidateAssignments if assignment.panelId == "panel-b"]
+    panel_c_candidates = [assignment for assignment in state.candidateAssignments if assignment.panelId == "panel-c"]
+    
+    assert panel_b_candidates
+    assert panel_c_candidates
+    
+    artifact_cluster_id = panel_b_candidates[0].clusterId
+    artifact_cluster = next(c for c in state.clusters if c.clusterId == artifact_cluster_id)
+    anchor_panel_ids = {crop.panelId for crop in state.crops if crop.cropId in artifact_cluster.anchorCropIds}
+    
+    assert "panel-b" in anchor_panel_ids
+    assert "panel-c" in anchor_panel_ids
+    assert "panel-a" not in anchor_panel_ids
 
 
 def test_prepass_recomputes_when_cached_state_uses_old_version(tmp_path: Path):
@@ -211,6 +232,25 @@ def test_prepass_force_bypasses_reusable_repository_state(tmp_path: Path):
     assert next_state.diagnostics["panels"]["panel-force"]["detectorVersion"] == "force-detector-test"
 
 
+def test_prepass_recomputes_when_cached_detector_version_changes(tmp_path: Path):
+    settings = build_settings(tmp_path)
+    repository = CharacterStateRepository(settings.character_state_db)
+    service = CharacterPrepassService(settings, repository)
+
+    path = tmp_path / "panel-cache-version.png"
+    draw_character_panel(path, character="hero", background="rain")
+    panels = [CharacterPanelReference(panelId="panel-cache-version", orderIndex=0)]
+
+    first_state = service.run(chapter_id="chapter-cache-version", panels=panels, file_paths=[path], force=True)
+    assert first_state.diagnostics["summary"]["versions"]["detector"] != "detector-version-test"
+
+    service.detector.version = "detector-version-test"
+    next_state = service.run(chapter_id="chapter-cache-version", panels=panels, file_paths=[path], force=False)
+
+    assert next_state.diagnostics["summary"]["versions"]["detector"] == "detector-version-test"
+    assert next_state.diagnostics["panels"]["panel-cache-version"]["detectorVersion"] == "detector-version-test"
+
+
 def test_prepass_marks_blank_panel_as_unresolved_unknown(tmp_path: Path):
     settings = build_settings(tmp_path)
     repository = CharacterStateRepository(settings.character_state_db)
@@ -227,7 +267,7 @@ def test_prepass_marks_blank_panel_as_unresolved_unknown(tmp_path: Path):
     assert state.unresolvedPanelIds == ["panel-blank"]
 
 
-def test_prepass_can_assign_multiple_clusters_to_same_panel(tmp_path: Path):
+def test_prepass_keeps_ambiguous_mixed_panel_unresolved(tmp_path: Path):
     settings = build_settings(tmp_path)
     repository = CharacterStateRepository(settings.character_state_db)
     service = CharacterPrepassService(settings, repository)

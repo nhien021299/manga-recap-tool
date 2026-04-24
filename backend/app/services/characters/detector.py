@@ -11,7 +11,7 @@ from PIL import Image
 from app.core.config import Settings
 
 
-DETECTOR_VERSION = "hybrid-detector-v3"
+DETECTOR_VERSION = "hybrid-detector-v4"
 HEURISTIC_DETECTOR_VERSION = "heuristic-multi-crop-v1"
 
 CropKind = Literal["face", "head", "upper_body", "person", "accessory", "heuristic"]
@@ -36,10 +36,17 @@ class CharacterCropDetector:
         self.mode = settings.character_detector_mode
         self.device = self._resolve_device(settings.character_device)
         self.object_model_name = settings.character_object_model
+        self.anime_face_model_path = getattr(settings, "character_anime_face_model_path", "")
         self._anime_detector = None
         self._anime_error = ""
+        self._anime_loaded = False
+        self._anime_provider = ""  # "onnx" or "anime-face-detector"
         self._object_model = None
         self._object_error = ""
+        self._total_face_count = 0
+        self._total_head_count = 0
+        self._total_heuristic_count = 0
+        self._total_object_count = 0
 
     def detect(self, *, panel_id: str, order_index: int, path: Path) -> list[DetectedCrop]:
         with Image.open(path) as image:
@@ -68,11 +75,15 @@ class CharacterCropDetector:
 
         height, width = rgb.shape[:2]
         detections: list[DetectedCrop] = []
-        try:
-            raw_items = detector(rgb)
-        except Exception as exc:  # pragma: no cover - optional dependency behavior
-            self._anime_error = f"{type(exc).__name__}: {exc}"
-            return []
+
+        if self._anime_provider == "onnx":
+            raw_items = self._run_onnx_anime_detection(detector, rgb)
+        else:
+            try:
+                raw_items = detector(rgb)
+            except Exception as exc:  # pragma: no cover
+                self._anime_error = f"{type(exc).__name__}: {exc}"
+                return []
 
         for index, item in enumerate(raw_items or [], start=1):
             bbox, score = self._parse_anime_bbox(item)
@@ -94,6 +105,7 @@ class CharacterCropDetector:
                     diagnostics={"provider": "anime-face-detector", "rank": index},
                 )
             )
+            self._total_face_count += 1
             head_bbox = self._expand_bbox((x, y, w, h), width=width, height=height, pad_x=0.75, pad_top=0.95, pad_bottom=0.65)
             detections.append(
                 DetectedCrop(
@@ -107,6 +119,7 @@ class CharacterCropDetector:
                     diagnostics={"provider": "anime-face-detector", "derivedFrom": "face", "rank": index},
                 )
             )
+            self._total_head_count += 1
         return detections
 
     def _detect_objects(self, *, panel_id: str, order_index: int, rgb: np.ndarray) -> list[DetectedCrop]:
@@ -245,6 +258,7 @@ class CharacterCropDetector:
 
         deduped = self._non_max_suppression(sorted(raw_candidates, key=lambda item: item.detection_score, reverse=True))
         if deduped:
+            self._total_heuristic_count += len(deduped[:4])
             return deduped[:4]
         return self._fallback_candidates(
             panel_id=panel_id,
@@ -302,21 +316,176 @@ class CharacterCropDetector:
             )
         return sorted(fallback_candidates, key=lambda item: item.detection_score, reverse=True)
 
+    def warmup_test(self) -> dict[str, object]:
+        """Run a quick warmup/test to verify anime face detection is operational.
+        Returns diagnostics dict with provider status, device, and any errors.
+        """
+        result: dict[str, object] = {
+            "mode": self.mode,
+            "device": self.device,
+            "animeProviderLoaded": False,
+            "animeProviderError": "",
+            "objectProviderLoaded": False,
+            "objectProviderError": "",
+            "warmupFaceDetected": False,
+            "warmupHeadDetected": False,
+            "fallbackReason": "",
+        }
+        if self.mode in {"hybrid", "anime"}:
+            detector = self._load_anime_detector()
+            if detector is not None:
+                result["animeProviderLoaded"] = True
+                try:
+                    import numpy as _np
+                    test_image = _np.full((64, 64, 3), 200, dtype=_np.uint8)
+                    test_image[16:48, 20:44] = 60
+                    test_items = detector(test_image)
+                    if test_items:
+                        result["warmupFaceDetected"] = True
+                        result["warmupHeadDetected"] = True
+                except Exception:
+                    pass
+            else:
+                result["animeProviderError"] = self._anime_error
+                result["fallbackReason"] = f"Anime face detector unavailable: {self._anime_error}"
+
+        if self.mode in {"hybrid", "object"}:
+            model = self._load_object_model()
+            if model is not None:
+                result["objectProviderLoaded"] = True
+            else:
+                result["objectProviderError"] = self._object_error
+
+        if not result["animeProviderLoaded"] and not result["objectProviderLoaded"]:
+            result["fallbackReason"] = "No AI detector available, falling back to OpenCV heuristic only."
+
+        return result
+
+    def runtime_diagnostics(self) -> dict[str, object]:
+        """Return runtime diagnostics for the detector."""
+        return {
+            "version": self.version,
+            "mode": self.mode,
+            "device": self.device,
+            "animeProviderLoaded": self._anime_loaded,
+            "animeProvider": self._anime_provider,
+            "animeProviderError": self._anime_error,
+            "animeFaceModelPath": self.anime_face_model_path,
+            "objectProviderLoaded": self._object_model is not None,
+            "objectProviderError": self._object_error,
+            "totalFaceCount": self._total_face_count,
+            "totalHeadCount": self._total_head_count,
+            "totalHeuristicCount": self._total_heuristic_count,
+            "totalObjectCount": self._total_object_count,
+        }
+
     def _load_anime_detector(self):
         if self._anime_detector is not None:
             return self._anime_detector
+        # Try ONNX model first (lightweight, no heavy dependencies)
+        onnx_path = Path(self.anime_face_model_path) if self.anime_face_model_path else None
+        if onnx_path and onnx_path.exists() and onnx_path.suffix == ".onnx":
+            try:
+                import onnxruntime as ort
+                session = ort.InferenceSession(
+                    str(onnx_path),
+                    providers=["CPUExecutionProvider"],
+                )
+                self._anime_detector = session
+                self._anime_provider = "onnx"
+                self._anime_loaded = True
+                return self._anime_detector
+            except Exception as exc:
+                self._anime_error = f"ONNX load failed: {type(exc).__name__}: {exc}"
+        # Fallback to anime_face_detector package
         try:
             from anime_face_detector import create_detector  # type: ignore
 
             self._anime_detector = create_detector("yolov3")
+            self._anime_provider = "anime-face-detector"
+            self._anime_loaded = True
         except Exception as exc:  # pragma: no cover - optional dependency behavior
             self._anime_error = f"{type(exc).__name__}: {exc}"
             self._anime_detector = None
+            self._anime_loaded = False
         return self._anime_detector
+
+    def _run_onnx_anime_detection(self, session, rgb: np.ndarray) -> list[dict]:
+        """Run anime face detection using ONNX model from deepghs/anime_face_detection."""
+        height, width = rgb.shape[:2]
+        target_size = 640
+        scale = target_size / max(height, width)
+        new_w = int(width * scale)
+        new_h = int(height * scale)
+        resized = cv2.resize(rgb, (new_w, new_h))
+
+        # Pad to target_size x target_size
+        padded = np.full((target_size, target_size, 3), 114, dtype=np.uint8)
+        padded[:new_h, :new_w] = resized
+
+        # Preprocess: HWC -> CHW, normalize to [0,1], add batch dim
+        blob = padded.astype(np.float32) / 255.0
+        blob = np.transpose(blob, (2, 0, 1))
+        blob = np.expand_dims(blob, axis=0)
+
+        input_name = session.get_inputs()[0].name
+        output_names = [out.name for out in session.get_outputs()]
+        try:
+            outputs = session.run(output_names, {input_name: blob})
+        except Exception as exc:
+            self._anime_error = f"ONNX inference failed: {type(exc).__name__}: {exc}"
+            return []
+
+        results: list[dict] = []
+        # Parse YOLO-style output
+        if len(outputs) >= 1:
+            predictions = outputs[0]  # shape: (1, N, 5+) or (1, 5+, N)
+            if predictions.ndim == 3:
+                pred = predictions[0]
+                # Check if we need to transpose (some YOLO models output (5+C, N) instead of (N, 5+C))
+                if pred.shape[0] < pred.shape[1] and pred.shape[0] <= 10:
+                    pred = pred.T
+                for detection in pred:
+                    if len(detection) < 5:
+                        continue
+                    # Format: cx, cy, w, h, score (or x1, y1, x2, y2, score)
+                    score = float(detection[4])
+                    if score < 0.35:
+                        continue
+                    cx, cy, bw, bh = detection[:4]
+                    # Check if coordinates are in center format or corner format
+                    if bw > 2.0 and bh > 2.0:  # Likely pixel coordinates
+                        if cx < bw and cy < bh:  # Corner format (x1,y1,x2,y2)
+                            x1, y1, x2, y2 = cx, cy, bw, bh
+                        else:  # Center format
+                            x1 = cx - bw / 2
+                            y1 = cy - bh / 2
+                            x2 = cx + bw / 2
+                            y2 = cy + bh / 2
+                    else:  # Normalized coordinates
+                        x1 = (cx - bw / 2) * target_size
+                        y1 = (cy - bh / 2) * target_size
+                        x2 = (cx + bw / 2) * target_size
+                        y2 = (cy + bh / 2) * target_size
+                    # Scale back to original image coordinates
+                    x1 = int(x1 / scale)
+                    y1 = int(y1 / scale)
+                    x2 = int(x2 / scale)
+                    y2 = int(y2 / scale)
+                    fw = x2 - x1
+                    fh = y2 - y1
+                    if fw > 5 and fh > 5:
+                        results.append({"bbox": (x1, y1, fw, fh), "score": score})
+        return results
 
     def _load_object_model(self):
         if self._object_model is not None:
             return self._object_model
+        model_path = Path(self.object_model_name)
+        if model_path.suffix == ".pt" and not model_path.exists():
+            self._object_error = f"Object model not found locally: {self.object_model_name}"
+            self._object_model = None
+            return None
         try:
             from ultralytics import YOLO  # type: ignore
 

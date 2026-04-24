@@ -34,7 +34,7 @@ from app.services.characters.embedder import CharacterCropEmbedder
 from app.services.characters.quality import CharacterCropQualityScorer
 from app.services.characters.repository import CharacterStateRepository
 
-PREPASS_VERSION = "character-hybrid-v3"
+PREPASS_VERSION = "character-hybrid-v4"
 
 
 class CharacterPrepassService:
@@ -43,7 +43,11 @@ class CharacterPrepassService:
         self.repository = repository
         self.detector = CharacterCropDetector(settings)
         self.quality_scorer = CharacterCropQualityScorer()
-        self.embedder = CharacterCropEmbedder(settings.character_cache_root)
+        self.embedder = CharacterCropEmbedder(
+            settings.character_cache_root,
+            dino_model_path=settings.character_dino_model_path,
+            embed_device=settings.character_embed_device,
+        )
         self.clusterer = CharacterClusterer(
             clusterer=settings.character_clusterer,
             min_cluster_size=settings.character_min_cluster_size,
@@ -371,6 +375,9 @@ class CharacterPrepassService:
         panel_ref_map = {ref.panelId: ref for ref in panel_refs}
         unresolved: list[str] = []
         for panel in sorted(panels, key=lambda item: item.orderIndex):
+            ref = panel_ref_map.get(panel.panelId)
+            if ref is not None and ref.diagnostics.get("manualOverride") and ref.clusterIds:
+                continue
             panel_crops = [crop for crop in crops if crop.panelId == panel.panelId]
             if not panel_crops:
                 unresolved.append(panel.panelId)
@@ -378,7 +385,6 @@ class CharacterPrepassService:
             if any(crop.assignmentState in {"suggested", "unknown"} for crop in panel_crops):
                 unresolved.append(panel.panelId)
                 continue
-            ref = panel_ref_map.get(panel.panelId)
             if ref is None or not ref.clusterIds:
                 unresolved.append(panel.panelId)
         return unresolved
@@ -393,6 +399,45 @@ class CharacterPrepassService:
             if ref.source == "manual" or ref.diagnostics.get("manualOverride")
         }
 
+        # Phase 3: Collect split constraints to prevent re-merge
+        split_constraints: dict[str, set[str]] = {}  # split_cluster_id -> {source_cluster_id}
+        for previous_cluster in previous_state.clusters:
+            split_from = previous_cluster.diagnostics.get("splitFromClusterId")
+            if split_from and isinstance(split_from, str):
+                split_constraints.setdefault(previous_cluster.clusterId, set()).add(split_from)
+                split_constraints.setdefault(split_from, set()).add(previous_cluster.clusterId)
+
+        # Phase 3: Build anchor bank from locked/manual clusters (prefer face/head vectors)
+        anchor_bank: dict[str, list[np.ndarray]] = {}  # cluster_id -> list of vectors
+        for previous_cluster in previous_state.clusters:
+            if previous_cluster.status in {"ignored", "merged"}:
+                continue
+            if not previous_cluster.lockName and previous_cluster.status != "locked":
+                continue
+            anchor_vectors: list[np.ndarray] = []
+            for crop_id in previous_cluster.anchorCropIds:
+                prev_crop = previous_crops.get(crop_id)
+                if prev_crop is None:
+                    continue
+                if prev_crop.kind not in {"face", "head", "heuristic"}:
+                    continue
+                embedding_key = prev_crop.diagnostics.get("embeddingKey", "")
+                if not embedding_key:
+                    continue
+                # Try to load cached vector
+                import hashlib as _hashlib
+                cache_dir = self.settings.character_cache_root / _hashlib.sha1(state.chapterId.encode("utf-8")).hexdigest()[:12] / "embeddings"
+                vector_path = cache_dir / f"{embedding_key}.npy"
+                if vector_path.exists():
+                    try:
+                        vector = np.load(vector_path)
+                        anchor_vectors.append(vector)
+                    except Exception:
+                        pass
+            if anchor_vectors:
+                anchor_bank[previous_cluster.clusterId] = anchor_vectors
+
+        # Restore locked clusters (existing behavior)
         for previous_cluster in previous_state.clusters:
             if previous_cluster.status in {"ignored", "merged"}:
                 continue
@@ -465,6 +510,111 @@ class CharacterPrepassService:
                     ),
                 )
 
+        # Phase 3: Anchor bank propagation - match unassigned face/head crops against locked anchors
+        ANCHOR_PROPAGATE_THRESHOLD = 0.88
+        ANCHOR_PROPAGATE_MARGIN = 0.10
+        locked_cluster_ids = {c.clusterId for c in state.clusters if c.lockName and c.status == "locked"}
+
+        if anchor_bank:
+            for crop in state.crops:
+                if crop.assignmentState in {"manual", "auto_confirmed"}:
+                    continue
+                if crop.kind not in {"face", "head"}:
+                    continue
+                embedding_key = crop.diagnostics.get("embeddingKey", "")
+                if not embedding_key:
+                    continue
+                import hashlib as _hashlib
+                cache_dir = self.settings.character_cache_root / _hashlib.sha1(state.chapterId.encode("utf-8")).hexdigest()[:12] / "embeddings"
+                vector_path = cache_dir / f"{embedding_key}.npy"
+                if not vector_path.exists():
+                    continue
+                try:
+                    crop_vector = np.load(vector_path)
+                except Exception:
+                    continue
+
+                # Score against all anchor banks
+                scored: list[tuple[str, float]] = []
+                for anchor_cluster_id, anchor_vectors in anchor_bank.items():
+                    if anchor_cluster_id not in locked_cluster_ids:
+                        continue
+                    anchor_matrix = np.stack(anchor_vectors, axis=0)
+                    similarities = anchor_matrix @ crop_vector
+                    best_sim = float(np.max(similarities))
+                    centroid = anchor_matrix.mean(axis=0)
+                    norm = float(np.linalg.norm(centroid))
+                    if norm > 1e-6:
+                        centroid = centroid / norm
+                    centroid_sim = float(np.dot(crop_vector, centroid))
+                    combined = centroid_sim * 0.55 + best_sim * 0.45
+                    scored.append((anchor_cluster_id, combined))
+
+                if not scored:
+                    continue
+                scored.sort(key=lambda x: x[1], reverse=True)
+                best_cluster_id, best_score = scored[0]
+                second_score = scored[1][1] if len(scored) > 1 else 0.0
+                margin = best_score - second_score
+
+                # Check split constraints - don't merge into a cluster that was split from this one
+                blocked_by_split = False
+                if best_cluster_id in split_constraints:
+                    current_assigned = crop.assignedClusterId
+                    if current_assigned and current_assigned in split_constraints[best_cluster_id]:
+                        blocked_by_split = True
+
+                # Check anchor conflict
+                if len(scored) > 1 and margin < ANCHOR_PROPAGATE_MARGIN and scored[1][1] >= ANCHOR_PROPAGATE_THRESHOLD:
+                    # Conflict between two locked anchors
+                    crop.assignmentState = "suggested"
+                    crop.assignedClusterId = best_cluster_id
+                    crop.diagnostics = {
+                        **crop.diagnostics,
+                        "anchorConflict": True,
+                        "anchorCandidates": [{"clusterId": cid, "score": round(s, 4)} for cid, s in scored[:3]],
+                    }
+                    # Add review flag to the cluster
+                    target = cluster_by_id.get(best_cluster_id)
+                    if target and "anchor_conflict" not in target.reviewFlags:
+                        target.reviewFlags.append("anchor_conflict")
+                elif best_score >= ANCHOR_PROPAGATE_THRESHOLD and margin >= ANCHOR_PROPAGATE_MARGIN and not blocked_by_split:
+                    # Strong match with clear margin - auto-confirm via anchor propagation
+                    crop.assignedClusterId = best_cluster_id
+                    crop.assignmentState = "auto_confirmed"
+                    crop.diagnostics = {
+                        **crop.diagnostics,
+                        "anchorPropagation": True,
+                        "anchorScore": round(best_score, 4),
+                        "anchorMargin": round(margin, 4),
+                    }
+                    state.candidateAssignments = [
+                        a for a in state.candidateAssignments if a.cropId != crop.cropId
+                    ]
+                    state.candidateAssignments.append(
+                        CharacterCandidateAssignment(
+                            cropId=crop.cropId,
+                            panelId=crop.panelId,
+                            clusterId=best_cluster_id,
+                            rank=1,
+                            score=round(best_score, 4),
+                            marginScore=round(margin, 4),
+                            state="auto_confirmed",
+                            diagnostics={"anchorPropagation": True},
+                        )
+                    )
+                    # Update panel ref for this propagated crop
+                    self._upsert_panel_ref(
+                        state,
+                        PanelCharacterRef(
+                            panelId=crop.panelId,
+                            clusterIds=[best_cluster_id],
+                            source="auto_confirmed",
+                            confidenceScore=round(best_score, 4),
+                            diagnostics={"anchorPropagation": True},
+                        ),
+                    )
+
         self._refresh_cluster_counts(state)
         panel_order = {crop.panelId: crop.orderIndex for crop in state.crops}
         state.panelCharacterRefs = sorted(state.panelCharacterRefs, key=lambda item: panel_order.get(item.panelId, 0))
@@ -514,13 +664,7 @@ class CharacterPrepassService:
         return f"data:image/jpeg;base64,{encoded}"
 
     def _detector_runtime_diagnostics(self) -> dict[str, object]:
-        return {
-            "device": getattr(self.detector, "device", "cpu"),
-            "animeProviderAvailable": not bool(getattr(self.detector, "_anime_error", "")),
-            "animeProviderError": getattr(self.detector, "_anime_error", ""),
-            "objectProviderAvailable": not bool(getattr(self.detector, "_object_error", "")),
-            "objectProviderError": getattr(self.detector, "_object_error", ""),
-        }
+        return self.detector.runtime_diagnostics()
 
     def _count_buckets(self, crops: list[CharacterCrop]) -> dict[str, int]:
         counts: dict[str, int] = {"good": 0, "medium": 0, "poor": 0}
@@ -553,6 +697,33 @@ class CharacterPrepassService:
             return False
         if not state.crops:
             return False
+        summary = state.diagnostics.get("summary") if isinstance(state.diagnostics, dict) else {}
+        if not isinstance(summary, dict):
+            return False
+        versions = summary.get("versions") if isinstance(summary.get("versions"), dict) else {}
+        config = summary.get("config") if isinstance(summary.get("config"), dict) else {}
+
+        expected_versions = {
+            "prepass": PREPASS_VERSION,
+            "detector": self.detector.version,
+            "quality": self.quality_scorer.version,
+            "embedder": self.embedder.version,
+            "cluster": self.clusterer.version,
+        }
+        for key, expected_value in expected_versions.items():
+            if versions.get(key) != expected_value:
+                return False
+
+        expected_config = {
+            "detectorMode": self.settings.character_detector_mode,
+            "clusterer": self.settings.character_clusterer,
+            "minClusterSize": self.settings.character_min_cluster_size,
+            "objectModel": self.settings.character_object_model,
+            "device": self.settings.character_device,
+        }
+        for key, expected_value in expected_config.items():
+            if config.get(key) != expected_value:
+                return False
         return True
 
     def _compute_content_hash(self, panels: list[CharacterPanelReference], file_paths: list[Path]) -> str:

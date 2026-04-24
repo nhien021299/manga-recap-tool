@@ -8,7 +8,7 @@ class CharacterScriptContextBuilder:
         active_clusters = {
             cluster.clusterId: cluster
             for cluster in state.clusters
-            if cluster.status not in {"ignored", "merged"}
+            if cluster.status not in {"ignored", "merged", "unknown"}
         }
         characters: list[CharacterScriptEntry] = []
         for cluster in active_clusters.values():

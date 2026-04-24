@@ -24,7 +24,7 @@ type MergeTargets = Record<string, string>;
 type SplitSelections = Record<string, boolean>;
 
 export function StepCharacters() {
-  const { config, panels, characterState, setCharacterState, setCurrentStep } = useRecapStore();
+  const { config, panels, characterState, setCharacterState, clearCharacterState, setCurrentStep } = useRecapStore();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +85,7 @@ export function StepCharacters() {
     [splitPanelSelections]
   );
   const activeClusters = useMemo(
-    () => (characterState?.clusters || []).filter((cluster) => cluster.status !== "merged" && cluster.status !== "ignored"),
+    () => (characterState?.clusters || []).filter((cluster) => cluster.status !== "merged" && cluster.status !== "ignored" && cluster.status !== "unknown"),
     [characterState?.clusters]
   );
   const possibleWrongMergeClusters = useMemo(
@@ -117,6 +117,7 @@ export function StepCharacters() {
 
   useEffect(() => {
     if (panels.length === 0 || !config.apiBaseUrl) return;
+    if (loading) return;
     if (characterState?.chapterId === chapterId) return;
 
     let cancelled = false;
@@ -143,7 +144,7 @@ export function StepCharacters() {
     return () => {
       cancelled = true;
     };
-  }, [chapterId, characterState?.chapterId, config.apiBaseUrl, panels, setCharacterState]);
+  }, [chapterId, characterState?.chapterId, config.apiBaseUrl, loading, panels, setCharacterState]);
 
   const applyState = (state: typeof characterState) => {
     if (!state) return;
@@ -161,6 +162,15 @@ export function StepCharacters() {
     try {
       requireApiBaseUrl();
       setLoading(true);
+      setError(null);
+      clearCharacterState();
+      setDraftNames({});
+      setMergeTargets({});
+      setPanelOverrideTarget("");
+      setSplitCropSelections({});
+      setSplitPanelSelections({});
+      setSplitName("");
+      setSelectedPanelId(panels[0]?.id || "");
       const state = await runCharacterPrepass(config.apiBaseUrl, chapterId, panels, { force: true });
       applyState(state);
     } catch (prepassError) {

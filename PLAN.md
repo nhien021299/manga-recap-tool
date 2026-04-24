@@ -1,147 +1,140 @@
-# Backend Native FFmpeg Export With Browser Fallback
+# Upgrade Character System Theo 4 Phase
 
-## Tóm tắt
-- Chuyển `Export MP4` chính thức sang backend async render job dùng native `ffmpeg.exe`.
-- Giữ browser-side render hiện tại làm fallback/preview phụ, không còn là đường export chính.
-- Mỗi lần export, frontend gửi toàn bộ panel image + audio WAV + render plan trong một `multipart/form-data` request self-contained.
-- Backend lưu asset và MP4 theo job trong thư mục tạm, phục vụ tải file kết quả theo kiểu ephemeral download rồi cleanup theo TTL.
+## Summary
 
-## Thay đổi chính
-- Backend thêm một render subsystem riêng, không tái dùng `JobQueue` script hiện tại.
-- Tạo `RenderJobQueue` và `RenderJobRecord` riêng để tránh trộn schema, logic progress, temp file, và lifecycle với script jobs.
-- Thêm `RenderService` hoặc `NativeFfmpegRenderService` chịu trách nhiệm:
-  - validate render request
-  - lưu panel/audio uploads theo clip
-  - compose concat list
-  - chạy `ffmpeg` native qua subprocess
-  - cập nhật progress/log theo phase
-  - xuất file MP4 cuối cùng
-- Backend thêm route nhóm `/api/v1/render`:
-  - `POST /api/v1/render/jobs`
-  - `GET /api/v1/render/jobs/{job_id}`
-  - `GET /api/v1/render/jobs/{job_id}/result`
-  - `POST /api/v1/render/jobs/{job_id}/cancel`
-- Frontend đổi nút chính ở tab Render sang tạo backend render job, poll progress, rồi mở preview/download khi job hoàn tất.
-- Browser render hiện tại được giữ lại dưới một action phụ kiểu `Fallback browser render` hoặc `Preview in browser`, không còn là đường mặc định.
-- `voice/options` và preview voice không được block export workflow; lỗi ở tab Voice không được làm hỏng backend export job path.
+Hiện tại repo đang ở **Phase 0.5, chưa đạt Phase 1**.
 
-## API và contract cần chốt khi triển khai
-- `POST /api/v1/render/jobs` dùng `multipart/form-data`.
-- Form fields:
-  - `plan`: JSON string
-  - `clips`: JSON string metadata theo thứ tự clip active
-  - `files`: list file upload, gồm cả panel images và audio WAV
-- `clips` phải là contract rõ ràng, mỗi item gồm:
-  - `clipId`
-  - `panelId`
-  - `orderIndex`
-  - `durationMs`
-  - `holdAfterMs`
-  - `captionText`
-  - `panelFileKey`
-  - `audioFileKey` hoặc `null`
-- `plan` gồm:
-  - `outputWidth`
-  - `outputHeight`
-  - `captionMode`
-  - `frameRate`
-- Backend không tự suy luận thứ tự clip từ filename; phải dùng metadata `clips` làm source of truth.
-- `GET /api/v1/render/jobs/{job_id}` trả:
-  - `jobId`
-  - `status`
-  - `progress`
-  - `phase`
-  - `detail`
-  - `downloadUrl` hoặc `null`
-  - `error`
-  - `logs`
-- `GET /api/v1/render/jobs/{job_id}/result` stream `video/mp4` khi job `completed`.
-- `POST /api/v1/render/jobs/{job_id}/cancel` hủy subprocess ffmpeg nếu đang chạy, cleanup temp dir, đánh dấu `cancelled`.
-- Backend cần dependency check cho `ffmpeg` khi khởi tạo render service; nếu không tìm thấy binary thì `POST /render/jobs` trả `503` với message rõ ràng.
-- TTL kết quả mặc định: 1 giờ kể từ lúc job hoàn tất. Sau TTL backend xóa thư mục job và file MP4.
-- Frontend primary flow:
-  - build backend render payload từ timeline active hiện tại
-  - upload tạo job
-  - poll mỗi 1 giây
-  - khi `completed`, tự chuyển sang tab `Export` và gắn `previewUrl` từ backend result endpoint
-  - khi `failed`, hiển thị `error` và logs backend
-- Browser fallback flow:
-  - chỉ xuất hiện như button phụ
-  - chỉ chạy khi user chủ động chọn
-  - không tự fallback âm thầm khi backend export lỗi
+Đã có scaffold hybrid detector, HDBSCAN, crop kind, split/manual review, cache version-aware. Nhưng chất lượng vẫn thấp vì:
 
-## Thiết kế triển khai backend
-- Thêm model API riêng cho render:
-  - `RenderJobCreateResponse`
-  - `RenderJobStatusResponse`
-  - `RenderClipSpec`
-  - `RenderPlanRequest`
-- Thêm model domain/job riêng cho render:
-  - `RenderJobRecord`
-  - `RenderJobStatus`
-  - `RenderJobLogEntry`
-- Thêm utility temp file riêng cho render assets và output:
-  - panel files
-  - audio files
-  - concat manifest
-  - output mp4
-- Thêm `RenderService` native:
-  - dựng command ffmpeg cho từng clip bằng image loop + audio input
-  - với clip không có audio, synthesize silence bằng native ffmpeg
-  - với `captionMode="burned"`, phase đầu dùng Python compose frame PNG có caption baked-in để giữ parity với FE hiện tại
-- Progress backend chia phase cố định:
-  - `accepted`
-  - `preparing assets`
-  - `rendering clip N/M`
-  - `muxing final video`
-  - `finalizing`
-  - `completed`
-- Queue backend nên chạy single-worker mặc định để tránh nhiều export lớn tranh CPU/disk; concurrency là config sau này nếu cần.
-- Cleanup luôn chạy trong `finally`, kể cả `failed` và `cancelled`, trừ file MP4 của job `completed` còn giữ tới TTL.
-- Thêm scheduler đơn giản hoặc lazy cleanup khi đọc/truy cập job list/result; không cần background cron phức tạp cho v1.
+- `heuristic` vẫn có thể tạo cluster và `auto_confirmed` nếu confidence đủ cao.
+- Anime face/head mới là adapter optional, chưa có runtime/provider ổn định được test như đường chính.
+- Embedding hiện là handcrafted OpenCV descriptor, chưa có learned embedding.
+- Chưa có cast-anchor propagation thật sự, chỉ có manual constraint giữ lại một phần khi rerun.
 
-## Thiết kế triển khai frontend
-- Thêm client API riêng cho backend render job.
-- `StepRender` đổi `handleRender()`:
-  - nếu chọn backend primary thì gọi create-job
-  - lưu `jobId`
-  - poll status
-  - render progress card từ `phase/detail/progress`
-  - khi done, dùng `/result` làm source cho `<video controls>`
-- `Render MP4` button chính map sang backend export.
-- Thêm button phụ `Browser Fallback` hoặc `Preview In Browser`.
-- `renderError` phải hiển thị nguyên message backend, không nén về `Render failed`.
-- Khi backend export đang chạy:
-  - disable nút chính
-  - cho phép cancel nếu user bấm `Cancel export`
-  - không gọi `voice/options` hay render preview voice trong background từ tab render
-- `buildRenderPlan()` hiện tại tiếp tục là source để sinh clip order/duration, nhưng cần thêm bước serialize file-key mapping cho multipart backend request.
+Đánh giá hiện tại: **khoảng 4.5/10**. Lý do chính là hệ thống vẫn dựa nhiều vào heuristic crop + handcrafted descriptor, nên dễ merge nhầm nhiều nhân vật.
 
-## Test plan
-- Backend route test cho `POST /render/jobs` với đủ asset hợp lệ tạo job `queued`.
-- Backend route test cho mismatch giữa metadata clip và số file upload trả `400`.
-- Backend service test cho missing `ffmpeg` trả `503`.
-- Backend queue test cho progress phase chuyển đúng từ `queued` tới `completed`.
-- Backend cancel test cho job đang chạy chuyển `cancelled` và cleanup temp dir.
-- Backend result test cho job chưa xong trả `409`, job xong stream `video/mp4`.
-- Backend TTL test cho output file bị xóa sau expiry hoặc khi cleanup lazy chạy.
-- Frontend test cho `StepRender` polling backend status và hiển thị `renderProgress`.
-- Frontend test cho success path đổi tab export và gắn `previewUrl`.
-- Frontend test cho failed job hiển thị lỗi backend chi tiết.
-- Frontend test cho browser fallback vẫn hoạt động độc lập.
-- End-to-end scenario:
-  - 1 clip có audio
-  - nhiều clip có mix audio + silent clip
-  - caption off
-  - caption burned
-  - cancel giữa lúc render clip N/M
-  - backend restart giữa lúc poll job
+## Phase 1: Chặn Heuristic Auto Cluster, Mục Tiêu 6/10
 
-## Giả định và default đã khóa
-- Export chính thức dùng backend async job.
-- Asset transfer dùng một request multipart self-contained cho mỗi lần export.
-- Output là ephemeral download, TTL mặc định 1 giờ.
-- Browser render được giữ lại làm fallback/preview phụ, không phải primary path.
-- Native `ffmpeg.exe` trên backend là dependency bắt buộc của official export.
-- V1 không làm persistent render history, không làm shared asset staging, không làm distributed queue.
-- V1 dùng single render worker mặc định để ưu tiên ổn định hơn throughput.
+- Sửa clustering policy để `heuristic` không bao giờ tạo `auto_confirmed`.
+- `heuristic` crop vẫn được detect và hiển thị trong review UI, nhưng chỉ được phép là `suggested` hoặc `unknown`.
+- Nếu cluster chỉ có heuristic anchors, cluster đó là review-only:
+  - không ghi `panelCharacterRefs` confirmed
+  - không đi vào script context
+  - luôn có `review_needed` hoặc `weak_identity_signal`
+- Face/head vẫn được phép auto-confirm theo threshold rất cao.
+- Person/body/accessory tiếp tục chỉ là context metadata, không tạo identity chính.
+
+Acceptance:
+
+- Case “nhân vật 1 có 8 panels nhưng merge quá nhiều người” phải chuyển phần lớn sang `suggested/unknown`, không còn auto-confirm cả cụm.
+- Script context không nhận bất kỳ cluster nào chỉ dựa trên heuristic.
+- UI vẫn thấy đầy đủ crop/panel để user split/lock thủ công.
+
+## Phase 2: Anime Face/Head Chạy Ổn, Mục Tiêu 7.5/10
+
+- Biến anime face/head detector thành đường identity chính, không chỉ optional best-effort.
+- Giữ provider optional để backend không crash, nhưng thêm runtime diagnostics rõ:
+  - provider loaded hay không
+  - model path
+  - device
+  - số face/head crop detect được
+  - fallback reason nếu fail
+- Chỉ cho `face/head` crop làm identity anchor auto.
+- Face bbox sinh thêm `head` crop bằng expansion heuristic, nhưng head derived phải lưu `derivedFrom=face`.
+- Thêm warmup/test path cho detector:
+  - ảnh synthetic hoặc fixture anime face/head
+  - xác nhận detect được face/head
+  - xác nhận thiếu dependency/model thì fallback OpenCV nhưng không crash
+- UI hiển thị rõ crop `kind=face/head` để user biết cluster dựa trên tín hiệu nào.
+
+Default:
+
+- `AI_BACKEND_CHARACTER_DETECTOR_MODE=hybrid`
+- Nếu anime provider fail, hệ thống vẫn chạy nhưng chất lượng chỉ đạt Phase 1, diagnostics phải nói rõ.
+
+## Phase 3: Cast-Anchor Propagate, Mục Tiêu 8.5/10
+
+- Thêm anchor bank từ các cluster đã `locked` hoặc manual split/rename.
+- Anchor bank lấy vector từ crop đã lock trước đó, ưu tiên `face/head`; heuristic manual anchor chỉ dùng để suggest, không auto-confirm.
+- Khi rerun prepass:
+  - load anchor bank từ previous state
+  - match crop face/head mới với anchor bank trước hoặc sau HDBSCAN
+  - nếu similarity cao và margin rõ, gán vào cluster locked cũ
+  - giữ nguyên canonical name, lockName, cluster id nếu có thể
+- Không cho auto merge hai locked clusters khác nhau.
+- Nếu một crop match nhiều locked anchors gần nhau, chuyển `suggested` và gắn review flag `anchor_conflict`.
+- Split/rename/lock trở thành constraint bền:
+  - rerun không được merge ngược cluster đã split
+  - panel refs manual vẫn thắng crop state unknown/suggested
+
+Acceptance:
+
+- User split một nhân vật ra cluster mới, rerun prepass không gộp ngược lại.
+- Nhân vật chính đã lock tiếp tục propagate qua panel mới nếu có face/head tương đồng.
+- Conflict giữa hai nhân vật locked không auto-resolve.
+
+## Phase 4: Learned Embedding DINOv2 Local, Mục Tiêu 9/10
+
+- Thêm learned embedder local bằng **DINOv2 local** làm provider mặc định cho Phase 4.
+- Không tự download model trong runtime.
+- Chỉ bật learned embedding khi model path tồn tại local.
+- Config mới:
+  - `AI_BACKEND_CHARACTER_EMBEDDER=hybrid-dinov2`
+  - `AI_BACKEND_CHARACTER_DINO_MODEL_PATH=<local path>`
+  - `AI_BACKEND_CHARACTER_EMBED_DEVICE=auto`
+- Embedding mới là hybrid vector:
+  - DINOv2 image embedding là tín hiệu chính
+  - handcrafted descriptor vẫn giữ làm phụ trợ
+  - crop kind feature vẫn giữ
+- Cache key phải gồm:
+  - embedder provider
+  - DINO model path/hash
+  - device
+  - crop kind
+  - detector version/config
+- Similarity policy tách theo kind:
+  - face/head dùng threshold cao nhất
+  - body/upper_body chỉ suggest
+  - accessory không được tạo identity
+- Thêm batch embedding để tránh chậm khi nhiều crop.
+
+Acceptance:
+
+- Same character khác nền/pose nhẹ vẫn group tốt hơn handcrafted.
+- Hai nhân vật mặc đồ giống nhưng mặt/head khác không auto-merge.
+- Learned model thiếu file local thì backend fallback handcrafted và ghi diagnostics rõ.
+
+## Test Plan
+
+- Phase 1 tests:
+  - heuristic-only crop không tạo `auto_confirmed`
+  - heuristic-only cluster không đi vào script context
+  - mixed panel mơ hồ vẫn unresolved/suggested
+  - existing manual split/lock vẫn hoạt động
+
+- Phase 2 tests:
+  - anime provider loaded thì tạo crop `face/head`
+  - anime provider missing thì fallback OpenCV không crash
+  - face/head crop được auto-confirm khi similarity cao
+  - face conflict không bị body/clothes override
+
+- Phase 3 tests:
+  - locked cluster propagate qua rerun
+  - split cluster không merge ngược
+  - anchor conflict sinh review flag, không auto-confirm
+  - manual panel override vẫn không bị unresolved
+
+- Phase 4 tests:
+  - DINOv2 model path missing thì fallback handcrafted
+  - DINOv2 cache invalid khi model hash/provider đổi
+  - learned embedding giảm false merge trong regression “nhân vật 1 merge 8 panels”
+  - batch embedding output ổn định CPU/GPU
+
+## Assumptions
+
+- Ưu tiên chất lượng identity hơn recall tự động.
+- Phase 1 cố ý làm conservative: ít auto-confirm hơn, nhiều review hơn.
+- `heuristic` chỉ còn là UI/review signal, không là identity confirmation signal.
+- DINOv2 local là lựa chọn chính cho Phase 4 theo quyết định hiện tại.
+- Không model nào được tự download trong request runtime.
+- Script context chỉ nhận `auto_confirmed` từ face/head/cast-anchor hoặc `manual`, không nhận `suggested`.

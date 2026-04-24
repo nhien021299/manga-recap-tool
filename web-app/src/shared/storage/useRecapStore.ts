@@ -170,7 +170,9 @@ const EMPTY_PANEL_UNDERSTANDING_META: PanelUnderstandingMeta = {
 const buildCharacterScriptContext = (state: ChapterCharacterState | null): CharacterScriptContext | null => {
   if (!state) return null;
 
-  const activeClusters = state.clusters.filter((cluster) => cluster.status !== "ignored" && cluster.status !== "merged");
+  const activeClusters = state.clusters.filter(
+    (cluster) => cluster.status !== "ignored" && cluster.status !== "merged" && cluster.status !== "unknown"
+  );
   const characters = activeClusters
     .map((cluster) => ({
       clusterId: cluster.clusterId,

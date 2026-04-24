@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.cluster import AgglomerativeClustering, HDBSCAN
 
 
-CLUSTER_VERSION = "hybrid-hdbscan-v3"
+CLUSTER_VERSION = "hybrid-hdbscan-v4"
 GREEN_SIMILARITY_THRESHOLD = 0.90
 GREEN_MARGIN_THRESHOLD = 0.12
 SUGGEST_SIMILARITY_THRESHOLD = 0.76
@@ -315,7 +315,9 @@ class CharacterClusterer:
         kinds = set(cluster.diagnostics.get("anchorKinds", []))
         if crop.crop_kind in CONTEXT_ONLY_KINDS:
             return "suggested"
-        if kinds and kinds.issubset(CONTEXT_ONLY_KINDS):
+        if kinds and kinds.issubset(CONTEXT_ONLY_KINDS | {"heuristic"}):
+            return "suggested"
+        if crop.crop_kind == "heuristic":
             return "suggested"
         if crop.crop_kind in IDENTITY_STRONG_KINDS:
             return "auto_confirmed"

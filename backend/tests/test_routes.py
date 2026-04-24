@@ -15,7 +15,15 @@ from app.deps import (
 )
 from app.main import app, build_services
 from app.models.api import ScriptJobResult
-from app.models.characters import ChapterCharacterState, CharacterCluster, CharacterCrop, PanelCharacterRef
+from app.models.characters import (
+    ChapterCharacterState,
+    CharacterCandidateAssignment,
+    CharacterCluster,
+    CharacterCrop,
+    CharacterPanelMappingRequest,
+    CharacterStatusRequest,
+    PanelCharacterRef,
+)
 from app.models.domain import Metrics, RawOutputs
 from app.services.characters.prepass import CharacterPrepassService
 from app.services.characters.repository import CharacterStateRepository
@@ -342,3 +350,111 @@ def test_character_split_route_moves_crop_and_rebuilds_script_refs(tmp_path: Pat
             assert script_context["panelCharacterRefs"]["panel-2"] == [new_cluster["clusterId"]]
     finally:
         app.dependency_overrides.clear()
+
+
+def test_manual_panel_override_clears_unresolved_even_with_unknown_crop(tmp_path: Path):
+    settings = build_route_settings(tmp_path)
+    repository = CharacterStateRepository(settings.character_state_db)
+    review_service = CharacterReviewStateService(repository)
+    state = ChapterCharacterState(
+        chapterId="chapter_manual_override",
+        chapterContentHash="manual-hash",
+        prepassVersion="character-hybrid-v3",
+        generatedAt="2026-04-24T00:00:00+00:00",
+        updatedAt="2026-04-24T00:00:00+00:00",
+        needsReview=True,
+        clusters=[
+            CharacterCluster(
+                clusterId="char_001",
+                chapterId="chapter_manual_override",
+                status="locked",
+                canonicalName="Ly Pham",
+                displayLabel="Ly Pham",
+                lockName=True,
+            )
+        ],
+        crops=[
+            CharacterCrop(
+                cropId="panel-1::crop::01",
+                panelId="panel-1",
+                orderIndex=0,
+                bbox=[0, 0, 20, 20],
+                qualityScore=0.7,
+                qualityBucket="medium",
+                assignedClusterId=None,
+                assignmentState="unknown",
+            )
+        ],
+        panelCharacterRefs=[PanelCharacterRef(panelId="panel-1", clusterIds=[], source="unknown", confidenceScore=0.0)],
+        unresolvedPanelIds=["panel-1"],
+    )
+    repository.save(state)
+
+    result = review_service.update_panel_mapping(
+        CharacterPanelMappingRequest(chapterId="chapter_manual_override", panelId="panel-1", clusterIds=["char_001"])
+    )
+
+    assert "panel-1" not in result.unresolvedPanelIds
+    assert result.panelCharacterRefs[0].diagnostics["manualOverride"] is True
+
+
+def test_unknown_cluster_is_removed_from_refs_and_script_context(tmp_path: Path):
+    settings = build_route_settings(tmp_path)
+    repository = CharacterStateRepository(settings.character_state_db)
+    review_service = CharacterReviewStateService(repository)
+    script_context_builder = CharacterScriptContextBuilder()
+    state = ChapterCharacterState(
+        chapterId="chapter_unknown",
+        chapterContentHash="unknown-hash",
+        prepassVersion="character-hybrid-v3",
+        generatedAt="2026-04-24T00:00:00+00:00",
+        updatedAt="2026-04-24T00:00:00+00:00",
+        needsReview=False,
+        clusters=[
+            CharacterCluster(
+                clusterId="char_001",
+                chapterId="chapter_unknown",
+                status="draft",
+                canonicalName="",
+                displayLabel="nhan vat 1",
+            )
+        ],
+        crops=[
+            CharacterCrop(
+                cropId="panel-1::crop::01",
+                panelId="panel-1",
+                orderIndex=0,
+                bbox=[0, 0, 20, 20],
+                qualityScore=1.0,
+                qualityBucket="good",
+                assignedClusterId="char_001",
+                assignmentState="auto_confirmed",
+            )
+        ],
+        candidateAssignments=[
+            CharacterCandidateAssignment(
+                cropId="panel-1::crop::01",
+                panelId="panel-1",
+                clusterId="char_001",
+                rank=1,
+                score=1.0,
+                marginScore=1.0,
+                state="auto_confirmed",
+            )
+        ],
+        panelCharacterRefs=[PanelCharacterRef(panelId="panel-1", clusterIds=["char_001"], source="auto_confirmed", confidenceScore=1.0)],
+    )
+    repository.save(state)
+
+    result = review_service.update_cluster_status(
+        CharacterStatusRequest(chapterId="chapter_unknown", clusterId="char_001", status="unknown")
+    )
+    script_context = script_context_builder.build(result)
+
+    assert result.crops[0].assignedClusterId is None
+    assert result.crops[0].assignmentState == "unknown"
+    assert result.candidateAssignments == []
+    assert result.panelCharacterRefs[0].clusterIds == []
+    assert script_context.characters == []
+    assert script_context.panelCharacterRefs == {}
+    assert script_context.unknownPanelIds == ["panel-1"]

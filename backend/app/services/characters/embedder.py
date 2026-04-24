@@ -11,7 +11,7 @@ import numpy as np
 from PIL import Image
 
 
-EMBEDDER_VERSION = "crop-embedding-v1"
+EMBEDDER_VERSION = "crop-embedding-v2"
 
 
 @dataclass(frozen=True)
@@ -22,9 +22,18 @@ class CharacterCropEmbedding:
 
 
 class CharacterCropEmbedder:
-    def __init__(self, cache_root: Path) -> None:
+    def __init__(self, cache_root: Path, *, dino_model_path: str = "", embed_device: str = "auto") -> None:
         self.cache_root = cache_root
         self.version = EMBEDDER_VERSION
+        self._dino_model_path = dino_model_path
+        self._embed_device = embed_device
+        self._dino_model = None
+        self._dino_transform = None
+        self._dino_error = ""
+        self._dino_loaded = False
+        self._dino_model_hash = self._compute_model_hash(dino_model_path) if dino_model_path else ""
+        self._resolved_device = self._resolve_device(embed_device)
+        self._embedder_provider = "hybrid-dinov2" if dino_model_path and Path(dino_model_path).exists() else "handcrafted"
 
     def embed(
         self,
@@ -61,6 +70,9 @@ class CharacterCropEmbedder:
         crop_image.save(buffer, format="PNG")
         digest = hashlib.sha1()
         digest.update(self.version.encode("utf-8"))
+        digest.update(self._embedder_provider.encode("utf-8"))
+        digest.update(self._dino_model_hash.encode("utf-8"))
+        digest.update(self._resolved_device.encode("utf-8"))
         digest.update(chapter_id.encode("utf-8"))
         digest.update(crop_id.encode("utf-8"))
         digest.update(crop_kind.encode("utf-8"))
@@ -134,11 +146,37 @@ class CharacterCropEmbedder:
             ]
         )
         normalized_vector = self._normalize(feature_vector.astype(np.float32))
+
+        # Phase 4: If DINOv2 is available, build a hybrid vector
+        dino_vector = self._compute_dino_embedding(crop_image)
+        if dino_vector is not None:
+            # Hybrid: DINOv2 is primary signal, handcrafted is supplementary
+            combined = np.concatenate([
+                dino_vector * 2.8,  # DINOv2 as primary signal
+                normalized_vector * 0.6,  # handcrafted as supplementary
+            ])
+            final_vector = self._normalize(combined.astype(np.float32))
+            diagnostics = {
+                "version": self.version,
+                "provider": self._embedder_provider,
+                "dimension": int(final_vector.shape[0]),
+                "cropKind": crop_kind,
+                "weights": weights,
+                "dinoDimension": int(dino_vector.shape[0]),
+                "handcraftedDimension": int(normalized_vector.shape[0]),
+                "dinoModelPath": self._dino_model_path,
+                "dinoModelHash": self._dino_model_hash[:12],
+                "device": self._resolved_device,
+            }
+            return final_vector, diagnostics
+
         diagnostics = {
             "version": self.version,
+            "provider": self._embedder_provider,
             "dimension": int(normalized_vector.shape[0]),
             "cropKind": crop_kind,
             "weights": weights,
+            "dinoFallbackReason": self._dino_error or "DINOv2 model not configured or not found locally.",
         }
         return normalized_vector, diagnostics
 
@@ -240,3 +278,116 @@ class CharacterCropEmbedder:
         if norm <= 1e-6:
             return vector
         return vector / norm
+
+    # --- Phase 4: DINOv2 learned embedding ---
+
+    def _compute_dino_embedding(self, crop_image: Image.Image) -> np.ndarray | None:
+        """Compute a DINOv2 embedding for a single crop image. Returns None if DINOv2 is not available."""
+        if self._embedder_provider != "hybrid-dinov2":
+            return None
+        model, transform = self._load_dino_model()
+        if model is None or transform is None:
+            return None
+        try:
+            import torch
+            rgb = crop_image.convert("RGB")
+            tensor = transform(rgb).unsqueeze(0)
+            with torch.no_grad():
+                outputs = model(pixel_values=tensor)
+            # DINOv2 cls_token is at position 0 of last_hidden_state
+            cls_embedding = outputs.last_hidden_state[:, 0, :]
+            embedding = cls_embedding[0].numpy().astype(np.float32)
+            return self._normalize(embedding)
+        except Exception as exc:
+            self._dino_error = f"{type(exc).__name__}: {exc}"
+            return None
+
+    def embed_batch(
+        self,
+        *,
+        chapter_id: str,
+        items: list[dict],
+    ) -> list[CharacterCropEmbedding]:
+        """Batch embed multiple crops. Each item should have: crop_id, crop_kind, crop_image, cache_hint."""
+        results: list[CharacterCropEmbedding] = []
+        for item in items:
+            result = self.embed(
+                chapter_id=chapter_id,
+                crop_id=item["crop_id"],
+                crop_kind=item["crop_kind"],
+                crop_image=item["crop_image"],
+                cache_hint=item["cache_hint"],
+            )
+            results.append(result)
+        return results
+
+    def _load_dino_model(self):
+        """Load DINOv2 model from local HuggingFace directory. Never downloads at runtime."""
+        if self._dino_model is not None:
+            return self._dino_model, self._dino_transform
+        if not self._dino_model_path:
+            self._dino_error = "DINOv2 model path not configured."
+            return None, None
+        model_path = Path(self._dino_model_path)
+        if not model_path.exists() or not (model_path / "config.json").exists():
+            self._dino_error = f"DINOv2 model not found locally: {self._dino_model_path}"
+            return None, None
+        try:
+            from transformers import AutoModel
+            from torchvision import transforms as T
+
+            self._dino_model = AutoModel.from_pretrained(
+                str(model_path),
+                local_files_only=True,
+            )
+            self._dino_model.eval()
+            self._dino_transform = T.Compose([
+                T.Resize((518, 518)),   # DINOv2 optimal at 518 (37 patches of 14px)
+                T.CenterCrop((518, 518)),
+                T.ToTensor(),
+                T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ])
+            self._dino_loaded = True
+        except Exception as exc:
+            self._dino_error = f"{type(exc).__name__}: {exc}"
+            self._dino_model = None
+            self._dino_transform = None
+            self._dino_loaded = False
+        return self._dino_model, self._dino_transform
+
+    def runtime_diagnostics(self) -> dict[str, object]:
+        """Return runtime diagnostics for the embedder."""
+        return {
+            "version": self.version,
+            "provider": self._embedder_provider,
+            "dinoModelPath": self._dino_model_path,
+            "dinoModelHash": self._dino_model_hash[:12] if self._dino_model_hash else "",
+            "dinoLoaded": self._dino_loaded,
+            "dinoError": self._dino_error,
+            "device": self._resolved_device,
+        }
+
+    def _compute_model_hash(self, model_path: str) -> str:
+        """Compute a hash of the model file for cache invalidation."""
+        path = Path(model_path)
+        if not path.exists():
+            return ""
+        try:
+            digest = hashlib.sha1()
+            digest.update(str(path.stat().st_size).encode("utf-8"))
+            digest.update(str(path.stat().st_mtime_ns).encode("utf-8"))
+            digest.update(path.name.encode("utf-8"))
+            return digest.hexdigest()
+        except Exception:
+            return ""
+
+    def _resolve_device(self, requested: str) -> str:
+        if requested == "cpu":
+            return "cpu"
+        if requested == "gpu":
+            return "cuda"
+        try:
+            import torch
+            return "cuda" if torch.cuda.is_available() else "cpu"
+        except Exception:
+            return "cpu"

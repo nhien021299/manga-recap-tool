@@ -236,7 +236,7 @@ class CharacterReviewStateService:
         active_cluster_ids = {
             cluster.clusterId
             for cluster in state.clusters
-            if cluster.status not in {"ignored", "merged"}
+            if cluster.status not in {"ignored", "merged", "unknown"}
         }
         cluster_ids = [cluster_id for cluster_id in self._dedupe_list(request.clusterIds) if cluster_id in active_cluster_ids]
         self._upsert_panel_ref(
@@ -263,7 +263,7 @@ class CharacterReviewStateService:
             state.candidateAssignments = [assignment for assignment in state.candidateAssignments if assignment.cropId != crop.cropId]
         else:
             cluster = self._require_cluster(state, request.clusterId)
-            if cluster.status in {"ignored", "merged"}:
+            if cluster.status in {"ignored", "merged", "unknown"}:
                 raise ValueError(f"Character cluster '{cluster.clusterId}' is not active.")
             self._assign_crop(state=state, crop_id=crop.cropId, cluster_id=cluster.clusterId, state_name="manual", score=1.0)
             if crop.cropId not in cluster.anchorCropIds and len(cluster.anchorCropIds) < 6:
@@ -282,6 +282,23 @@ class CharacterReviewStateService:
         cluster.status = request.status
         if request.status in {"unknown", "ignored"}:
             cluster.lockName = False
+            for crop in state.crops:
+                if crop.assignedClusterId == cluster.clusterId:
+                    crop.assignedClusterId = None
+                    crop.assignmentState = "unknown"
+            state.candidateAssignments = [
+                assignment
+                for assignment in state.candidateAssignments
+                if assignment.clusterId != cluster.clusterId
+            ]
+            for ref in state.panelCharacterRefs:
+                if cluster.clusterId not in ref.clusterIds:
+                    continue
+                ref.clusterIds = [item for item in ref.clusterIds if item != cluster.clusterId]
+                if not ref.clusterIds:
+                    ref.source = "unknown"
+                    ref.confidenceScore = 0.0
+                ref.diagnostics = {**ref.diagnostics, "statusClearedClusterId": cluster.clusterId}
         return self._save(state)
 
     def _assign_crop(self, *, state: ChapterCharacterState, crop_id: str, cluster_id: str, state_name: str, score: float) -> None:
@@ -417,6 +434,7 @@ class CharacterReviewStateService:
             state.unresolvedPanelIds
             or any(
                 cluster.status not in {"merged", "ignored"}
+                and cluster.status != "unknown"
                 and any(flag in {"review_needed", "possible_merge", "low_confidence"} for flag in cluster.reviewFlags)
                 for cluster in state.clusters
             )
@@ -434,7 +452,7 @@ class CharacterReviewStateService:
         active_cluster_ids = {
             cluster.clusterId
             for cluster in state.clusters
-            if cluster.status not in {"ignored", "merged"}
+            if cluster.status not in {"ignored", "merged", "unknown"}
         }
         for panel_id in panel_ids:
             if panel_id in manual_overrides:
@@ -472,15 +490,17 @@ class CharacterReviewStateService:
         panel_ref_map = {ref.panelId: ref for ref in state.panelCharacterRefs}
         unresolved: list[str] = []
         for panel_id in self._dedupe_list([crop.panelId for crop in state.crops] + [ref.panelId for ref in state.panelCharacterRefs]):
+            ref = panel_ref_map.get(panel_id)
+            if ref is not None and ref.diagnostics.get("manualOverride") and ref.clusterIds:
+                continue
             panel_crops = [crop for crop in state.crops if crop.panelId == panel_id]
             if not panel_crops:
-                if not panel_ref_map.get(panel_id, PanelCharacterRef(panelId=panel_id)).clusterIds:
+                if ref is None or not ref.clusterIds:
                     unresolved.append(panel_id)
                 continue
             if any(crop.assignmentState in {"suggested", "unknown"} for crop in panel_crops):
                 unresolved.append(panel_id)
                 continue
-            ref = panel_ref_map.get(panel_id)
             if ref is None or not ref.clusterIds:
                 unresolved.append(panel_id)
         return unresolved

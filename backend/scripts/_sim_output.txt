@@ -1,0 +1,253 @@
+﻿python : 
+C:\Users\PTC\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\cluster\_hdbscan\hdbscan.py:722: 
+FutureWarning: The default value of `copy` will change from False to True in 1.10. Explicitly set a value for `copy` 
+to silence this warning.
+At line:1 char:1
++ python scripts/_simulate_cluster.py 2>&1 | Out-File -Encoding UTF8 sc ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (C:\Users\PTC\Ap...e this warning.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  warn(
+Embedder provider: hybrid-dinov2
+Anchor distance threshold: 0.32
+Identity usable kinds: {'head', 'face'}
+
+Total panels: 52
+
+Total crops for clustering: 148
+By kind: {'face': 25, 'head': 37, 'heuristic': 86}
+Anchor-eligible crops (good + face/head): 6
+  panel-001::crop::02: panel=1, kind=head, quality=good, score=0.583
+  panel-009::crop::05: panel=9, kind=head, quality=good, score=0.748
+  panel-014::crop::02: panel=14, kind=head, quality=good, score=0.797
+  panel-028::crop::02: panel=28, kind=head, quality=good, score=0.772
+  panel-031::crop::01: panel=31, kind=face, quality=good, score=0.784
+  panel-044::crop::02: panel=44, kind=head, quality=good, score=0.809
+
+=== CLUSTERS: 15 ===
+
+  Cluster 0: conf=0.715 | flags=['review_needed', 'hdbscan', 'low_confidence']
+    Anchor crops: ['panel-009::crop::01', 'panel-012::crop::02']
+    Member panels: [9, 12]
+    Member kinds: ['face', 'face']
+
+  Cluster 1: conf=0.689 | flags=['review_needed', 'hdbscan', 'low_confidence']
+    Anchor crops: ['panel-009::crop::03', 'panel-012::crop::04']
+    Member panels: [9, 12]
+    Member kinds: ['head', 'head']
+
+  Cluster 2: conf=0.813 | flags=['review_needed', 'hdbscan']
+    Anchor crops: ['panel-010::crop::01', 'panel-014::crop::01']
+    Member panels: [10, 14]
+    Member kinds: ['face', 'face']
+
+  Cluster 3: conf=0.766 | flags=['review_needed', 'hdbscan', 'low_confidence']
+    Anchor crops: ['panel-010::crop::02', 'panel-014::crop::02']
+    Member panels: [10, 14]
+    Member kinds: ['head', 'head']
+
+  Cluster 4: conf=0.695 | flags=['review_needed', 'hdbscan', 'low_confidence']
+    Anchor crops: ['panel-018::crop::02', 'panel-020::crop::02']
+    Member panels: [18, 20]
+    Member kinds: ['head', 'head']
+
+  Cluster 5: conf=0.725 | flags=['review_needed', 'hdbscan', 'low_confidence']
+    Anchor crops: ['panel-023::crop::01', 'panel-041::crop::02', 'panel-044::crop::01', 'panel-052::crop::01']
+    Member panels: [23, 41, 44, 52]
+    Member kinds: ['face', 'head', 'face', 'face']
+
+  Cluster 6: conf=0.746 | flags=['review_needed', 'hdbscan', 'low_confidence']
+    Anchor crops: ['panel-023::crop::02', 'panel-024::crop::02']
+    Member panels: [23, 24]
+    Member kinds: ['head', 'head']
+
+  Cluster 7: conf=0.748 | flags=['review_needed', 'hdbscan', 'low_confidence']
+    Anchor crops: ['panel-024::crop::01', 'panel-036::crop::02']
+    Member panels: [24, 36]
+    Member kinds: ['face', 'face']
+
+  Cluster 8: conf=0.741 | flags=['review_needed', 'hdbscan', 'low_confidence']
+    Anchor crops: ['panel-025::crop::02', 'panel-039::crop::01']
+    Member panels: [25, 39]
+    Member kinds: ['head', 'face']
+
+  Cluster 9: conf=0.719 | flags=['review_needed', 'hdbscan', 'low_confidence']
+    Anchor crops: ['panel-028::crop::01', 'panel-048::crop::01']
+    Member panels: [28, 48]
+    Member kinds: ['face', 'face']
+
+  Cluster 10: conf=0.742 | flags=['review_needed', 'hdbscan', 'low_confidence']
+    Anchor crops: ['panel-028::crop::04', 'panel-036::crop::01']
+    Member panels: [28, 36]
+    Member kinds: ['head', 'face']
+
+  Cluster 11: conf=0.762 | flags=['review_needed', 'hdbscan', 'low_confidence']
+    Anchor crops: ['panel-033::crop::01', 'panel-036::crop::04', 'panel-048::crop::02']
+    Member panels: [33, 36, 48]
+    Member kinds: ['face', 'head', 'face']
+
+  Cluster 12: conf=0.723 | flags=['review_needed', 'hdbscan', 'low_confidence']
+    Anchor crops: ['panel-036::crop::03', 'panel-039::crop::02', 'panel-048::crop::04']
+    Member panels: [36, 39, 48]
+    Member kinds: ['head', 'head', 'head']
+
+  Cluster 13: conf=0.743 | flags=['review_needed', 'hdbscan', 'low_confidence']
+    Anchor crops: ['panel-038::crop::02', 'panel-048::crop::03']
+    Member panels: [38, 48]
+    Member kinds: ['head', 'head']
+
+  Cluster 14: conf=0.805 | flags=['review_needed', 'hdbscan']
+    Anchor crops: ['panel-044::crop::02', 'panel-052::crop::02']
+    Member panels: [44, 52]
+    Member kinds: ['head', 'head']
+
+=== ASSIGNMENTS ===
+  P  9       head -> cluster=1 state=auto_confirmed score=1.000 margin=1.000
+  P 12       head -> cluster=1 state=auto_confirmed score=1.000 margin=1.000
+  P 10       face -> cluster=2 state=auto_confirmed score=1.000 margin=1.000
+  P 14       face -> cluster=2 state=auto_confirmed score=1.000 margin=1.000
+  P 10       head -> cluster=3 state=auto_confirmed score=1.000 margin=1.000
+  P 14       head -> cluster=3 state=auto_confirmed score=1.000 margin=1.000
+  P 18       head -> cluster=4 state=auto_confirmed score=1.000 margin=1.000
+  P 20       head -> cluster=4 state=auto_confirmed score=1.000 margin=1.000
+  P 23       face -> cluster=5 state=auto_confirmed score=1.000 margin=1.000
+  P 41       head -> cluster=5 state=auto_confirmed score=1.000 margin=1.000
+  P 44       face -> cluster=5 state=auto_confirmed score=1.000 margin=1.000
+  P 52       face -> cluster=5 state=auto_confirmed score=1.000 margin=1.000
+  P 23       head -> cluster=6 state=auto_confirmed score=1.000 margin=1.000
+  P 24       head -> cluster=6 state=auto_confirmed score=1.000 margin=1.000
+  P 24       face -> cluster=7 state=auto_confirmed score=1.000 margin=1.000
+  P 36       face -> cluster=7 state=auto_confirmed score=1.000 margin=1.000
+  P 25       head -> cluster=8 state=auto_confirmed score=1.000 margin=1.000
+  P 39       face -> cluster=8 state=auto_confirmed score=1.000 margin=1.000
+  P 28       face -> cluster=9 state=auto_confirmed score=1.000 margin=1.000
+  P 48       face -> cluster=9 state=auto_confirmed score=1.000 margin=1.000
+  P 28       head -> cluster=10 state=auto_confirmed score=1.000 margin=1.000
+  P 36       face -> cluster=10 state=auto_confirmed score=1.000 margin=1.000
+  P 33       face -> cluster=11 state=auto_confirmed score=1.000 margin=1.000
+  P 36       head -> cluster=11 state=auto_confirmed score=1.000 margin=1.000
+  P 48       face -> cluster=11 state=auto_confirmed score=1.000 margin=1.000
+  P 36       head -> cluster=12 state=auto_confirmed score=1.000 margin=1.000
+  P 39       head -> cluster=12 state=auto_confirmed score=1.000 margin=1.000
+  P 48       head -> cluster=12 state=auto_confirmed score=1.000 margin=1.000
+  P 38       head -> cluster=13 state=auto_confirmed score=1.000 margin=1.000
+  P 42       head -> cluster=13 state=suggested score=0.697 margin=0.055
+  P 48       head -> cluster=13 state=auto_confirmed score=1.000 margin=1.000
+  P 44       head -> cluster=14 state=auto_confirmed score=1.000 margin=1.000
+  P 52       head -> cluster=14 state=auto_confirmed score=1.000 margin=1.000
+  P  1       face -> cluster=None state=unknown score=0.489 margin=0.047
+  P  1       head -> cluster=None state=unknown score=0.425 margin=0.004
+  P  1  heuristic -> cluster=None state=unknown score=0.336 margin=0.003
+  P  1  heuristic -> cluster=None state=unknown score=0.274 margin=0.010
+  P  1  heuristic -> cluster=None state=unknown score=0.282 margin=0.020
+  P  1  heuristic -> cluster=None state=unknown score=0.243 margin=0.002
+  P  2  heuristic -> cluster=None state=unknown score=0.599 margin=0.013
+  P  3  heuristic -> cluster=None state=unknown score=0.589 margin=0.015
+  P  3  heuristic -> cluster=None state=unknown score=0.351 margin=0.012
+  P  4  heuristic -> cluster=None state=unknown score=0.448 margin=0.021
+  P  4  heuristic -> cluster=None state=unknown score=0.241 margin=0.021
+  P  4  heuristic -> cluster=None state=unknown score=0.224 margin=0.004
+  P  6  heuristic -> cluster=None state=unknown score=0.643 margin=0.011
+  P  6  heuristic -> cluster=None state=unknown score=0.493 margin=0.025
+  P  7  heuristic -> cluster=None state=unknown score=0.368 margin=0.087
+  P  7  heuristic -> cluster=None state=unknown score=0.281 margin=0.017
+  P  8  heuristic -> cluster=None state=unknown score=0.506 margin=0.007
+  P  8  heuristic -> cluster=None state=unknown score=0.522 margin=0.019
+  P  8  heuristic -> cluster=None state=unknown score=0.370 margin=0.013
+  P  8  heuristic -> cluster=None state=unknown score=0.394 margin=0.045
+  P  9       face -> cluster=0 state=auto_confirmed score=1.000 margin=1.000
+  P  9       face -> cluster=None state=unknown score=0.682 margin=0.002
+  P  9       head -> cluster=None state=unknown score=0.678 margin=0.012
+  P  9       head -> cluster=None state=unknown score=0.447 margin=0.010
+  P  9  heuristic -> cluster=None state=unknown score=0.493 margin=0.035
+  P  9  heuristic -> cluster=None state=unknown score=0.690 margin=0.002
+  P 10  heuristic -> cluster=None state=unknown score=0.690 margin=0.010
+  P 10  heuristic -> cluster=None state=unknown score=0.657 margin=0.002
+  P 11  heuristic -> cluster=None state=unknown score=0.251 margin=0.016
+  P 12       face -> cluster=0 state=auto_confirmed score=1.000 margin=1.000
+  P 13       head -> cluster=None state=unknown score=0.600 margin=0.027
+  P 13  heuristic -> cluster=None state=unknown score=0.535 margin=0.000
+  P 13  heuristic -> cluster=None state=unknown score=0.542 margin=0.019
+  P 13  heuristic -> cluster=None state=unknown score=0.531 margin=0.004
+  P 15  heuristic -> cluster=None state=unknown score=0.287 margin=0.054
+  P 15  heuristic -> cluster=None state=unknown score=0.237 margin=0.027
+  P 17  heuristic -> cluster=None state=unknown score=0.328 margin=0.024
+  P 17  heuristic -> cluster=None state=unknown score=0.372 margin=0.020
+  P 17  heuristic -> cluster=None state=unknown score=0.230 margin=0.013
+  P 18  heuristic -> cluster=None state=unknown score=0.470 margin=0.022
+  P 18  heuristic -> cluster=None state=unknown score=0.453 margin=0.026
+  P 19  heuristic -> cluster=None state=unknown score=0.448 margin=0.035
+  P 19  heuristic -> cluster=None state=unknown score=0.265 margin=0.022
+  P 19  heuristic -> cluster=None state=unknown score=0.341 margin=0.049
+  P 20       face -> cluster=None state=unknown score=0.487 margin=0.008
+  P 20  heuristic -> cluster=None state=unknown score=0.742 margin=0.000
+  P 21  heuristic -> cluster=None state=unknown score=0.364 margin=0.008
+  P 21  heuristic -> cluster=None state=unknown score=0.530 margin=0.012
+  P 21  heuristic -> cluster=None state=unknown score=0.395 margin=0.012
+  P 21  heuristic -> cluster=None state=unknown score=0.434 margin=0.024
+  P 23  heuristic -> cluster=None state=unknown score=0.232 margin=0.021
+  P 23  heuristic -> cluster=None state=unknown score=0.380 margin=0.009
+  P 24  heuristic -> cluster=None state=unknown score=0.626 margin=0.004
+  P 26  heuristic -> cluster=None state=unknown score=0.602 margin=0.063
+  P 26  heuristic -> cluster=None state=unknown score=0.538 margin=0.054
+  P 27       head -> cluster=None state=unknown score=0.699 margin=0.018
+  P 27       head -> cluster=None state=unknown score=0.466 margin=0.005
+  P 27  heuristic -> cluster=None state=unknown score=0.474 margin=0.001
+  P 27  heuristic -> cluster=None state=unknown score=0.442 margin=0.006
+  P 27  heuristic -> cluster=None state=unknown score=0.474 margin=0.023
+  P 27  heuristic -> cluster=None state=unknown score=0.464 margin=0.049
+  P 28       head -> cluster=None state=unknown score=0.740 margin=0.048
+  P 28       face -> cluster=None state=unknown score=0.732 margin=0.047
+  P 29       head -> cluster=None state=unknown score=0.620 margin=0.058
+  P 29  heuristic -> cluster=None state=unknown score=0.550 margin=0.013
+  P 30       face -> cluster=None state=unknown score=0.558 margin=0.022
+  P 30       head -> cluster=None state=unknown score=0.539 margin=0.056
+  P 30       head -> cluster=None state=unknown score=0.396 margin=0.049
+  P 30  heuristic -> cluster=None state=unknown score=0.301 margin=0.057
+  P 30  heuristic -> cluster=None state=unknown score=0.472 margin=0.003
+  P 30  heuristic -> cluster=None state=unknown score=0.303 margin=0.036
+  P 31       face -> cluster=None state=unknown score=0.722 margin=0.035
+  P 31       head -> cluster=None state=unknown score=0.667 margin=0.008
+  P 31  heuristic -> cluster=None state=unknown score=0.567 margin=0.015
+  P 32  heuristic -> cluster=None state=unknown score=0.526 margin=0.078
+  P 32  heuristic -> cluster=None state=unknown score=0.443 margin=0.008
+  P 32  heuristic -> cluster=None state=unknown score=0.353 margin=0.063
+  P 33       head -> cluster=None state=unknown score=0.737 margin=0.042
+  P 33  heuristic -> cluster=None state=unknown score=0.635 margin=0.001
+  P 33  heuristic -> cluster=None state=unknown score=0.647 margin=0.060
+  P 33  heuristic -> cluster=None state=unknown score=0.716 margin=0.029
+  P 33  heuristic -> cluster=None state=unknown score=0.457 margin=0.017
+  P 34  heuristic -> cluster=None state=unknown score=0.345 margin=0.124
+  P 35  heuristic -> cluster=None state=unknown score=0.522 margin=0.037
+  P 35  heuristic -> cluster=None state=unknown score=0.367 margin=0.018
+  P 35  heuristic -> cluster=None state=unknown score=0.431 margin=0.002
+  P 36  heuristic -> cluster=None state=unknown score=0.697 margin=0.049
+  P 37       face -> cluster=None state=unknown score=0.411 margin=0.001
+  P 37       head -> cluster=None state=unknown score=0.728 margin=0.036
+  P 38  heuristic -> cluster=None state=unknown score=0.473 margin=0.062
+  P 38  heuristic -> cluster=None state=unknown score=0.329 margin=0.009
+  P 40       face -> cluster=None state=unknown score=0.541 margin=0.022
+  P 40       head -> cluster=None state=unknown score=0.602 margin=0.015
+  P 41       face -> cluster=None state=unknown score=0.653 margin=0.043
+  P 41  heuristic -> cluster=None state=unknown score=0.643 margin=0.008
+  P 42  heuristic -> cluster=None state=unknown score=0.638 margin=0.003
+  P 42  heuristic -> cluster=None state=unknown score=0.674 margin=0.002
+  P 42  heuristic -> cluster=None state=unknown score=0.361 margin=0.039
+  P 43  heuristic -> cluster=None state=unknown score=0.472 margin=0.050
+  P 43  heuristic -> cluster=None state=unknown score=0.567 margin=0.026
+  P 44  heuristic -> cluster=None state=unknown score=0.544 margin=0.001
+  P 44  heuristic -> cluster=None state=unknown score=0.647 margin=0.039
+  P 44  heuristic -> cluster=None state=unknown score=0.426 margin=0.005
+  P 44  heuristic -> cluster=None state=unknown score=0.472 margin=0.027
+  P 45       head -> cluster=None state=unknown score=0.476 margin=0.003
+  P 46       head -> cluster=None state=unknown score=0.529 margin=0.054
+  P 46  heuristic -> cluster=None state=unknown score=0.260 margin=0.007
+  P 47  heuristic -> cluster=None state=unknown score=0.353 margin=0.012
+  P 48  heuristic -> cluster=None state=unknown score=0.610 margin=0.027
+  P 49  heuristic -> cluster=None state=unknown score=0.364 margin=0.061
+  P 50       face -> cluster=None state=unknown score=0.625 margin=0.054
+  P 50       head -> cluster=None state=unknown score=0.675 margin=0.022
+  P 50  heuristic -> cluster=None state=unknown score=0.554 margin=0.016
+  P 50  heuristic -> cluster=None state=unknown score=0.495 margin=0.033
+  P 51  heuristic -> cluster=None state=unknown score=0.504 margin=0.037

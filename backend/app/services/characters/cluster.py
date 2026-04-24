@@ -7,16 +7,16 @@ from sklearn.cluster import AgglomerativeClustering, HDBSCAN
 
 
 CLUSTER_VERSION = "hybrid-hdbscan-v4"
-GREEN_SIMILARITY_THRESHOLD = 0.90
-GREEN_MARGIN_THRESHOLD = 0.12
-SUGGEST_SIMILARITY_THRESHOLD = 0.76
+GREEN_SIMILARITY_THRESHOLD = 0.82
+GREEN_MARGIN_THRESHOLD = 0.10
+SUGGEST_SIMILARITY_THRESHOLD = 0.68
 SUGGEST_MARGIN_THRESHOLD = 0.05
-ANCHOR_DISTANCE_THRESHOLD = 0.06
-FACE_ATTACH_SIMILARITY_THRESHOLD = 0.94
-FACE_ATTACH_MARGIN_THRESHOLD = 0.12
+ANCHOR_DISTANCE_THRESHOLD = 0.32
+FACE_ATTACH_SIMILARITY_THRESHOLD = 0.78
+FACE_ATTACH_MARGIN_THRESHOLD = 0.08
 
 IDENTITY_STRONG_KINDS = {"face", "head"}
-IDENTITY_USABLE_KINDS = {"face", "head", "heuristic"}
+IDENTITY_USABLE_KINDS = {"face", "head"}
 CONTEXT_ONLY_KINDS = {"person", "upper_body", "accessory"}
 
 
@@ -60,8 +60,7 @@ class CharacterClusterer:
         if not crops:
             return [], []
 
-        anchors = [crop for crop in crops if crop.quality_bucket == "good" and crop.crop_kind in IDENTITY_USABLE_KINDS]
-        anchors = anchors or [crop for crop in crops if crop.quality_bucket == "medium" and crop.crop_kind in IDENTITY_USABLE_KINDS]
+        anchors = [crop for crop in crops if crop.quality_bucket in ("good", "medium") and crop.crop_kind in IDENTITY_USABLE_KINDS]
         if not anchors:
             return [], [self._unknown_assignment(crop) for crop in crops]
 

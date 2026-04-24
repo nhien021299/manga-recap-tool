@@ -152,8 +152,8 @@ class CharacterCropEmbedder:
         if dino_vector is not None:
             # Hybrid: DINOv2 is primary signal, handcrafted is supplementary
             combined = np.concatenate([
-                dino_vector * 2.8,  # DINOv2 as primary signal
-                normalized_vector * 0.6,  # handcrafted as supplementary
+                dino_vector * 4.5,  # DINOv2 as dominant identity signal
+                normalized_vector * 0.15,  # handcrafted as minimal supplementary
             ])
             final_vector = self._normalize(combined.astype(np.float32))
             diagnostics = {
@@ -333,20 +333,29 @@ class CharacterCropEmbedder:
             self._dino_error = f"DINOv2 model not found locally: {self._dino_model_path}"
             return None, None
         try:
+            import torch
             from transformers import AutoModel
-            from torchvision import transforms as T
 
             self._dino_model = AutoModel.from_pretrained(
                 str(model_path),
                 local_files_only=True,
             )
             self._dino_model.eval()
-            self._dino_transform = T.Compose([
-                T.Resize((518, 518)),   # DINOv2 optimal at 518 (37 patches of 14px)
-                T.CenterCrop((518, 518)),
-                T.ToTensor(),
-                T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ])
+
+            # Manual transform equivalent to torchvision:
+            # Resize(518) → CenterCrop(518) → ToTensor → Normalize
+            # This avoids the heavy torchvision dependency.
+            _mean = np.array([0.485, 0.456, 0.406], dtype=np.float32).reshape(3, 1, 1)
+            _std = np.array([0.229, 0.224, 0.225], dtype=np.float32).reshape(3, 1, 1)
+
+            def _dino_preprocess(pil_image: Image.Image) -> "torch.Tensor":
+                img = pil_image.resize((518, 518), Image.BICUBIC)
+                arr = np.asarray(img, dtype=np.float32) / 255.0  # HWC, [0,1]
+                arr = arr.transpose(2, 0, 1)  # CHW
+                arr = (arr - _mean) / _std
+                return torch.from_numpy(arr)
+
+            self._dino_transform = _dino_preprocess
             self._dino_loaded = True
         except Exception as exc:
             self._dino_error = f"{type(exc).__name__}: {exc}"

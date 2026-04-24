@@ -177,6 +177,18 @@ class Settings(BaseSettings):
         return _resolve_backend_path(self.character_cache_root_raw)
 
     @property
+    def character_dino_model_resolved_path(self) -> str:
+        if not self.character_dino_model_path:
+            return ""
+        return str(_resolve_backend_path(self.character_dino_model_path))
+
+    @property
+    def character_anime_face_model_resolved_path(self) -> str:
+        if not self.character_anime_face_model_path:
+            return ""
+        return str(_resolve_backend_path(self.character_anime_face_model_path))
+
+    @property
     def tts_vieneu_voice_root(self) -> Path:
         return _resolve_backend_path(self.tts_vieneu_voice_root_raw)
 

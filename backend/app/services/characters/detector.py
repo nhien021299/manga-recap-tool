@@ -36,7 +36,7 @@ class CharacterCropDetector:
         self.mode = settings.character_detector_mode
         self.device = self._resolve_device(settings.character_device)
         self.object_model_name = settings.character_object_model
-        self.anime_face_model_path = getattr(settings, "character_anime_face_model_path", "")
+        self.anime_face_model_path = getattr(settings, "character_anime_face_model_resolved_path", "") or getattr(settings, "character_anime_face_model_path", "")
         self._anime_detector = None
         self._anime_error = ""
         self._anime_loaded = False

@@ -45,7 +45,7 @@ class CharacterPrepassService:
         self.quality_scorer = CharacterCropQualityScorer()
         self.embedder = CharacterCropEmbedder(
             settings.character_cache_root,
-            dino_model_path=settings.character_dino_model_path,
+            dino_model_path=settings.character_dino_model_resolved_path,
             embed_device=settings.character_embed_device,
         )
         self.clusterer = CharacterClusterer(
@@ -720,6 +720,10 @@ class CharacterPrepassService:
             "minClusterSize": self.settings.character_min_cluster_size,
             "objectModel": self.settings.character_object_model,
             "device": self.settings.character_device,
+            "embedder": self.settings.character_embedder,
+            "dinoModelPath": self.settings.character_dino_model_path,
+            "embedDevice": self.settings.character_embed_device,
+            "animeFaceModelPath": getattr(self.settings, "character_anime_face_model_path", ""),
         }
         for key, expected_value in expected_config.items():
             if config.get(key) != expected_value:

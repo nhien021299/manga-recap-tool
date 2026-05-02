@@ -359,7 +359,7 @@ export interface BenchmarkRecord {
   warnings: string[];
 }
 
-export type Step = "upload" | "extract" | "characters" | "script" | "voice" | "render" | "benchmark";
+export type Step = "upload" | "extract" | "script" | "voice" | "render" | "benchmark";
 export type LogType = "request" | "result" | "error";
 
 export interface GeminiLog {

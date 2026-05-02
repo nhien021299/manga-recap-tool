@@ -92,3 +92,86 @@ export async function submitScriptGeneration(
     throw parseFetchError(error, apiBaseUrl);
   }
 }
+
+// ---------------------------------------------------------------------------
+// Narration upload + video production
+// ---------------------------------------------------------------------------
+
+export interface NarrationScene {
+  scene: number;
+  title: string;
+  narration: string;
+  duration_seconds: number;
+  dialogue?: string | null;
+}
+
+export interface NarrationPayload {
+  project?: string;
+  chapter?: number;
+  language?: string;
+  scenes: NarrationScene[];
+}
+
+export interface VideoJobStatus {
+  job_id: string;
+  phase: string;
+  progress: number;
+  detail: string;
+  error?: string | null;
+  download_url?: string | null;
+}
+
+/**
+ * Upload narration JSON + panel images to kick off the full
+ * TTS → Gemini direction → Remotion render pipeline.
+ */
+export async function submitNarrationProduction(
+  apiBaseUrl: string,
+  narration: NarrationPayload,
+  panels: Panel[],
+  voiceConfig?: { voiceKey?: string; speed?: number; provider?: string },
+): Promise<VideoJobStatus> {
+  const base = normalizeBaseUrl(apiBaseUrl);
+  const formData = new FormData();
+
+  formData.append("narration", JSON.stringify(narration));
+  formData.append("voice_key", voiceConfig?.voiceKey || "voice_default");
+  formData.append("speed", String(voiceConfig?.speed ?? 1.15));
+  formData.append("provider", voiceConfig?.provider || "vieneu");
+
+  panels.forEach((panel, index) => {
+    formData.append("files", panel.blob, `panel-${index + 1}.png`);
+  });
+
+  try {
+    const response = await fetch(`${base}/api/v1/video/produce-from-narration`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!response.ok) {
+      throw new Error(await parseResponseError(response));
+    }
+    return response.json();
+  } catch (error) {
+    throw parseFetchError(error, apiBaseUrl);
+  }
+}
+
+/**
+ * Poll the status of a video production job.
+ */
+export async function pollVideoJobStatus(
+  apiBaseUrl: string,
+  jobId: string,
+): Promise<VideoJobStatus> {
+  const base = normalizeBaseUrl(apiBaseUrl);
+  try {
+    const response = await fetch(`${base}/api/v1/video/jobs/${jobId}`);
+    if (!response.ok) {
+      throw new Error(await parseResponseError(response));
+    }
+    return response.json();
+  } catch (error) {
+    throw parseFetchError(error, apiBaseUrl);
+  }
+}

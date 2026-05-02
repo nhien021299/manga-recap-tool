@@ -16,16 +16,7 @@ def get_gemini_script_service(request: Request):
     return request.app.state.gemini_script_service
 
 
-def get_character_prepass_service(request: Request):
-    return request.app.state.character_prepass_service
 
-
-def get_character_review_state_service(request: Request):
-    return request.app.state.character_review_state_service
-
-
-def get_character_script_context_builder(request: Request):
-    return request.app.state.character_script_context_builder
 
 
 def get_voice_service(request: Request):
@@ -42,3 +33,11 @@ def get_render_service(request: Request):
 
 def get_render_queue(request: Request):
     return request.app.state.render_queue
+
+
+def get_video_tts_service(request: Request):
+    return request.app.state.video_tts_service
+
+
+def get_video_orchestrator(request: Request):
+    return request.app.state.video_orchestrator

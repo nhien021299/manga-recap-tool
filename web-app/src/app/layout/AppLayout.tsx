@@ -1,6 +1,5 @@
 import {
   BarChart3,
-  ContactRound,
   FileText,
   Mic2,
   Scissors,
@@ -19,7 +18,6 @@ import type { Step } from "@/shared/types";
 const steps: Array<{ id: Step; label: string; icon: LucideIcon }> = [
   { id: "upload", label: "Tai Len", icon: Upload },
   { id: "extract", label: "Tach Panel", icon: Scissors },
-  { id: "characters", label: "Nhan Vat", icon: ContactRound },
   { id: "script", label: "Kich Ban", icon: FileText },
   { id: "voice", label: "Long Tieng", icon: Mic2 },
   { id: "render", label: "Xuat Video", icon: Video },

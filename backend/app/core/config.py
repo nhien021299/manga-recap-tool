@@ -127,10 +127,10 @@ class Settings(BaseSettings):
             "onnx-directml": "arcface-directml",
         }
         normalized = aliases.get(normalized, normalized)
-        if normalized in {"handcrafted", "arcface", "arcface-directml", "dinov2", "hybrid-dinov2"}:
+        if normalized in {"handcrafted", "arcface", "arcface-directml", "dinov2", "hybrid-dinov2", "arcface-dino"}:
             return normalized
         raise ValueError(
-            "AI_BACKEND_CHARACTER_EMBEDDER must be one of: handcrafted, arcface, arcface-directml, dinov2, hybrid-dinov2."
+            "AI_BACKEND_CHARACTER_EMBEDDER must be one of: handcrafted, arcface, arcface-directml, dinov2, hybrid-dinov2, arcface-dino."
         )
 
     @field_validator("character_min_cluster_size", mode="before")

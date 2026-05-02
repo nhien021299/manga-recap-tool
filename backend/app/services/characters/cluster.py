@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.cluster import AgglomerativeClustering, HDBSCAN
 
 
-CLUSTER_VERSION = "hybrid-hdbscan-v5"
+CLUSTER_VERSION = "dedup-provider-cluster-v7"
 GREEN_SIMILARITY_THRESHOLD = 0.82
 GREEN_MARGIN_THRESHOLD = 0.10
 SUGGEST_SIMILARITY_THRESHOLD = 0.68
@@ -31,6 +31,9 @@ class ClusterInputCrop:
     vector: np.ndarray
     quality_bucket: str
     crop_kind: str = "heuristic"
+    embedding_provider: str = "handcrafted"
+    identity_role: str = "identity"
+    learned_mode: bool = False
 
 
 @dataclass(frozen=True)
@@ -63,7 +66,11 @@ class CharacterClusterer:
         if not crops:
             return [], []
 
-        anchors = [crop for crop in crops if crop.quality_bucket in ("good", "medium") and crop.crop_kind in IDENTITY_USABLE_KINDS]
+        anchors = [
+            crop
+            for crop in crops
+            if crop.quality_bucket in ("good", "medium") and self._is_anchor_eligible(crop)
+        ]
         if not anchors:
             return [], [self._unknown_assignment(crop) for crop in crops]
 
@@ -92,8 +99,7 @@ class CharacterClusterer:
         if len(anchors) < self.min_cluster_size:
             return np.full((len(anchors),), -1, dtype=np.int32)
 
-        vectors = np.stack([crop.vector for crop in anchors], axis=0)
-        distances = self._cosine_distance_matrix(vectors=vectors, crops=anchors)
+        distances = self._cosine_distance_matrix(crops=anchors)
         if self.clusterer == "agglomerative":
             return self._cluster_with_agglomerative(distances)
 
@@ -281,12 +287,14 @@ class CharacterClusterer:
         clusters: list[ClusterSummary],
         cluster_anchor_crops: dict[int, list[ClusterInputCrop]],
     ) -> list[dict[str, float | int | str]]:
-        if crop.crop_kind in CONTEXT_ONLY_KINDS:
+        if crop.crop_kind in CONTEXT_ONLY_KINDS or not self._is_identity_usable(crop):
             return []
         ranked_candidates: list[dict[str, float | int | str]] = []
         for cluster in clusters:
             anchor_crops = cluster_anchor_crops[cluster.cluster_index]
             if any(anchor_crop.panel_id == crop.panel_id for anchor_crop in anchor_crops):
+                continue
+            if not self._can_compare(crop, anchor_crops):
                 continue
             score, centroid_similarity, strongest_anchor_similarity = self._score_against_cluster(
                 crop=crop,
@@ -354,6 +362,10 @@ class CharacterClusterer:
         return normalized
 
     def _anchor_assignment_state(self, crop: ClusterInputCrop, cluster: ClusterSummary) -> str:
+        if crop.learned_mode:
+            if crop.embedding_provider == "arcface-onnx" and crop.crop_kind in IDENTITY_STRONG_KINDS and crop.identity_role == "identity":
+                return "auto_confirmed"
+            return "suggested"
         kinds = set(cluster.diagnostics.get("anchorKinds", []))
         if crop.crop_kind in CONTEXT_ONLY_KINDS:
             return "suggested"
@@ -366,6 +378,14 @@ class CharacterClusterer:
         return "auto_confirmed" if cluster.confidence >= 0.82 else "suggested"
 
     def _can_attach_auto(self, *, crop: ClusterInputCrop, top_score: float, margin_score: float) -> bool:
+        if crop.learned_mode:
+            return (
+                crop.embedding_provider == "arcface-onnx"
+                and crop.crop_kind in IDENTITY_STRONG_KINDS
+                and crop.identity_role == "identity"
+                and top_score >= FACE_ATTACH_SIMILARITY_THRESHOLD
+                and margin_score >= FACE_ATTACH_MARGIN_THRESHOLD
+            )
         if crop.crop_kind not in IDENTITY_STRONG_KINDS:
             return False
         return top_score >= FACE_ATTACH_SIMILARITY_THRESHOLD and margin_score >= FACE_ATTACH_MARGIN_THRESHOLD
@@ -387,6 +407,26 @@ class CharacterClusterer:
         strongest_anchor_similarity = float(np.max(anchor_vectors @ crop.vector))
         score = (centroid_similarity * 0.55) + (strongest_anchor_similarity * 0.45)
         return score, centroid_similarity, strongest_anchor_similarity
+
+    def _is_identity_usable(self, crop: ClusterInputCrop) -> bool:
+        if crop.learned_mode and crop.embedding_provider == "handcrafted":
+            return False
+        return crop.crop_kind in IDENTITY_USABLE_KINDS or crop.identity_role == "fallback_head"
+
+    def _is_anchor_eligible(self, crop: ClusterInputCrop) -> bool:
+        return self._is_identity_usable(crop)
+
+    def _can_compare(self, crop: ClusterInputCrop, anchor_crops: list[ClusterInputCrop]) -> bool:
+        if not crop.learned_mode:
+            return True
+        providers = {anchor.embedding_provider for anchor in anchor_crops}
+        if crop.embedding_provider == "handcrafted" or "handcrafted" in providers:
+            return False
+        if crop.embedding_provider == "arcface-onnx" and providers == {"arcface-onnx"}:
+            return True
+        if crop.embedding_provider == "dinov2" and providers == {"dinov2"}:
+            return True
+        return False
 
     def _cluster_confidence(self, vectors: np.ndarray) -> float:
         if vectors.shape[0] == 1:
@@ -412,6 +452,8 @@ class CharacterClusterer:
             left_centroid = self._centroid(cluster_anchor_vectors[left.cluster_index])
             for right in clusters[index + 1 :]:
                 right_centroid = self._centroid(cluster_anchor_vectors[right.cluster_index])
+                if left_centroid.shape != right_centroid.shape:
+                    continue
                 similarity = float(np.dot(left_centroid, right_centroid))
                 if similarity >= 0.90:
                     warnings.add((left.cluster_index, right.cluster_index))
@@ -424,16 +466,48 @@ class CharacterClusterer:
             return centroid
         return centroid / norm
 
-    def _cosine_distance_matrix(self, *, vectors: np.ndarray, crops: list[ClusterInputCrop]) -> np.ndarray:
-        similarity = np.clip(vectors @ vectors.T, -1.0, 1.0)
-        distances = 1.0 - similarity
+    def _cosine_distance_matrix(self, *, crops: list[ClusterInputCrop]) -> np.ndarray:
+        distances = np.ones((len(crops), len(crops)), dtype=np.float32)
         for left_index, left_crop in enumerate(crops):
             for right_index, right_crop in enumerate(crops[left_index + 1 :], start=left_index + 1):
                 if left_crop.panel_id == right_crop.panel_id:
                     distances[left_index, right_index] = 1.0
                     distances[right_index, left_index] = 1.0
+                    continue
+                if not self._can_pair_for_clustering(left_crop, right_crop):
+                    distances[left_index, right_index] = 1.0
+                    distances[right_index, left_index] = 1.0
+                    continue
+                if left_crop.vector.shape != right_crop.vector.shape:
+                    distances[left_index, right_index] = 1.0
+                    distances[right_index, left_index] = 1.0
+                    continue
+                distances[left_index, right_index] = 1.0 - float(np.clip(np.dot(left_crop.vector, right_crop.vector), -1.0, 1.0))
+                distances[left_index, right_index] = self._effective_distance(
+                    float(distances[left_index, right_index]),
+                    left_crop=left_crop,
+                    right_crop=right_crop,
+                )
+                distances[right_index, left_index] = distances[left_index, right_index]
         np.fill_diagonal(distances, 0.0)
         return distances
+
+    def _can_pair_for_clustering(self, left_crop: ClusterInputCrop, right_crop: ClusterInputCrop) -> bool:
+        if not left_crop.learned_mode and not right_crop.learned_mode:
+            return True
+        if left_crop.embedding_provider == "handcrafted" or right_crop.embedding_provider == "handcrafted":
+            return False
+        if left_crop.embedding_provider != right_crop.embedding_provider:
+            return False
+        return True
+
+    def _effective_distance(self, distance: float, *, left_crop: ClusterInputCrop, right_crop: ClusterInputCrop) -> float:
+        if left_crop.learned_mode or right_crop.learned_mode:
+            if left_crop.embedding_provider == "dinov2" and right_crop.embedding_provider == "dinov2":
+                return max(0.0, distance - 0.30)
+            if left_crop.embedding_provider == "arcface-onnx" and right_crop.embedding_provider == "arcface-onnx":
+                return max(0.0, distance - 0.10)
+        return distance
 
     def _max_pairwise_distance(self, vectors: np.ndarray) -> float:
         if vectors.shape[0] < 2:

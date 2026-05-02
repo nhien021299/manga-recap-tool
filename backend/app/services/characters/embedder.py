@@ -12,7 +12,7 @@ from PIL import Image
 
 from app.services.characters.directml_runtime import create_onnx_session, session_diagnostics
 
-EMBEDDER_VERSION = "crop-embedding-v3"
+EMBEDDER_VERSION = "learned-identity-embedding-v4"
 
 
 @dataclass(frozen=True)
@@ -45,10 +45,27 @@ class CharacterCropEmbedder:
         self._arcface_session = None
         self._arcface_error = ""
         self._arcface_runtime: dict[str, object] = {}
+        self._arcface_input_layout = "nchw"
         self._dino_model_hash = self._compute_model_hash(dino_model_path) if dino_model_path else ""
         self._arcface_model_hash = self._compute_model_hash(arcface_model_path) if arcface_model_path else ""
         self._resolved_device = self._resolve_device(embed_device)
         self._embedder_provider = self._resolve_provider()
+        self._handcrafted_override = False
+
+    @property
+    def learned_mode(self) -> bool:
+        return self._embedder_mode in {"arcface", "arcface-directml", "dinov2", "hybrid-dinov2", "arcface-dino"}
+
+    def validate_runtime(self) -> None:
+        if not self.learned_mode:
+            return
+        if self._has_arcface_model() or self._has_dino_model():
+            return
+        raise RuntimeError(
+            "Character learned embedder is enabled but no learned identity model is available. "
+            "Set AI_BACKEND_CHARACTER_ARCFACE_MODEL_PATH to a local ArcFace ONNX model or "
+            "AI_BACKEND_CHARACTER_DINO_MODEL_PATH to a local DINOv2 model directory."
+        )
 
     def embed(
         self,
@@ -96,7 +113,7 @@ class CharacterCropEmbedder:
         digest.update(buffer.getvalue())
         return digest.hexdigest()
 
-    def _build_embedding(self, crop_image: Image.Image, *, crop_kind: str) -> tuple[np.ndarray, dict[str, object]]:
+    def _build_embedding(self, crop_image: Image.Image, *, crop_kind: str, identity_role: str = "identity") -> tuple[np.ndarray, dict[str, object]]:
         rgb = np.asarray(crop_image.convert("RGB").resize((96, 128)), dtype=np.uint8)
         gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
         hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
@@ -163,7 +180,8 @@ class CharacterCropEmbedder:
         )
         normalized_vector = self._normalize(feature_vector.astype(np.float32))
 
-        arcface_vector = self._compute_arcface_embedding(crop_image)
+        strategy = self._embedding_strategy(crop_kind=crop_kind, identity_role=identity_role)
+        arcface_vector = self._compute_arcface_embedding(crop_image) if strategy == "arcface" else None
         if arcface_vector is not None:
             combined = np.concatenate(
                 [
@@ -174,9 +192,11 @@ class CharacterCropEmbedder:
             final_vector = self._normalize(combined.astype(np.float32))
             diagnostics = {
                 "version": self.version,
-                "provider": self._embedder_provider,
+                "provider": "arcface-onnx",
+                "configuredProvider": self._embedder_provider,
                 "dimension": int(final_vector.shape[0]),
                 "cropKind": crop_kind,
+                "identityRole": identity_role,
                 "weights": weights,
                 "arcfaceDimension": int(arcface_vector.shape[0]),
                 "handcraftedDimension": int(normalized_vector.shape[0]),
@@ -187,8 +207,7 @@ class CharacterCropEmbedder:
             }
             return final_vector, diagnostics
 
-        # Legacy fallback: DINOv2 is only allowed when explicitly configured and not CPU-bound.
-        dino_vector = self._compute_dino_embedding(crop_image)
+        dino_vector = self._compute_dino_embedding(crop_image) if strategy == "dino" else None
         if dino_vector is not None:
             combined = np.concatenate([
                 dino_vector * 4.5,
@@ -197,9 +216,11 @@ class CharacterCropEmbedder:
             final_vector = self._normalize(combined.astype(np.float32))
             diagnostics = {
                 "version": self.version,
-                "provider": self._embedder_provider,
+                "provider": "dinov2",
+                "configuredProvider": self._embedder_provider,
                 "dimension": int(final_vector.shape[0]),
                 "cropKind": crop_kind,
+                "identityRole": identity_role,
                 "weights": weights,
                 "dinoDimension": int(dino_vector.shape[0]),
                 "handcraftedDimension": int(normalized_vector.shape[0]),
@@ -211,9 +232,11 @@ class CharacterCropEmbedder:
 
         diagnostics = {
             "version": self.version,
-            "provider": self._embedder_provider,
+            "provider": "handcrafted",
+            "configuredProvider": self._embedder_provider,
             "dimension": int(normalized_vector.shape[0]),
             "cropKind": crop_kind,
+            "identityRole": identity_role,
             "weights": weights,
             "arcfaceFallbackReason": self._arcface_error or "ArcFace ONNX model not configured or not found locally.",
             "dinoFallbackReason": self._dino_error or "DINOv2 disabled or not configured.",
@@ -322,7 +345,7 @@ class CharacterCropEmbedder:
     # --- Phase 4: DINOv2 learned embedding ---
 
     def _compute_arcface_embedding(self, crop_image: Image.Image) -> np.ndarray | None:
-        if self._embedder_provider != "arcface-onnx":
+        if not self._can_use_arcface():
             return None
         session = self._load_arcface_session()
         if session is None:
@@ -350,6 +373,11 @@ class CharacterCropEmbedder:
         try:
             self._arcface_session = create_onnx_session(model_path, device=self._embed_device)
             self._arcface_runtime = session_diagnostics(self._arcface_session)
+            self._arcface_input_layout = self._detect_arcface_input_layout(self._arcface_session)
+            self._arcface_runtime = {
+                **self._arcface_runtime,
+                "inputLayout": self._arcface_input_layout,
+            }
         except Exception as exc:
             self._arcface_error = f"{type(exc).__name__}: {exc}"
             self._arcface_session = None
@@ -359,16 +387,28 @@ class CharacterCropEmbedder:
         batch: list[np.ndarray] = []
         for image in images:
             arr = np.asarray(image.convert("RGB").resize((112, 112), Image.BICUBIC), dtype=np.float32)
-            arr = (arr / 255.0 - 0.5) / 0.5
-            batch.append(arr.transpose(2, 0, 1))
+            arr = (arr - 127.5) / 128.0
+            if self._arcface_input_layout == "nchw":
+                arr = arr.transpose(2, 0, 1)
+            batch.append(arr)
         return np.stack(batch, axis=0).astype(np.float32)
+
+    def _detect_arcface_input_layout(self, session) -> str:
+        try:
+            shape = list(session.get_inputs()[0].shape or [])
+        except Exception:
+            return "nchw"
+        if len(shape) != 4:
+            return "nchw"
+        if shape[1] == 3:
+            return "nchw"
+        if shape[-1] == 3:
+            return "nhwc"
+        return "nchw"
 
     def _compute_dino_embedding(self, crop_image: Image.Image) -> np.ndarray | None:
         """Compute a DINOv2 embedding for a single crop image. Returns None if DINOv2 is not available."""
-        if self._embedder_provider != "hybrid-dinov2":
-            return None
-        if self._resolved_device == "cpu":
-            self._dino_error = "DINOv2 disabled on CPU to avoid character prepass stalls; use ArcFace ONNX DirectML or handcrafted embedding."
+        if not self._can_use_dino():
             return None
         model, transform = self._load_dino_model()
         if model is None or transform is None:
@@ -417,22 +457,39 @@ class CharacterCropEmbedder:
             else:
                 uncached.append((index, item, cache_key, vector_path, meta_path))
 
-        batched_vectors = self._compute_arcface_embeddings([entry[1]["crop_image"] for entry in uncached])
+        arcface_entries = [
+            entry
+            for entry in uncached
+            if self._embedding_strategy(
+                crop_kind=str(entry[1]["crop_kind"]),
+                identity_role=str(entry[1].get("identity_role", "identity")),
+            )
+            == "arcface"
+        ]
+        arcface_vectors = self._compute_arcface_embeddings([entry[1]["crop_image"] for entry in arcface_entries])
+        arcface_by_cache_key = {
+            entry[2]: vector
+            for entry, vector in zip(arcface_entries, arcface_vectors or [], strict=False)
+        }
         cache_dir.mkdir(parents=True, exist_ok=True)
         for offset, (index, item, cache_key, vector_path, meta_path) in enumerate(uncached):
-            if batched_vectors is not None:
+            identity_role = str(item.get("identity_role", "identity"))
+            arcface_vector = arcface_by_cache_key.get(cache_key)
+            if arcface_vector is not None:
                 handcrafted_vector, handcrafted_diagnostics = self._build_handcrafted_embedding(
                     item["crop_image"],
                     crop_kind=item["crop_kind"],
                 )
-                combined = np.concatenate([batched_vectors[offset] * 4.0, handcrafted_vector * 0.20])
+                combined = np.concatenate([arcface_vector * 4.0, handcrafted_vector * 0.20])
                 vector = self._normalize(combined.astype(np.float32))
                 diagnostics = {
                     "version": self.version,
-                    "provider": self._embedder_provider,
+                    "provider": "arcface-onnx",
+                    "configuredProvider": self._embedder_provider,
                     "dimension": int(vector.shape[0]),
                     "cropKind": item["crop_kind"],
-                    "arcfaceDimension": int(batched_vectors[offset].shape[0]),
+                    "identityRole": identity_role,
+                    "arcfaceDimension": int(arcface_vector.shape[0]),
                     "handcraftedDimension": int(handcrafted_vector.shape[0]),
                     "arcfaceModelPath": self._arcface_model_path,
                     "arcfaceModelHash": self._arcface_model_hash[:12],
@@ -441,7 +498,11 @@ class CharacterCropEmbedder:
                     "handcraftedWeights": handcrafted_diagnostics["weights"],
                 }
             else:
-                vector, diagnostics = self._build_embedding(item["crop_image"], crop_kind=item["crop_kind"])
+                vector, diagnostics = self._build_embedding(
+                    item["crop_image"],
+                    crop_kind=item["crop_kind"],
+                    identity_role=identity_role,
+                )
             np.save(vector_path, vector)
             meta_path.write_text(json.dumps(diagnostics), encoding="utf-8")
             results[index] = CharacterCropEmbedding(cache_key=cache_key, vector=vector, diagnostics=diagnostics)
@@ -449,7 +510,7 @@ class CharacterCropEmbedder:
         return [result for result in results if result is not None]
 
     def _compute_arcface_embeddings(self, images: list[Image.Image]) -> list[np.ndarray] | None:
-        if not images or self._embedder_provider != "arcface-onnx":
+        if not images or not self._can_use_arcface():
             return None
         session = self._load_arcface_session()
         if session is None:
@@ -556,16 +617,50 @@ class CharacterCropEmbedder:
             return "cpu"
 
     def _resolve_provider(self) -> str:
+        if self._embedder_mode == "arcface-dino":
+            return "arcface-dino"
         if self._embedder_mode in {"arcface", "arcface-directml"}:
             return "arcface-onnx" if self._arcface_model_path and Path(self._arcface_model_path).exists() else "handcrafted"
         if self._embedder_mode in {"dinov2", "hybrid-dinov2"}:
             return "hybrid-dinov2" if self._dino_model_path and Path(self._dino_model_path).exists() else "handcrafted"
         return "handcrafted"
 
+    def _has_arcface_model(self) -> bool:
+        return bool(self._arcface_model_path and Path(self._arcface_model_path).exists())
+
+    def _has_dino_model(self) -> bool:
+        path = Path(self._dino_model_path) if self._dino_model_path else None
+        return bool(path and path.exists() and (path / "config.json").exists())
+
+    def _can_use_arcface(self) -> bool:
+        return not self._handcrafted_override and self._embedder_mode in {"arcface", "arcface-directml", "arcface-dino"} and self._has_arcface_model()
+
+    def _can_use_dino(self) -> bool:
+        return not self._handcrafted_override and self._embedder_mode in {"dinov2", "hybrid-dinov2", "arcface-dino"} and self._has_dino_model()
+
+    def _embedding_strategy(self, *, crop_kind: str, identity_role: str) -> str:
+        if self._handcrafted_override:
+            return "handcrafted"
+        if self._embedder_mode == "arcface-dino":
+            if identity_role == "fallback_head":
+                return "dino" if self._can_use_dino() else "handcrafted"
+            if crop_kind == "face" and self._can_use_arcface():
+                return "arcface"
+            if crop_kind == "head" and self._can_use_dino():
+                return "dino"
+            if self._can_use_dino():
+                return "dino"
+            return "handcrafted"
+        if self._can_use_arcface():
+            return "arcface"
+        if self._can_use_dino():
+            return "dino"
+        return "handcrafted"
+
     def _build_handcrafted_embedding(self, crop_image: Image.Image, *, crop_kind: str) -> tuple[np.ndarray, dict[str, object]]:
-        current_provider = self._embedder_provider
-        self._embedder_provider = "handcrafted"
+        current_override = self._handcrafted_override
+        self._handcrafted_override = True
         try:
             return self._build_embedding(crop_image, crop_kind=crop_kind)
         finally:
-            self._embedder_provider = current_provider
+            self._handcrafted_override = current_override

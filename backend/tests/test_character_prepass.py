@@ -1,14 +1,29 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
+import numpy as np
+import pytest
 from PIL import Image, ImageDraw
 
 from app.core.config import Settings
-from app.models.characters import ChapterCharacterState, CharacterPanelReference, PanelCharacterRef
+from app.models.characters import (
+    ChapterCharacterState,
+    CharacterCandidateAssignment,
+    CharacterCluster,
+    CharacterCrop,
+    CharacterPanelReference,
+    PanelCharacterRef,
+)
+from app.services.characters.cluster import CharacterClusterer, ClusterInputCrop
 from app.services.characters.detector import DetectedCrop
 from app.services.characters.prepass import PREPASS_VERSION, CharacterPrepassService
+from app.services.characters.quality import CharacterCropQuality
 from app.services.characters.repository import CharacterStateRepository
+
+
+TAM_MA_PANEL_DIR = Path(r"D:\Manhwa Recap\Tâm Ma\chapter 1 cropped")
 
 
 def build_settings(tmp_path: Path) -> Settings:
@@ -104,6 +119,37 @@ def install_synthetic_face_detector(
 
     service.detector.detect = detect  # type: ignore[method-assign]
     service.detector.version = "synthetic-head-detector-v1"
+
+
+def make_detection_record(
+    crop_id: str,
+    *,
+    bbox: tuple[int, int, int, int],
+    kind: str,
+    detector_source: str = "anime-face-detector",
+    quality_score: float = 0.72,
+    detection_score: float = 0.88,
+) -> dict[str, object]:
+    return {
+        "crop_id": crop_id,
+        "detection": DetectedCrop(
+            panel_id="panel-dedup",
+            order_index=0,
+            bbox=bbox,
+            detection_score=detection_score,
+            kind=kind,  # type: ignore[arg-type]
+            detector_source=detector_source,
+            detector_model=detector_source,
+            diagnostics={},
+        ),
+        "crop_kind": kind,
+        "monster_like": False,
+        "quality": CharacterCropQuality(score=quality_score, bucket="medium", diagnostics={"saturation": 0.35}),
+        "crop_image": Image.new("RGB", (32, 32), color=(128, 128, 128)),
+        "suppressed_by_crop_id": "",
+        "suppression_reason": "",
+        "duplicate_group_id": "",
+    }
 
 
 def test_prepass_groups_same_character_across_different_backgrounds(tmp_path: Path):
@@ -336,5 +382,233 @@ def test_prepass_keeps_ambiguous_mixed_panel_unresolved(tmp_path: Path):
 
     refs_by_panel = {item.panelId: item for item in state.panelCharacterRefs}
     assert refs_by_panel["panel-mixed"].clusterIds == []
-    assert "panel-mixed" in state.unresolvedPanelIds
+    assert "panel-mixed" not in state.unresolvedPanelIds
     assert all(ref.source != "suggested" for ref in state.panelCharacterRefs)
+
+
+def test_learned_embedder_fails_fast_without_learned_model(tmp_path: Path):
+    settings = build_settings(tmp_path).model_copy(
+        update={
+            "character_embedder": "arcface-dino",
+            "character_arcface_model_path": str(tmp_path / "missing-arcface.onnx"),
+            "character_dino_model_path": str(tmp_path / "missing-dino"),
+        }
+    )
+    repository = CharacterStateRepository(settings.character_state_db)
+    service = CharacterPrepassService(settings, repository)
+
+    path = tmp_path / "panel.png"
+    draw_character_panel(path, character="hero", background="rain")
+    panels = [CharacterPanelReference(panelId="panel-1", orderIndex=0)]
+
+    with pytest.raises(RuntimeError, match="no learned identity model"):
+        service.run(chapter_id="chapter-learned-missing", panels=panels, file_paths=[path], force=True)
+
+
+def test_learned_mode_rejects_handcrafted_auto_clusters():
+    clusterer = CharacterClusterer(clusterer="hdbscan", min_cluster_size=2)
+    vector = np.asarray([1.0, 0.0, 0.0], dtype=np.float32)
+    crops = [
+        ClusterInputCrop(
+            crop_id="panel-1::crop::01",
+            panel_id="panel-1",
+            order_index=0,
+            vector=vector,
+            quality_bucket="good",
+            crop_kind="face",
+            embedding_provider="handcrafted",
+            learned_mode=True,
+        ),
+        ClusterInputCrop(
+            crop_id="panel-2::crop::01",
+            panel_id="panel-2",
+            order_index=1,
+            vector=vector,
+            quality_bucket="good",
+            crop_kind="face",
+            embedding_provider="handcrafted",
+            learned_mode=True,
+        ),
+    ]
+
+    clusters, assignments = clusterer.cluster(crops)
+
+    assert clusters == []
+    assert all(assignment.state == "unknown" for assignment in assignments)
+
+
+def test_unknown_context_crops_do_not_make_panel_unresolved(tmp_path: Path):
+    settings = build_settings(tmp_path)
+    repository = CharacterStateRepository(settings.character_state_db)
+    service = CharacterPrepassService(settings, repository)
+    panel = CharacterPanelReference(panelId="panel-context", orderIndex=0)
+    crop = CharacterCrop(
+        cropId="panel-context::crop::01",
+        panelId="panel-context",
+        orderIndex=0,
+        bbox=[0, 0, 120, 160],
+        kind="heuristic",
+        assignmentState="unknown",
+        diagnostics={"identityEligible": False, "identityRole": "context"},
+    )
+    ref = PanelCharacterRef(panelId="panel-context", clusterIds=[], source="unknown", confidenceScore=0.0)
+
+    assert service._build_unresolved_panels(panels=[panel], crops=[crop], panel_refs=[ref]) == []
+
+
+def test_duplicate_suppression_collapses_face_inside_head(tmp_path: Path):
+    settings = build_settings(tmp_path)
+    repository = CharacterStateRepository(settings.character_state_db)
+    service = CharacterPrepassService(settings, repository)
+    records = [
+        make_detection_record("panel::crop::01", bbox=(610, 193, 258, 335), kind="face"),
+        make_detection_record("panel::crop::02", bbox=(417, 0, 523, 745), kind="head", quality_score=0.78),
+    ]
+
+    service._suppress_duplicate_records(records)
+
+    face_record, head_record = records
+    assert face_record["suppressed_by_crop_id"] == ""
+    assert head_record["suppressed_by_crop_id"] == "panel::crop::01"
+    assert head_record["suppression_reason"] == "face_inside_head"
+    assert face_record["duplicate_group_id"] == head_record["duplicate_group_id"]
+
+
+def test_duplicate_suppression_keeps_separated_people(tmp_path: Path):
+    settings = build_settings(tmp_path)
+    repository = CharacterStateRepository(settings.character_state_db)
+    service = CharacterPrepassService(settings, repository)
+    records = [
+        make_detection_record("panel::crop::01", bbox=(20, 30, 80, 100), kind="face"),
+        make_detection_record("panel::crop::02", bbox=(180, 32, 82, 104), kind="face"),
+    ]
+
+    service._suppress_duplicate_records(records)
+
+    assert all(record["suppressed_by_crop_id"] == "" for record in records)
+    assert all(record["duplicate_group_id"] == "" for record in records)
+
+
+def test_duplicate_suppression_makes_heuristic_container_context_only(tmp_path: Path):
+    settings = build_settings(tmp_path)
+    repository = CharacterStateRepository(settings.character_state_db)
+    service = CharacterPrepassService(settings, repository)
+    records = [
+        make_detection_record("panel::crop::01", bbox=(120, 90, 120, 150), kind="face"),
+        make_detection_record(
+            "panel::crop::02",
+            bbox=(80, 40, 260, 330),
+            kind="heuristic",
+            detector_source="opencv-heuristic",
+            quality_score=0.81,
+            detection_score=0.54,
+        ),
+    ]
+
+    service._suppress_duplicate_records(records)
+
+    assert records[0]["suppressed_by_crop_id"] == ""
+    assert records[1]["suppressed_by_crop_id"] == "panel::crop::01"
+    assert records[1]["suppression_reason"] == "anime_or_identity_crop_over_heuristic"
+
+
+def test_suppressed_identity_crop_does_not_make_panel_unresolved(tmp_path: Path):
+    settings = build_settings(tmp_path)
+    repository = CharacterStateRepository(settings.character_state_db)
+    service = CharacterPrepassService(settings, repository)
+    panel = CharacterPanelReference(panelId="panel-suppressed", orderIndex=0)
+    crop = CharacterCrop(
+        cropId="panel-suppressed::crop::02",
+        panelId="panel-suppressed",
+        orderIndex=0,
+        bbox=[417, 0, 523, 745],
+        kind="head",
+        assignmentState="unknown",
+        diagnostics={"suppressedByCropId": "panel-suppressed::crop::01", "identityEligible": False},
+    )
+    ref = PanelCharacterRef(panelId="panel-suppressed", clusterIds=[], source="unknown", confidenceScore=0.0)
+
+    assert not service._is_identity_relevant_crop(crop)
+    assert service._build_unresolved_panels(panels=[panel], crops=[crop], panel_refs=[ref]) == []
+
+
+def test_panel_refs_ignore_impure_or_low_confidence_auto_clusters(tmp_path: Path):
+    settings = build_settings(tmp_path)
+    repository = CharacterStateRepository(settings.character_state_db)
+    service = CharacterPrepassService(settings, repository)
+    low_crop = CharacterCrop(
+        cropId="panel-low::crop::01",
+        panelId="panel-low",
+        orderIndex=0,
+        bbox=[0, 0, 80, 100],
+        kind="face",
+        assignedClusterId="char_low",
+        assignmentState="auto_confirmed",
+    )
+    manual_crop = CharacterCrop(
+        cropId="panel-manual::crop::01",
+        panelId="panel-manual",
+        orderIndex=1,
+        bbox=[0, 0, 80, 100],
+        kind="face",
+        assignedClusterId="char_impure",
+        assignmentState="manual",
+    )
+    clusters = [
+        CharacterCluster(clusterId="char_low", chapterId="chapter", status="review_needed", reviewFlags=["low_confidence"]),
+        CharacterCluster(clusterId="char_impure", chapterId="chapter", status="review_needed", reviewFlags=["impure_cluster"]),
+    ]
+    assignments = [
+        CharacterCandidateAssignment(cropId=low_crop.cropId, panelId=low_crop.panelId, clusterId="char_low", rank=1, score=0.99, state="auto_confirmed"),
+        CharacterCandidateAssignment(cropId=manual_crop.cropId, panelId=manual_crop.panelId, clusterId="char_impure", rank=1, score=1.0, state="manual"),
+    ]
+
+    refs = service._build_panel_refs(
+        crops=[low_crop, manual_crop],
+        clusters=clusters,
+        candidate_assignments=assignments,
+        panel_order={"panel-low": 0, "panel-manual": 1},
+    )
+    refs_by_panel = {ref.panelId: ref for ref in refs}
+
+    assert refs_by_panel["panel-low"].clusterIds == []
+    assert refs_by_panel["panel-manual"].clusterIds == ["char_impure"]
+
+
+@pytest.mark.skipif(os.environ.get("RUN_TAM_MA_REGRESSION") != "1", reason="Local Tâm Ma regression is opt-in.")
+@pytest.mark.skipif(not TAM_MA_PANEL_DIR.exists(), reason="Local Tâm Ma panel folder is unavailable.")
+def test_tam_ma_learned_regression_with_local_chapter(tmp_path: Path):
+    settings = build_settings(tmp_path).model_copy(
+        update={
+            "character_detector_mode": "hybrid",
+            "character_anime_face_model_path": str((Path(__file__).resolve().parents[1] / ".models" / "anime-face" / "anime-face-detect.onnx").resolve()),
+            "character_embedder": "arcface-dino",
+            "character_dino_model_path": str((Path(__file__).resolve().parents[1] / ".models" / "dinov2").resolve()),
+            "character_arcface_model_path": str((Path(__file__).resolve().parents[1] / ".models" / "arcface" / "arcface.onnx").resolve()),
+            "character_embed_device": "cpu",
+        }
+    )
+    repository = CharacterStateRepository(settings.character_state_db)
+    service = CharacterPrepassService(settings, repository)
+    panel_paths = sorted(TAM_MA_PANEL_DIR.glob("scene-*.png"))
+    panels = [
+        CharacterPanelReference(panelId=f"scene-{index + 1:03d}", orderIndex=index)
+        for index, _path in enumerate(panel_paths)
+    ]
+
+    state = service.run(chapter_id="tam-ma-regression", panels=panels, file_paths=panel_paths, force=True)
+    refs_by_panel = {ref.panelId: ref for ref in state.panelCharacterRefs}
+
+    assert refs_by_panel["scene-001"].clusterIds == []
+    assert all(crop.assignedClusterId is None for crop in state.crops if crop.panelId == "scene-001")
+    assert any(crop.diagnostics.get("identityRole") == "fallback_head" for crop in state.crops if crop.panelId in {"scene-002", "scene-006"})
+    assert any(crop.detectorSource == "opencv-heuristic" for crop in state.crops)
+    assert any(crop.detectorSource == "anime-face-detector" for crop in state.crops)
+    duplicate_failure_panels = {"scene-010", "scene-024", "scene-028", "scene-033", "scene-044", "scene-048"}
+    suppressed_duplicates = [
+        crop
+        for crop in state.crops
+        if crop.panelId in duplicate_failure_panels and crop.diagnostics.get("suppressedByCropId")
+    ]
+    assert suppressed_duplicates
+    assert all(crop.assignedClusterId is None for crop in suppressed_duplicates)

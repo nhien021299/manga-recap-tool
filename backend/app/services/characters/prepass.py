@@ -35,7 +35,7 @@ from app.services.characters.embedder import CharacterCropEmbedder
 from app.services.characters.quality import CharacterCropQualityScorer
 from app.services.characters.repository import CharacterStateRepository
 
-PREPASS_VERSION = "character-hybrid-v4"
+PREPASS_VERSION = "character-dedup-v6"
 
 IDENTITY_KINDS = {"face", "head"}
 MIN_FACE_SIZE = 48
@@ -43,6 +43,15 @@ MIN_HEAD_SIZE = 64
 MIN_FACE_QUALITY = 0.58
 MIN_HEAD_QUALITY = 0.62
 MIN_DETECTOR_CONFIDENCE = 0.45
+MIN_LEARNED_FACE_QUALITY = 0.50
+MIN_LEARNED_HEAD_QUALITY = 0.52
+MIN_STRONG_FACE_DETECTION = 0.70
+MIN_STRONG_HEAD_DETECTION = 0.68
+MIN_ANIME_IDENTITY_DETECTION = 0.64
+MIN_FALLBACK_HEURISTIC_QUALITY = 0.48
+MIN_FALLBACK_HEURISTIC_DETECTION = 0.38
+MIN_FALLBACK_HEURISTIC_SATURATION = 0.10
+DUPLICATE_CONTAINMENT_THRESHOLD = 0.90
 
 
 class CharacterPrepassService:
@@ -86,6 +95,7 @@ class CharacterPrepassService:
             if self._is_reusable_state(cached_state, chapter_content_hash=chapter_content_hash):
                 return self.repository.save(cached_state)
 
+        self.embedder.validate_runtime()
         state = self._build_state(chapter_id=chapter_id, chapter_content_hash=chapter_content_hash, panels=panels, file_paths=file_paths)
         if existing_state is not None:
             self._apply_manual_constraints(state=state, previous_state=existing_state)
@@ -109,6 +119,7 @@ class CharacterPrepassService:
         panel_diagnostics: dict[str, object] = {}
         metrics = {
             "totalDetectedCrops": 0,
+            "suppressedDuplicateCrops": 0,
             "identityEligibleCrops": 0,
             "rejectedLowQualityCrops": 0,
             "rejectedKindCrops": 0,
@@ -126,10 +137,11 @@ class CharacterPrepassService:
                     "detectorVersion": self.detector.version,
                     "detectorMode": self.settings.character_detector_mode,
                     "detectorRuntime": self._detector_runtime_diagnostics(),
+                    "detectorMix": "hybrid mode keeps anime-face-detector crops and OpenCV heuristic fallback crops in the same review surface.",
                 }
                 metrics["totalDetectedCrops"] += len(detections)
+                detection_records: list[dict[str, object]] = []
                 for detection_index, detection in enumerate(detections, start=1):
-                    crop_id = f"{panel.panelId}::crop::{detection_index:02d}"
                     x, y, w, h = detection.bbox
                     crop_image = panel_image.crop((x, y, x + w, y + h))
                     crop_kind = detection.kind
@@ -141,12 +153,65 @@ class CharacterPrepassService:
                         bbox=detection.bbox,
                         detection_score=detection.detection_score,
                     )
+                    detection_records.append(
+                        {
+                            "crop_id": f"{panel.panelId}::crop::{detection_index:02d}",
+                            "detection": detection,
+                            "crop_kind": crop_kind,
+                            "monster_like": monster_like,
+                            "quality": quality,
+                            "crop_image": crop_image,
+                            "suppressed_by_crop_id": "",
+                            "suppression_reason": "",
+                            "duplicate_group_id": "",
+                        }
+                    )
+                self._suppress_duplicate_records(detection_records)
+                suppressed_count = sum(1 for record in detection_records if record.get("suppressed_by_crop_id"))
+                metrics["suppressedDuplicateCrops"] += suppressed_count
+                panel_diagnostics[panel.panelId] = {
+                    **panel_diagnostics[panel.panelId],
+                    "suppressedDuplicateCropCount": suppressed_count,
+                }
+
+                panel_has_reliable_identity = any(
+                    self._face_head_identity_gate(
+                        crop_kind=str(record["crop_kind"]),
+                        bbox=record["detection"].bbox,  # type: ignore[union-attr]
+                        quality_score=record["quality"].score,  # type: ignore[union-attr]
+                        detection_score=record["detection"].detection_score,  # type: ignore[union-attr]
+                    )[0]
+                    and not record.get("suppressed_by_crop_id")
+                    for record in detection_records
+                )
+
+                for record in detection_records:
+                    detection = record["detection"]  # type: ignore[assignment]
+                    quality = record["quality"]  # type: ignore[assignment]
+                    crop_kind = str(record["crop_kind"])
+                    crop_image = record["crop_image"]  # type: ignore[assignment]
+                    monster_like = bool(record["monster_like"])
+                    crop_id = str(record["crop_id"])
+                    x, y, w, h = detection.bbox
                     identity_eligible, rejection_reason = self._identity_gate(
                         crop_kind=crop_kind,
                         bbox=detection.bbox,
                         quality_score=quality.score,
                         detection_score=detection.detection_score,
+                        quality_bucket=quality.bucket,
+                        panel_has_reliable_identity=panel_has_reliable_identity,
                     )
+                    if record.get("suppressed_by_crop_id"):
+                        identity_eligible = False
+                        rejection_reason = "duplicate_suppressed"
+                    if (
+                        identity_eligible
+                        and crop_kind == "heuristic"
+                        and float(quality.diagnostics.get("saturation", 0.0)) < MIN_FALLBACK_HEURISTIC_SATURATION
+                    ):
+                        identity_eligible = False
+                        rejection_reason = "low_color_identity_signal"
+                    identity_role = "fallback_head" if identity_eligible and crop_kind == "heuristic" else "identity"
                     if identity_eligible:
                         metrics["identityEligibleCrops"] += 1
                     elif crop_kind == "monster":
@@ -172,6 +237,7 @@ class CharacterPrepassService:
                             str(h),
                             quality.bucket,
                             str(quality.score),
+                            identity_role,
                         ]
                     )
                     if identity_eligible:
@@ -181,6 +247,7 @@ class CharacterPrepassService:
                                 "panel_id": panel.panelId,
                                 "order_index": panel.orderIndex,
                                 "crop_kind": crop_kind,
+                                "identity_role": identity_role,
                                 "quality_bucket": quality.bucket,
                                 "crop_image": crop_image.copy(),
                                 "cache_hint": cache_hint,
@@ -208,9 +275,16 @@ class CharacterPrepassService:
                                 "detectorSource": detection.detector_source,
                                 "detectorModel": detection.detector_model,
                                 "cropKind": crop_kind,
+                                "identityRole": identity_role,
                                 "identityEligible": identity_eligible,
+                                "identityGateReason": rejection_reason,
                                 "identityRejectionReason": rejection_reason,
+                                "suppressedByCropId": record.get("suppressed_by_crop_id", ""),
+                                "suppressionReason": record.get("suppression_reason", ""),
+                                "duplicateGroupId": record.get("duplicate_group_id", ""),
                                 "monsterLike": monster_like,
+                                "panelHasReliableIdentity": panel_has_reliable_identity,
+                                "embeddingProvider": "",
                                 "embeddingKey": "",
                                 "embeddingVersion": "",
                                 "embeddingDiagnostics": {},
@@ -229,8 +303,16 @@ class CharacterPrepassService:
                 **crop.diagnostics,
                 "embeddingKey": embedding.cache_key,
                 "embeddingVersion": self.embedder.version,
+                "embeddingProvider": embedding.diagnostics.get("provider", "handcrafted"),
                 "embeddingDiagnostics": embedding.diagnostics,
             }
+            embedding_provider = str(embedding.diagnostics.get("provider", "handcrafted"))
+            if self.embedder.learned_mode and embedding_provider == "handcrafted":
+                crop.diagnostics = {
+                    **crop.diagnostics,
+                    "learnedFallbackReason": "Handcrafted embedding was produced in learned mode, so this crop is excluded from automatic identity clustering.",
+                }
+                continue
             cluster_inputs.append(
                 ClusterInputCrop(
                     crop_id=crop_id,
@@ -239,6 +321,9 @@ class CharacterPrepassService:
                     vector=embedding.vector,
                     quality_bucket=str(item["quality_bucket"]),
                     crop_kind=str(item["crop_kind"]),
+                    embedding_provider=embedding_provider,
+                    identity_role=str(item.get("identity_role", "identity")),
+                    learned_mode=self.embedder.learned_mode,
                 )
             )
 
@@ -385,6 +470,102 @@ class CharacterPrepassService:
             diagnostics=diagnostics,
         )
 
+    def _suppress_duplicate_records(self, records: list[dict[str, object]]) -> None:
+        ordered = sorted(records, key=self._duplicate_priority, reverse=True)
+        duplicate_index = 1
+        for canonical in ordered:
+            if canonical.get("suppressed_by_crop_id"):
+                continue
+            suppressed_any = False
+            for candidate in ordered:
+                if candidate is canonical or candidate.get("suppressed_by_crop_id"):
+                    continue
+                if not self._is_duplicate_record_pair(canonical, candidate):
+                    continue
+                group_id = str(canonical.get("duplicate_group_id") or f"{canonical['crop_id']}::dup::{duplicate_index:02d}")
+                if not canonical.get("duplicate_group_id"):
+                    canonical["duplicate_group_id"] = group_id
+                    duplicate_index += 1
+                candidate["suppressed_by_crop_id"] = str(canonical["crop_id"])
+                candidate["suppression_reason"] = self._duplicate_suppression_reason(canonical, candidate)
+                candidate["duplicate_group_id"] = group_id
+                suppressed_any = True
+            if suppressed_any and not canonical.get("duplicate_group_id"):
+                canonical["duplicate_group_id"] = f"{canonical['crop_id']}::dup::{duplicate_index:02d}"
+                duplicate_index += 1
+
+    def _is_duplicate_record_pair(self, left: dict[str, object], right: dict[str, object]) -> bool:
+        left_detection = left["detection"]
+        right_detection = right["detection"]
+        left_bbox = left_detection.bbox  # type: ignore[attr-defined]
+        right_bbox = right_detection.bbox  # type: ignore[attr-defined]
+        containment = self._containment_ratio(left_bbox, right_bbox)
+        if containment < DUPLICATE_CONTAINMENT_THRESHOLD:
+            return False
+        left_kind = str(left["crop_kind"])
+        right_kind = str(right["crop_kind"])
+        if "heuristic" in {left_kind, right_kind}:
+            return True
+        if {left_kind, right_kind}.issubset({"face", "head"}):
+            return True
+        return self._center_distance_ratio(left_bbox, right_bbox) <= 0.45
+
+    def _duplicate_priority(self, record: dict[str, object]) -> tuple[int, float, float]:
+        detection = record["detection"]
+        quality = record["quality"]
+        crop_kind = str(record["crop_kind"])
+        detector_source = str(getattr(detection, "detector_source", ""))
+        kind_priority = {
+            "face": 50,
+            "head": 35,
+            "upper_body": 15,
+            "person": 12,
+            "heuristic": 5,
+        }.get(crop_kind, 0)
+        source_priority = 40 if detector_source == "anime-face-detector" else 10 if detector_source == "opencv-heuristic" else 20
+        return (
+            source_priority + kind_priority,
+            float(getattr(quality, "score", 0.0)),
+            float(getattr(detection, "detection_score", 0.0)),
+        )
+
+    def _duplicate_suppression_reason(self, canonical: dict[str, object], candidate: dict[str, object]) -> str:
+        canonical_kind = str(canonical["crop_kind"])
+        candidate_kind = str(candidate["crop_kind"])
+        if canonical_kind == "face" and candidate_kind == "head":
+            return "face_inside_head"
+        if candidate_kind == "heuristic":
+            return "anime_or_identity_crop_over_heuristic"
+        return "contained_duplicate"
+
+    def _containment_ratio(self, left: tuple[int, int, int, int], right: tuple[int, int, int, int]) -> float:
+        intersection = self._intersection_area(left, right)
+        smaller = min(left[2] * left[3], right[2] * right[3])
+        return 0.0 if smaller <= 0 else intersection / float(smaller)
+
+    def _center_distance_ratio(self, left: tuple[int, int, int, int], right: tuple[int, int, int, int]) -> float:
+        left_cx = left[0] + (left[2] / 2.0)
+        left_cy = left[1] + (left[3] / 2.0)
+        right_cx = right[0] + (right[2] / 2.0)
+        right_cy = right[1] + (right[3] / 2.0)
+        dx = left_cx - right_cx
+        dy = left_cy - right_cy
+        larger_diagonal = max(
+            (left[2] ** 2 + left[3] ** 2) ** 0.5,
+            (right[2] ** 2 + right[3] ** 2) ** 0.5,
+            1.0,
+        )
+        return ((dx * dx + dy * dy) ** 0.5) / larger_diagonal
+
+    def _intersection_area(self, left: tuple[int, int, int, int], right: tuple[int, int, int, int]) -> int:
+        left_x, left_y, left_w, left_h = left
+        right_x, right_y, right_w, right_h = right
+        x1 = max(left_x, right_x)
+        y1 = max(left_y, right_y)
+        x2 = min(left_x + left_w, right_x + right_w)
+        y2 = min(left_y + left_h, right_y + right_h)
+        return max(0, x2 - x1) * max(0, y2 - y1)
+
     def _build_panel_refs(
         self,
         *,
@@ -394,6 +575,7 @@ class CharacterPrepassService:
         panel_order: dict[str, int],
     ) -> list[PanelCharacterRef]:
         active_cluster_ids = {cluster.clusterId for cluster in clusters if cluster.status not in {"ignored", "merged"}}
+        cluster_by_id = {cluster.clusterId: cluster for cluster in clusters}
         candidate_lookup: dict[tuple[str, str], CharacterCandidateAssignment] = {
             (assignment.cropId, assignment.clusterId): assignment
             for assignment in candidate_assignments
@@ -410,6 +592,11 @@ class CharacterPrepassService:
                     continue
                 if crop.assignedClusterId not in active_cluster_ids:
                     continue
+                cluster = cluster_by_id.get(crop.assignedClusterId)
+                if crop.assignmentState != "manual" and cluster is not None:
+                    review_flags = set(cluster.reviewFlags)
+                    if "impure_cluster" in review_flags or "low_confidence" in review_flags:
+                        continue
                 confirmed_cluster_ids.append(crop.assignedClusterId)
                 candidate = candidate_lookup.get((crop.cropId, crop.assignedClusterId))
                 score_values.append(candidate.score if candidate is not None else 1.0)
@@ -453,12 +640,21 @@ class CharacterPrepassService:
             if not panel_crops:
                 unresolved.append(panel.panelId)
                 continue
-            if any(crop.assignmentState in {"suggested", "unknown"} for crop in panel_crops):
+            identity_crops = [crop for crop in panel_crops if self._is_identity_relevant_crop(crop)]
+            if any(crop.assignmentState in {"suggested", "unknown"} for crop in identity_crops):
                 unresolved.append(panel.panelId)
                 continue
-            if ref is None or not ref.clusterIds:
+            if identity_crops and (ref is None or not ref.clusterIds):
                 unresolved.append(panel.panelId)
         return unresolved
+
+    def _is_identity_relevant_crop(self, crop: CharacterCrop) -> bool:
+        if crop.diagnostics.get("suppressedByCropId"):
+            return False
+        if crop.kind in IDENTITY_KINDS:
+            return True
+        diagnostics = crop.diagnostics or {}
+        return bool(diagnostics.get("identityEligible") or diagnostics.get("identityRole") == "fallback_head")
 
     def _apply_manual_constraints(self, *, state: ChapterCharacterState, previous_state: ChapterCharacterState) -> None:
         active_crop_ids = {crop.cropId for crop in state.crops}
@@ -744,18 +940,51 @@ class CharacterPrepassService:
         bbox: tuple[int, int, int, int],
         quality_score: float,
         detection_score: float,
+        quality_bucket: str = "poor",
+        panel_has_reliable_identity: bool = False,
+    ) -> tuple[bool, str]:
+        if crop_kind == "heuristic" and self.embedder.learned_mode:
+            if panel_has_reliable_identity:
+                return False, "context_fallback_not_needed"
+            if quality_bucket not in {"good", "medium"}:
+                return False, "quality"
+            if quality_score < MIN_FALLBACK_HEURISTIC_QUALITY:
+                return False, "quality"
+            if detection_score < MIN_FALLBACK_HEURISTIC_DETECTION:
+                return False, "detector_confidence"
+            return True, ""
+        return self._face_head_identity_gate(
+            crop_kind=crop_kind,
+            bbox=bbox,
+            quality_score=quality_score,
+            detection_score=detection_score,
+        )
+
+    def _face_head_identity_gate(
+        self,
+        *,
+        crop_kind: str,
+        bbox: tuple[int, int, int, int],
+        quality_score: float,
+        detection_score: float,
     ) -> tuple[bool, str]:
         if crop_kind not in IDENTITY_KINDS:
             return False, "kind"
         _x, _y, width, height = bbox
         min_size = MIN_FACE_SIZE if crop_kind == "face" else MIN_HEAD_SIZE
-        min_quality = MIN_FACE_QUALITY if crop_kind == "face" else MIN_HEAD_QUALITY
         if width < min_size or height < min_size:
             return False, "size"
-        if quality_score < min_quality:
-            return False, "quality"
         if detection_score < MIN_DETECTOR_CONFIDENCE:
             return False, "detector_confidence"
+        if self.embedder.learned_mode:
+            if crop_kind == "face" and detection_score >= MIN_STRONG_FACE_DETECTION and quality_score >= MIN_LEARNED_FACE_QUALITY:
+                return True, ""
+            if crop_kind == "head" and detection_score >= MIN_STRONG_HEAD_DETECTION and quality_score >= MIN_LEARNED_HEAD_QUALITY:
+                return True, ""
+            return False, "weak_anime_face"
+        min_quality = MIN_FACE_QUALITY if crop_kind == "face" else MIN_HEAD_QUALITY
+        if quality_score < min_quality:
+            return False, "quality"
         return True, ""
 
     def _is_monster_like_crop(self, *, panel_rgb: np.ndarray, bbox: tuple[int, int, int, int]) -> bool:

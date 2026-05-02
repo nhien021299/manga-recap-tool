@@ -149,6 +149,10 @@ export function StepCharacters() {
     void load();
     return () => {
       controller.abort();
+      if (prepassRequestKeyRef.current === requestKey) {
+        prepassRequestKeyRef.current = "";
+      }
+      setLoading(false);
     };
   }, [chapterId, characterState?.chapterId, config.apiBaseUrl, panels, setCharacterState]);
 

@@ -1,0 +1,7 @@
+node_modules/
+dist/
+out/
+.remotion/
+public/scene_*
+*.mp4
+*.webm

@@ -11,6 +11,7 @@ import threading
 import time
 from pathlib import Path
 
+import librosa
 import soundfile as sf
 
 from app.core.config import Settings
@@ -210,18 +211,46 @@ class VieneuTtsWorkerBridge:
                     voice=voice_data,
                     temperature=self.settings.tts_vieneu_temperature,
                 )
+
+                # ── Hallucination guard ──
+                # VieNeu can sometimes loop indefinitely, producing 30s+ of
+                # garbage for a short sentence.  Detect and truncate.
+                sample_rate = getattr(client, "sample_rate", 24000)
+                word_count = len(text.split())
+                # Vietnamese TTS ≈ 3 words/sec.  Allow 1.5× expected + 2.0s buffer.
+                expected_sec = word_count / 3.0
+                max_allowed_sec = max(expected_sec * 1.5 + 2.0, 4.0)  # floor 4s
+                actual_sec = len(audio_array) / sample_rate
+
+                if actual_sec > max_allowed_sec:
+                    max_samples = int(max_allowed_sec * sample_rate)
+                    logger.warning(
+                        "VieNeu hallucination detected: words=%d expected=%.1fs actual=%.1fs maxAllowed=%.1fs — truncating to %d samples",
+                        word_count, expected_sec, actual_sec, max_allowed_sec, max_samples,
+                    )
+                    audio_array = audio_array[:max_samples]
+
+                # ── Trim Silence/Noise ──
+                # VieNeu often produces weird low-volume static or breathing at the ends of clips
+                try:
+                    # top_db=40 means any sound 40dB below the peak is considered silence
+                    audio_array, _ = librosa.effects.trim(audio_array, top_db=40)
+                except Exception as trim_exc:
+                    logger.warning("Failed to trim silence: %s", trim_exc)
+
                 wav_buffer = io.BytesIO()
-                sf.write(wav_buffer, audio_array, getattr(client, "sample_rate", 24000), format="WAV")
+                sf.write(wav_buffer, audio_array, sample_rate, format="WAV")
                 wav_bytes = wav_buffer.getvalue()
                 if abs(request.speed - 1.0) > 0.001:
                     wav_bytes = self._apply_speed_to_wav_bytes(wav_bytes, request.speed)
                 elapsed_ms = round((time.perf_counter() - started_at) * 1000, 1)
                 logger.info(
-                    "VieNeu generation completed voiceKey=%s resolvedVoiceKey=%s chars=%s audioSamples=%s speed=%.2f elapsedMs=%s",
+                    "VieNeu generation completed voiceKey=%s resolvedVoiceKey=%s chars=%s audioSamples=%s duration=%.1fs speed=%.2f elapsedMs=%s",
                     requested_voice_key,
                     resolved_voice_key,
                     len(text),
                     len(audio_array),
+                    len(audio_array) / sample_rate,
                     request.speed,
                     elapsed_ms,
                 )
@@ -245,7 +274,7 @@ class VieneuTtsWorkerBridge:
                 "FFmpeg is required to apply TTS speed. Set AI_BACKEND_RENDER_FFMPEG_PATH to a valid ffmpeg binary."
             )
 
-        safe_speed = max(0.5, min(2.0, speed))
+        safe_speed = max(0.5, min(3.0, speed))
         with tempfile.TemporaryDirectory(prefix="vieneu-speed-") as temp_dir:
             temp_root = Path(temp_dir)
             input_path = temp_root / "input.wav"

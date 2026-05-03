@@ -108,6 +108,12 @@ export interface ScriptMeta {
   metrics?: Metrics;
 }
 
+export interface TtsChunk {
+  i: number;
+  w: number;
+  text: string;
+}
+
 export interface TimelineItem {
   panelId: string;
   imageBlob: Blob;
@@ -122,6 +128,7 @@ export interface TimelineItem {
   audioDuration?: number;
   audioUrl?: string;
   audioStatus?: AudioStatus;
+  audioChunks?: TtsChunk[];
 }
 
 export interface AppConfig {
@@ -239,6 +246,12 @@ export interface RenderJobStatusResponse {
   downloadUrl?: string | null;
   error?: string | null;
   logs: RenderJobLogEntry[];
+}
+
+export interface RenderProgressUpdate {
+  phase: string;
+  progress: number;
+  detail?: string;
 }
 
 export interface RenderRevealResponse {

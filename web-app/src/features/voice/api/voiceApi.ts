@@ -1,4 +1,4 @@
-import type { VoiceGenerateRequest, VoiceOptionsResponse } from "@/shared/types";
+import type { VoiceGenerateRequest, VoiceOptionsResponse, TtsChunk } from "@/shared/types";
 
 const buildUrl = (apiBaseUrl: string, path: string): string =>
   `${apiBaseUrl.replace(/\/$/, "")}${path}`;
@@ -33,7 +33,7 @@ export async function fetchVoiceOptions(apiBaseUrl: string): Promise<VoiceOption
 export async function generateVoiceAudio(
   apiBaseUrl: string,
   request: VoiceGenerateRequest
-): Promise<Blob> {
+): Promise<{ blob: Blob; chunks?: TtsChunk[] }> {
   const response = await fetch(buildUrl(apiBaseUrl, "/api/v1/voice/generate"), {
     method: "POST",
     headers: {
@@ -47,5 +47,17 @@ export async function generateVoiceAudio(
     throw new Error(await readErrorMessage(response));
   }
 
-  return await response.blob();
+  const blob = await response.blob();
+  let chunks: TtsChunk[] | undefined;
+  
+  try {
+    const chunksHeader = response.headers.get("X-TTS-Chunks");
+    if (chunksHeader) {
+      chunks = JSON.parse(decodeURIComponent(chunksHeader));
+    }
+  } catch (e) {
+    console.error("Failed to parse TTS chunks header", e);
+  }
+
+  return { blob, chunks };
 }

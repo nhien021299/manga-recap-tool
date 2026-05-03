@@ -40,19 +40,20 @@ def normalize_tts_text(text: str) -> str:
 def count_words(text: str) -> int:
     return len([w for w in text.split() if w.strip()])
 
-def merge_dialogue_into_narration(narration: str, dialogue: str | None) -> str:
+def merge_dialogue_into_narration(narration: str, dialogue: str | None, speaker: str | None = None) -> str:
     if not dialogue:
         return narration
 
     d = dialogue.strip()
     word_count = count_words(d)
+    name = speaker.strip() if speaker else "Hắn"
 
     if word_count <= 4:
-        return f"{narration} Hắn khẽ bật ra: {d}"
+        return f"{narration} {name} khẽ bật ra: {d}"
 
-    return f"{narration} Hắn nói: {d}"
+    return f"{narration} {name} nói: {d}"
 
-def split_into_tts_chunks(text: str, min_words=8, ideal_max=28, hard_max=38) -> list[str]:
+def split_into_tts_chunks(text: str, min_words=6, ideal_max=18, hard_max=26) -> list[str]:
     # Basic sentence split.
     sentences = re.split(r"(?<=[.!?])\s+", text.strip())
     sentences = [s.strip() for s in sentences if s.strip()]
@@ -81,16 +82,21 @@ def split_into_tts_chunks(text: str, min_words=8, ideal_max=28, hard_max=38) -> 
         else:
             merged.append(chunk)
 
-    # Split very long chunks by comma if possible.
+    # Split chunks that exceed ideal_max by comma, colon, or semicolon.
     final = []
     for chunk in merged:
-        if count_words(chunk) <= hard_max:
+        if count_words(chunk) <= ideal_max:
             final.append(chunk)
             continue
 
-        parts = re.split(r"(?<=,)\s+", chunk)
-        buffer = ""
+        # Try splitting by comma, colon, semicolon
+        parts = re.split(r"(?<=[,;:])\s+", chunk)
+        if len(parts) <= 1:
+            # No split points found, keep as-is
+            final.append(chunk)
+            continue
 
+        buffer = ""
         for part in parts:
             candidate = (buffer + " " + part).strip() if buffer else part
             if count_words(candidate) <= ideal_max:

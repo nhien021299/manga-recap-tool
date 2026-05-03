@@ -35,6 +35,7 @@ import {
   revealRenderResult,
   resolveRenderResultUrl,
 } from "@/features/render/api/renderApi";
+import { submitNarrationProduction, pollVideoJobStatus, cancelVideoJob, purgeVideoData } from "@/features/script/api/scriptApi";
 import type { RenderProgressUpdate } from "@/features/render/lib/renderEngine";
 import { buildRenderPlan, validateRenderPlan } from "@/features/render/lib/renderPlan";
 import { useVoiceGeneration } from "@/features/voice/hooks/useVoiceGeneration";
@@ -98,6 +99,7 @@ export function StepRender() {
     config,
     timeline,
     panels,
+    scriptContext,
     renderConfig,
     setRenderConfig,
     updateTimelineItem,
@@ -106,20 +108,28 @@ export function StepRender() {
     duplicateTimelineItem,
     resetTimelineItemToAuto,
     setCurrentStep,
+    activeJobId,
+    setActiveJobId,
+    isRendering,
+    setIsRendering,
+    renderMode,
+    setRenderMode,
+    renderProgress,
+    setRenderProgress,
+    renderError,
+    setRenderError,
+    previewUrl,
+    setPreviewUrl,
+    backendStatus,
+    setBackendStatus,
+    activeRenderTab,
+    setActiveRenderTab,
   } = useRecapStore();
   const { generateSingleVoice, generateStaleVoices, error: voiceError } = useVoiceGeneration();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const backendPollInFlightRef = useRef(false);
 
-  const [activeTab, setActiveTab] = useState("timeline");
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
-  const [isRendering, setIsRendering] = useState(false);
-  const [renderMode, setRenderMode] = useState<ActiveRenderMode>(null);
-  const [renderProgress, setRenderProgress] = useState<RenderProgressUpdate | null>(null);
-  const [renderError, setRenderError] = useState<string | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [activeJobId, setActiveJobId] = useState<string | null>(null);
-  const [backendStatus, setBackendStatus] = useState<RenderJobStatusResponse | null>(null);
 
   const validationErrors = useMemo(() => validateRenderPlan(timeline, panels), [panels, timeline]);
 
@@ -152,8 +162,22 @@ export function StepRender() {
       if (backendPollInFlightRef.current) return;
       backendPollInFlightRef.current = true;
       try {
-        const status = await fetchRenderJobStatus(config.apiBaseUrl, activeJobId);
+        // Use the new video production polling API
+        const videoStatus = await pollVideoJobStatus(config.apiBaseUrl, activeJobId);
         if (disposed) return;
+
+        // Normalize VideoJobStatus to RenderJobStatusResponse for the UI/Store
+        const status: RenderJobStatusResponse = {
+          jobId: videoStatus.job_id,
+          status: videoStatus.phase === "completed" 
+            ? "completed" 
+            : (videoStatus.phase === "failed" ? "failed" : "running"),
+          phase: videoStatus.phase,
+          progress: videoStatus.progress,
+          detail: videoStatus.detail,
+          error: videoStatus.error || undefined,
+          downloadUrl: videoStatus.download_url || undefined,
+        };
 
         setBackendStatus(status);
         setRenderProgress({
@@ -165,7 +189,7 @@ export function StepRender() {
         if (status.status === "completed") {
           setIsRendering(false);
           setActiveJobId(null);
-          setActiveTab("export");
+          setActiveRenderTab("export");
           setPreviewUrl(resolveRenderResultUrl(config.apiBaseUrl, status.downloadUrl));
           setRenderError(null);
           return;
@@ -219,7 +243,7 @@ export function StepRender() {
   };
 
   const handleBackendRender = async () => {
-    if (!renderPlan) return;
+    if (!timeline.length) return;
 
     setRenderMode("backend");
     setIsRendering(true);
@@ -229,17 +253,45 @@ export function StepRender() {
     setRenderProgress({
       phase: "accepted",
       progress: 2,
-      detail: "Uploading render payload to backend.",
+      detail: "Preparing narration package and assets...",
     });
-    setActiveTab("export");
+    setActiveRenderTab("export");
 
     try {
-      const created = await createRenderJob(config.apiBaseUrl, renderPlan);
-      setActiveJobId(created.jobId);
+      // 1. Build the narration payload from current timeline
+      const narrationPayload = {
+        project: scriptContext.mangaName || "Manga Recap",
+        chapter: Number(scriptContext.chapterId) || 1,
+        language: scriptContext.language || "vi",
+        scenes: timeline
+          .filter((item) => item.enabled !== false)
+          .map((item, index) => ({
+            scene: index + 1,
+            title: `Scene ${index + 1}`,
+            narration: item.scriptItem.voiceover_text,
+            duration_seconds: item.audioDuration || 0,
+            dialogue: item.scriptItem.dialogue_text || null,
+          })),
+      };
+
+      // 2. Submit to the full VideoOrchestrator pipeline (TTS -> Gemini -> Remotion)
+      const voiceConfig = useRecapStore.getState().voiceConfig;
+      const response = await submitNarrationProduction(
+        config.apiBaseUrl,
+        narrationPayload,
+        panels,
+        {
+          voiceKey: voiceConfig.voiceKey,
+          speed: voiceConfig.speed,
+          provider: voiceConfig.provider,
+        }
+      );
+
+      setActiveJobId(response.job_id);
       setRenderProgress({
-        phase: "accepted",
-        progress: 4,
-        detail: "Backend render job queued.",
+        phase: response.phase,
+        progress: response.progress,
+        detail: response.detail || "Video production job started.",
       });
     } catch (error) {
       setIsRendering(false);
@@ -248,17 +300,46 @@ export function StepRender() {
     }
   };
 
+  const handlePurgeCache = async () => {
+    if (!window.confirm("Bạn có chắc chắn muốn dừng toàn bộ Job và xóa sạch cache không?")) return;
+    
+    try {
+      await purgeVideoData(config.apiBaseUrl);
+      setIsRendering(false);
+      setActiveJobId(null);
+      setBackendStatus(null);
+      setRenderProgress(null);
+      setPreviewUrl(null);
+      alert("Đã dừng toàn bộ job và xóa sạch cache hệ thống.");
+    } catch (error) {
+      setRenderError(describeRenderError(error));
+    }
+  };
+
   const handleCancelExport = async () => {
     if (!activeJobId || renderMode !== "backend") return;
 
     try {
-      const status = await cancelRenderJob(config.apiBaseUrl, activeJobId);
+      const statusResponse = await cancelVideoJob(config.apiBaseUrl, activeJobId);
+      
+      // Normalize VideoJobStatus to RenderJobStatusResponse for the UI/Store
+      const status: RenderJobStatusResponse = {
+        jobId: statusResponse.job_id,
+        status: statusResponse.phase === "cancelled" ? "cancelled" : "running",
+        phase: statusResponse.phase,
+        progress: statusResponse.progress,
+        detail: statusResponse.detail,
+        error: statusResponse.error || undefined,
+        downloadUrl: statusResponse.download_url || undefined,
+      };
+
       setBackendStatus(status);
       setRenderProgress({
         phase: status.phase,
         progress: status.progress,
         detail: status.detail || undefined,
       });
+
       if (status.status === "cancelled") {
         setIsRendering(false);
         setActiveJobId(null);
@@ -415,7 +496,7 @@ export function StepRender() {
         </Card>
       )}
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeRenderTab} onValueChange={setActiveRenderTab}>
         <TabsList className="rounded-2xl border border-white/10 bg-white/5 p-1.5">
           <TabsTrigger value="timeline">Dòng thời gian</TabsTrigger>
           <TabsTrigger value="export">Xuất bản</TabsTrigger>
@@ -673,17 +754,29 @@ export function StepRender() {
                     Thao tác xuất bản
                   </p>
                   <div className="space-y-3">
-                    {canCancelExport ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      {canCancelExport && (
+                        <Button
+                          size="lg"
+                          variant="destructive"
+                          onClick={handleCancelExport}
+                          className="h-14 rounded-2xl text-lg font-bold"
+                        >
+                          <XCircle className="h-5 w-5" />
+                          Hủy xuất bản
+                        </Button>
+                      )}
                       <Button
                         size="lg"
-                        variant="destructive"
-                        onClick={handleCancelExport}
-                        className="h-14 w-full rounded-2xl text-lg font-bold"
+                        variant="outline"
+                        onClick={handlePurgeCache}
+                        className={`h-14 rounded-2xl text-lg font-bold border-red-500/30 bg-red-500/5 text-red-400 hover:bg-red-500/10 ${!canCancelExport ? "col-span-2" : ""}`}
                       >
-                        <XCircle className="h-5 w-5" />
-                        Hủy xuất bản
+                        <Trash2 className="h-5 w-5" />
+                        Dừng & Xóa Cache
                       </Button>
-                    ) : null}
+                    </div>
+
                     <Button
                       size="lg"
                       onClick={handleBackendRender}

@@ -175,3 +175,42 @@ export async function pollVideoJobStatus(
     throw parseFetchError(error, apiBaseUrl);
   }
 }
+
+/**
+ * Cancel a running video production job.
+ */
+export async function cancelVideoJob(
+  apiBaseUrl: string,
+  jobId: string,
+): Promise<VideoJobStatus> {
+  const base = normalizeBaseUrl(apiBaseUrl);
+  try {
+    const response = await fetch(`${base}/api/v1/video/jobs/${jobId}/cancel`, {
+      method: "POST",
+    });
+    if (!response.ok) {
+      throw new Error(await parseResponseError(response));
+    }
+    return response.json();
+  } catch (error) {
+    throw parseFetchError(error, apiBaseUrl);
+  }
+}
+
+/**
+ * Stop all running jobs and delete all temporary job files.
+ */
+export async function purgeVideoData(apiBaseUrl: string): Promise<any> {
+  const base = normalizeBaseUrl(apiBaseUrl);
+  try {
+    const response = await fetch(`${base}/api/v1/video/jobs/purge`, {
+      method: "POST",
+    });
+    if (!response.ok) {
+      throw new Error(await parseResponseError(response));
+    }
+    return response.json();
+  } catch (error) {
+    throw parseFetchError(error, apiBaseUrl);
+  }
+}

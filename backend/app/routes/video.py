@@ -179,6 +179,18 @@ async def get_video_job_status(
     return status
 
 
+@router.post("/jobs/{job_id}/cancel", response_model=VideoJobStatus)
+async def cancel_video_job(
+    job_id: str,
+    video_orchestrator=Depends(get_video_orchestrator),
+) -> VideoJobStatus:
+    """Cancel a running video production job."""
+    status = video_orchestrator.cancel_job(job_id)
+    if status is None:
+        raise HTTPException(status_code=404, detail="Video job not found.")
+    return status
+
+
 @router.get("/jobs/{job_id}/result")
 async def get_video_job_result(
     job_id: str,
@@ -195,3 +207,11 @@ async def get_video_job_result(
         filename=f"video-{job_id}.mp4",
         content_disposition_type="inline",
     )
+
+
+@router.post("/jobs/purge")
+async def purge_video_data(
+    video_orchestrator=Depends(get_video_orchestrator),
+):
+    """Stop all running jobs and delete all temporary job files."""
+    return video_orchestrator.purge_all_data()

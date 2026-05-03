@@ -17,17 +17,19 @@ export function useVoiceGeneration() {
   const [error, setError] = useState<string | null>(null);
 
   const buildRequest = useCallback(
-    (text: string) => ({
+    (text: string, dialogue?: string | null, speaker?: string | null) => ({
       text,
       provider: voiceConfig.provider,
       voiceKey: voiceConfig.voiceKey,
       speed: voiceConfig.speed,
+      dialogue,
+      speaker,
     }),
     [voiceConfig]
   );
 
   const attachAudioToTimeline = useCallback(
-    async (index: number, audioBlob: Blob) => {
+    async (index: number, audioBlob: Blob, chunks?: any[]) => {
       const tempAudioUrl = URL.createObjectURL(audioBlob);
       const duration = await new Promise<number>((resolve) => {
         const audio = new Audio(tempAudioUrl);
@@ -39,6 +41,7 @@ export function useVoiceGeneration() {
         audioBlob,
         audioDuration: duration,
         audioStatus: "ready",
+        audioChunks: chunks,
       });
     },
     [updateTimelineItem]
@@ -72,8 +75,11 @@ export function useVoiceGeneration() {
         });
 
         updateTimelineItem(index, { audioStatus: "generating" });
-        const audioBlob = await generateVoiceAudio(config.apiBaseUrl, buildRequest(text));
-        await attachAudioToTimeline(index, audioBlob);
+        const result = await generateVoiceAudio(
+          config.apiBaseUrl, 
+          buildRequest(text, item.scriptItem?.dialogue_text, item.scriptItem?.dialogue_speaker)
+        );
+        await attachAudioToTimeline(index, result.blob, result.chunks);
         setProgress(Math.round(((queueIndex + 1) / Math.max(queuedItems.length, 1)) * 100));
       }
 
@@ -133,8 +139,11 @@ export function useVoiceGeneration() {
           startedAt: new Date().toISOString(),
         });
         updateTimelineItem(index, { audioStatus: "generating" });
-        const audioBlob = await generateVoiceAudio(config.apiBaseUrl, buildRequest(text));
-        await attachAudioToTimeline(index, audioBlob);
+        const result = await generateVoiceAudio(
+          config.apiBaseUrl, 
+          buildRequest(text, item.scriptItem?.dialogue_text, item.scriptItem?.dialogue_speaker)
+        );
+        await attachAudioToTimeline(index, result.blob, result.chunks);
       } catch (voiceError) {
         updateTimelineItem(index, { audioStatus: "error" });
         setError(voiceError instanceof Error ? voiceError.message : "Unknown voice generation error.");
@@ -151,6 +160,7 @@ export function useVoiceGeneration() {
       delete clone.audioBlob;
       delete clone.audioUrl;
       delete clone.audioDuration;
+      delete clone.audioChunks;
       clone.audioStatus = "missing";
       return clone;
     });

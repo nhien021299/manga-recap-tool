@@ -13,6 +13,7 @@ import {
   type PanelUnderstanding,
   type PanelUnderstandingMeta,
   type RenderConfig,
+  type RenderProgressUpdate,
   type Scene,
   type ScriptContext,
   type ScriptMeta,
@@ -82,11 +83,30 @@ interface RecapState {
   resetTimelineItemToAuto: (index: number) => void;
   scriptMeta: ScriptMeta;
   setScriptMeta: (meta: ScriptMeta) => void;
+  setScriptMeta: (meta: ScriptMeta) => void;
   markScriptOutdated: (reason: string) => void;
   clearScriptData: () => void;
   benchmarkRecords: BenchmarkRecord[];
   addBenchmarkRecord: (record: BenchmarkRecord) => void;
   removeBenchmarkRecord: (id: string) => void;
+
+  activeJobId: string | null;
+  setActiveJobId: (id: string | null) => void;
+  isRendering: boolean;
+  setIsRendering: (isRendering: boolean) => void;
+  renderMode: "backend" | null;
+  setRenderMode: (mode: "backend" | null) => void;
+  renderProgress: RenderProgressUpdate | null;
+  setRenderProgress: (progress: RenderProgressUpdate | null) => void;
+  renderError: string | null;
+  setRenderError: (error: string | null) => void;
+  previewUrl: string | null;
+  setPreviewUrl: (url: string | null) => void;
+  backendStatus: RenderJobStatusResponse | null;
+  setBackendStatus: (status: RenderJobStatusResponse | null) => void;
+
+  activeRenderTab: string;
+  setActiveRenderTab: (tab: string) => void;
 
   init: () => Promise<void>;
   reset: () => void;
@@ -137,7 +157,7 @@ const normalizeVoiceConfig = (config?: Partial<VoiceConfig> | null): VoiceConfig
   return {
     provider,
     voiceKey,
-    speed: Math.max(0.8, Math.min(1.15, normalizeNumber(config?.speed, DEFAULT_TTS_SPEED))),
+    speed: Math.max(0.8, Math.min(3.0, normalizeNumber(config?.speed, DEFAULT_TTS_SPEED))),
   };
 };
 
@@ -649,6 +669,24 @@ export const useRecapStore = create<RecapState>()(
           benchmarkRecords: state.benchmarkRecords.filter((record) => record.id !== id),
         })),
 
+      activeJobId: null,
+      setActiveJobId: (activeJobId) => set({ activeJobId }),
+      isRendering: false,
+      setIsRendering: (isRendering) => set({ isRendering }),
+      renderMode: null,
+      setRenderMode: (renderMode) => set({ renderMode }),
+      renderProgress: null,
+      setRenderProgress: (renderProgress) => set({ renderProgress }),
+      renderError: null,
+      setRenderError: (renderError) => set({ renderError }),
+      previewUrl: null,
+      setPreviewUrl: (previewUrl) => set({ previewUrl }),
+      backendStatus: null,
+      setBackendStatus: (backendStatus) => set({ backendStatus }),
+
+      activeRenderTab: "timeline",
+      setActiveRenderTab: (activeRenderTab) => set({ activeRenderTab }),
+
       init: async () => {
         set((state) => ({
           config: normalizeAppConfig(state.config),
@@ -712,6 +750,14 @@ export const useRecapStore = create<RecapState>()(
           isLoading: false,
           logs: [],
           renderConfig: normalizeRenderConfig(undefined, DEFAULT_ASPECT),
+          activeJobId: null,
+          isRendering: false,
+          renderMode: null,
+          renderProgress: null,
+          renderError: null,
+          previewUrl: null,
+          backendStatus: null,
+          activeRenderTab: "timeline",
         });
         void idbSet("recap-virtual-strip-data", null);
         void idbSet("recap-panels-data", []);
@@ -736,6 +782,11 @@ export const useRecapStore = create<RecapState>()(
         aspectRatio: state.aspectRatio,
         benchmarkRecords: state.benchmarkRecords,
         renderConfig: normalizeRenderConfig(state.renderConfig, state.aspectRatio),
+        activeRenderTab: state.activeRenderTab,
+        activeJobId: state.activeJobId,
+        isRendering: state.isRendering,
+        renderMode: state.renderMode,
+        renderProgress: state.renderProgress,
       }),
     }
   )

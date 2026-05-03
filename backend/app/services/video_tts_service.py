@@ -58,6 +58,7 @@ class VideoTtsService:
         request: BatchTtsRequest,
         *,
         job_id: str,
+        on_progress: callable[[int, str], None] | None = None,
     ) -> BatchTtsResult:
         """Generate TTS audio for all scenes in the narration package.
 
@@ -81,13 +82,19 @@ class VideoTtsService:
 
         for index, scene in enumerate(package.scenes, start=1):
             scene_num = scene.scene
+            
+            if on_progress:
+                progress_pct = int(5 + (index / total_scenes) * 30)
+                on_progress(progress_pct, f"Generating TTS for scene {index}/{total_scenes}: {scene.title}")
+
             started = time.perf_counter()
 
             narration_text = scene.narration or ""
             dialogue_text = scene.dialogue
+            speaker_name = scene.dialogue_speaker
             
             # 1. Adapt text for TTS
-            raw_text = merge_dialogue_into_narration(narration_text, dialogue_text)
+            raw_text = merge_dialogue_into_narration(narration_text, dialogue_text, speaker_name)
             normalized_text = normalize_tts_text(raw_text)
             chunks = split_into_tts_chunks(normalized_text)
 

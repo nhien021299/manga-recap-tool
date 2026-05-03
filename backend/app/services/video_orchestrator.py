@@ -40,6 +40,7 @@ class VideoOrchestrator:
         self.video_tts_service = video_tts_service
         self.video_director_service = video_director_service
         self._jobs: dict[str, _JobState] = {}
+        self._tasks: dict[str, asyncio.Task] = {}
 
     def _video_jobs_root(self) -> Path:
         return self.settings.render_temp_root.parent / "video-jobs"
@@ -51,9 +52,43 @@ class VideoOrchestrator:
         self._jobs[job_id] = state
 
         # Run the pipeline in background
-        asyncio.create_task(self._run_pipeline(state))
+        task = asyncio.create_task(self._run_pipeline(state))
+        self._tasks[job_id] = task
+        
+        # Cleanup task ref when done
+        task.add_done_callback(lambda t: self._tasks.pop(job_id, None))
 
         return state.to_status()
+
+    def purge_all_data(self) -> dict[str, int]:
+        """Stop all running jobs and delete all temporary job files."""
+        # 1. Stop all tasks
+        cancelled_count = 0
+        for task in self._tasks.values():
+            task.cancel()
+            cancelled_count += 1
+        self._tasks.clear()
+
+        # 2. Delete directories
+        import shutil
+        roots = [
+            self.settings.render_temp_root,
+            self._video_jobs_root()
+        ]
+        
+        deleted_dirs = 0
+        for root in roots:
+            if root.exists():
+                # Delete contents but keep the root if possible, 
+                # or just delete and recreat
+                shutil.rmtree(root)
+                root.mkdir(parents=True, exist_ok=True)
+                deleted_dirs += 1
+        
+        # 3. Clear memory state
+        self._jobs.clear()
+        
+        return {"cancelled_tasks": cancelled_count, "purged_roots": deleted_dirs}
 
     def get_status(self, job_id: str) -> VideoJobStatus | None:
         """Get current status of a video production job."""
@@ -70,6 +105,27 @@ class VideoOrchestrator:
         if state.output_path and state.output_path.exists():
             return state.output_path
         return None
+
+    def cancel_job(self, job_id: str) -> VideoJobStatus | None:
+        """Cancel a running video production job."""
+        state = self._jobs.get(job_id)
+        if state is None:
+            return None
+
+        if state.phase not in [VideoJobPhase.completed, VideoJobPhase.failed, VideoJobPhase.cancelled]:
+            state.phase = VideoJobPhase.cancelled
+            state.detail = "Production cancelled by user."
+            state.progress = 0
+            
+            # Actually cancel the background task
+            task = self._tasks.get(job_id)
+            if task:
+                task.cancel()
+                logger.info("Video background task cancelled job_id=%s", job_id)
+            
+            logger.info("Video job cancelled by user job_id=%s", job_id)
+
+        return state.to_status()
 
     async def _run_pipeline(self, state: _JobState) -> None:
         """Execute the full production pipeline."""
@@ -90,10 +146,14 @@ class VideoOrchestrator:
                 provider=request.provider,
             )
 
+            def update_tts_progress(p: int, d: str):
+                state.progress = p
+                state.detail = d
+
             tts_result: BatchTtsResult = await asyncio.get_event_loop().run_in_executor(
                 None,
                 lambda: self.video_tts_service.generate_batch(
-                    tts_request, job_id=job_id
+                    tts_request, job_id=job_id, on_progress=update_tts_progress
                 ),
             )
 
@@ -262,6 +322,7 @@ class VideoOrchestrator:
 
         state.detail = "Running Remotion render..."
         state.progress = 68
+        logger.info("Remotion input props saved at: %s", props_path)
 
         # Execute Remotion render
         # CLI syntax: npx remotion render <entry> <comp-id> <output> --props=<file>

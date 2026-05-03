@@ -155,10 +155,11 @@ class VideoDirectorService:
 
         elapsed_ms = round((perf_counter() - started) * 1000)
         logger.info(
-            "Video director completed job_id=%s total_duration_ms=%d elapsed_ms=%d",
+            "Video director completed job_id=%s total_duration_ms=%d elapsed_ms=%d. Plan saved at: %s",
             job_id,
             direction.total_duration_ms,
             elapsed_ms,
+            direction_path,
         )
 
         return direction

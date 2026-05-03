@@ -2,17 +2,11 @@ import { fetchFile } from "@ffmpeg/util";
 import coreURL from "@ffmpeg/core?url";
 import wasmURL from "@ffmpeg/core/wasm?url";
 
-import type { CompiledRenderClip, RenderPlan } from "@/shared/types";
+import type { CompiledRenderClip, RenderPlan, RenderProgressUpdate } from "@/shared/types";
 
 const SILENT_AUDIO_RATE = 24000;
 
 type FFmpegInstance = InstanceType<(typeof import("@ffmpeg/ffmpeg"))["FFmpeg"]>;
-
-export interface RenderProgressUpdate {
-  phase: string;
-  progress: number;
-  detail?: string;
-}
 
 interface MotionTransform {
   scale: number;

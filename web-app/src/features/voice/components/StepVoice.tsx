@@ -27,7 +27,7 @@ const PREVIEW_TEXT =
   "Xin chào, đây là đoạn nghe thử để kiểm tra chất giọng kể chuyện, độ cuốn và nhịp review truyện của preset này.";
 
 const MIN_VOICE_SPEED = 0.8;
-const MAX_VOICE_SPEED = 1.15;
+const MAX_VOICE_SPEED = 3.0;
 const SPEED_STEP = 0.05;
 
 const clampVoiceSpeed = (value: number): number =>
@@ -204,23 +204,7 @@ export function StepVoice() {
 
       {activeVoices.length > 0 && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between px-1 text-sm">
-            <span className="font-medium text-muted-foreground">Chọn Giọng Đọc</span>
-            <span className="text-xs uppercase tracking-[0.2em] text-white/45">{activeProvider?.label || "Giọng"}</span>
-          </div>
-          <div className="flex items-center justify-between px-1 text-sm">
-            <span className="font-medium text-muted-foreground">
-              Chọn mẫu giọng để sử dụng, bạn có thể nghe thử ở tốc độ {voiceConfig.speed.toFixed(2)}x.
-            </span>
-            {staleClipCount > 0 ? (
-              <span className="text-xs text-amber-200/85">
-                {staleClipCount} đoạn cần cập nhật
-              </span>
-            ) : (
-              <span className="text-xs uppercase tracking-[0.2em] text-white/45">Bản nghe thử tuân theo tốc độ</span>
-            )}
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {activeVoices.map((voice) => {
               const isSelected = voiceConfig.voiceKey === voice.key;
               const isPlaying = playingPreview === voice.key;
@@ -235,95 +219,77 @@ export function StepVoice() {
                       voiceKey: voice.key,
                     })
                   }
-                  className={`group relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border p-4 transition-all duration-300 ${
+                  className={`group relative flex cursor-pointer items-center justify-between overflow-hidden rounded-2xl border px-4 py-2.5 transition-all duration-300 ${
                     isSelected
-                      ? "border-primary bg-primary/5 shadow-glow"
+                      ? "border-primary/40 bg-primary/10 shadow-glow-sm"
                       : "border-white/5 bg-white/5 hover:border-white/20 hover:bg-white/10"
                   }`}
                 >
-                  {isSelected && (
-                    <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-primary/20 blur-2xl"></div>
-                  )}
-
-                  <div className="relative z-10 mb-6 space-y-1">
-                    <div className="flex items-start justify-between gap-3">
-                      <h4 className="font-semibold text-white">{voice.label}</h4>
-                      {isSelected ? (
-                        <span className="rounded-full border border-cyan-300/25 bg-cyan-400/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-100">
-                          {voiceConfig.speed.toFixed(2)}x
-                        </span>
-                      ) : null}
-                    </div>
-                    {voice.styleTag && (
-                      <p className="text-[10px] uppercase tracking-[0.2em] text-primary/80">{voice.styleTag}</p>
-                    )}
-                    <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                      {voice.description || "Backend voice preset"}
-                    </p>
-                    {!voice.isAvailable && <p className="text-[10px] text-destructive">Thiếu dữ liệu</p>}
-                  </div>
-
-                  {isSelected ? (
-                    <div className="relative z-10 mb-5 space-y-2 rounded-2xl border border-white/10 bg-black/20 p-3">
-                      <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.2em] text-white/45">
-                        <span>Tốc độ đọc</span>
-                        <span>{voiceConfig.speed.toFixed(2)}x</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Slider
-                          value={[voiceConfig.speed]}
-                          min={MIN_VOICE_SPEED}
-                          max={MAX_VOICE_SPEED}
-                          step={SPEED_STEP}
-                          onValueChange={(value) =>
-                            handleSpeedChange(Array.isArray(value) ? (value[0] ?? 1) : value)
-                          }
-                          className="flex-1"
-                        />
-                        <Input
-                          type="number"
-                          min={MIN_VOICE_SPEED}
-                          max={MAX_VOICE_SPEED}
-                          step={SPEED_STEP}
-                          value={voiceConfig.speed}
-                          onChange={(event) => handleSpeedChange(Number(event.target.value) || 1)}
-                          onClick={(event) => event.stopPropagation()}
-                          className="h-9 w-20 rounded-xl border-white/10 bg-black/30 px-2 text-sm text-white"
-                        />
-                      </div>
-                    </div>
-                  ) : null}
-
-                  <div className="relative z-10 flex items-center justify-between">
-                    <div className="flex h-4 w-8 items-center justify-start gap-1">
-                      {isPlaying && (
-                        <>
-                          <div className="h-[8px] w-[3px] animate-[bounce_1s_infinite] rounded-full bg-primary"></div>
-                          <div className="h-[14px] w-[3px] animate-[bounce_1s_infinite_0.2s] rounded-full bg-primary/80"></div>
-                          <div className="h-[10px] w-[3px] animate-[bounce_1s_infinite_0.4s] rounded-full bg-primary/60"></div>
-                        </>
-                      )}
-                    </div>
-
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={(event) => handlePreviewVoice(voice.key, event)}
-                      disabled={isLoadingVoice || !voice.isAvailable}
-                      className={`h-9 w-9 rounded-full transition-all ${
-                        isPlaying
-                          ? "bg-primary text-primary-foreground hover:bg-primary/80"
-                          : "bg-white/10 text-white hover:bg-white/30 hover:scale-105"
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <div
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold transition-colors ${
+                        isSelected
+                          ? "border-primary/40 bg-primary/20 text-primary shadow-sm"
+                          : "border-white/10 bg-white/5 text-white/40"
                       }`}
                     >
-                      {isLoadingVoice ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : isPlaying ? (
-                        <Pause className="h-4 w-4" />
-                      ) : (
-                        <Play className="ml-0.5 h-4 w-4" />
+                      {voice.label.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex flex-col overflow-hidden">
+                      <h4 className="truncate text-sm font-bold text-white">{voice.label}</h4>
+                      <p className="text-[9px] uppercase tracking-[0.1em] text-white/40">
+                        {voice.styleTag || "Default Preset"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    {isSelected && (
+                      <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/40 px-2.5 py-1 backdrop-blur-md">
+                        <span className="text-[9px] font-bold uppercase tracking-tight text-white/30">Speed</span>
+                        <div className="flex items-center">
+                          <Input
+                            type="number"
+                            min={MIN_VOICE_SPEED}
+                            max={MAX_VOICE_SPEED}
+                            step={SPEED_STEP}
+                            value={voiceConfig.speed}
+                            onChange={(event) => handleSpeedChange(Number(event.target.value) || 1)}
+                            onClick={(event) => event.stopPropagation()}
+                            className="h-5 w-12 border-none bg-transparent p-0 text-center font-mono text-xs font-bold text-primary focus-visible:ring-0"
+                          />
+                          <span className="text-[10px] font-bold text-primary/50">x</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2">
+                      {isPlaying && (
+                        <div className="flex items-center gap-0.5 px-1">
+                          <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary"></div>
+                          <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary/60 [animation-delay:0.2s]"></div>
+                        </div>
                       )}
-                    </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={(event) => handlePreviewVoice(voice.key, event)}
+                        disabled={isLoadingVoice || !voice.isAvailable}
+                        className={`h-8 w-8 rounded-full shadow-sm transition-all ${
+                          isPlaying
+                            ? "bg-primary text-primary-foreground scale-105"
+                            : "bg-white/10 text-white hover:bg-white/20 hover:scale-105"
+                        }`}
+                      >
+                        {isLoadingVoice ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : isPlaying ? (
+                          <Pause className="h-4 w-4" />
+                        ) : (
+                          <Play className="ml-0.5 h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               );
@@ -451,6 +417,23 @@ export function StepVoice() {
                         </span>
                       )}
                     </div>
+                    {item.audioChunks && item.audioChunks.length > 0 && (
+                      <div className="mt-3 flex flex-col gap-2 rounded-xl border border-white/5 bg-black/20 p-3">
+                        {item.audioChunks.map((chunk) => (
+                          <div
+                            key={chunk.i}
+                            className="flex flex-col gap-1 border-b border-white/5 pb-2 last:border-0 last:pb-0"
+                          >
+                            <span className="font-mono text-[10px] text-primary/70">
+                              Chunk {chunk.i} ({chunk.w}w)
+                            </span>
+                            <span className="text-xs text-muted-foreground leading-relaxed">
+                              {chunk.text}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <Button

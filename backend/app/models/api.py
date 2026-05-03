@@ -91,6 +91,8 @@ class VoiceGenerateRequest(BaseModel):
     provider: str = "vieneu"
     voiceKey: str
     speed: float = 1.15
+    dialogue: str | None = None
+    speaker: str | None = None
 
 
 class TtsRuntimeResponse(BaseModel):

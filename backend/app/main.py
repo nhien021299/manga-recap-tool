@@ -1,5 +1,13 @@
 from __future__ import annotations
 
+import sys
+import io
+
+# Force UTF-8 on Windows to handle Vietnamese characters in logs/console
+if sys.platform == "win32":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
+
 from contextlib import asynccontextmanager
 from pathlib import Path
 

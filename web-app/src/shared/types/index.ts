@@ -37,102 +37,12 @@ export interface Panel {
   rect?: { x: number; y: number; width: number; height: number };
 }
 
-export type CharacterClusterStatus = "draft" | "locked" | "review_needed" | "unknown" | "ignored" | "merged";
-export type PanelCharacterSource = "auto_confirmed" | "manual" | "unknown" | "suggested";
-export type CharacterQualityBucket = "good" | "medium" | "poor";
-export type CharacterCropAssignmentState = "auto_confirmed" | "suggested" | "manual" | "unknown";
-export type CharacterCropKind = "face" | "head" | "upper_body" | "person" | "accessory" | "heuristic" | "monster" | "unknown";
-
-export interface CharacterCluster {
-  clusterId: string;
-  chapterId: string;
-  status: CharacterClusterStatus;
-  canonicalName: string;
-  displayLabel: string;
-  lockName: boolean;
-  confidenceScore: number;
-  occurrenceCount: number;
-  anchorCropIds: string[];
-  anchorPanelIds: string[];
-  samplePanelIds: string[];
-  reviewFlags: string[];
-  mergedIntoClusterId?: string | null;
-  diagnostics?: Record<string, unknown>;
-}
-
-export interface PanelCharacterRef {
-  panelId: string;
-  clusterIds: string[];
-  source: PanelCharacterSource;
-  confidenceScore: number;
-  diagnostics?: Record<string, unknown>;
-}
-
-export interface CharacterCrop {
-  cropId: string;
-  panelId: string;
-  orderIndex: number;
-  bbox: number[];
-  detectionScore: number;
-  kind: CharacterCropKind;
-  detectorSource: string;
-  detectorModel: string;
-  qualityScore: number;
-  qualityBucket: CharacterQualityBucket;
-  previewImage: string;
-  assignedClusterId?: string | null;
-  assignmentState: CharacterCropAssignmentState;
-  diagnostics?: Record<string, unknown>;
-}
-
-export interface CharacterCandidateAssignment {
-  cropId: string;
-  panelId: string;
-  clusterId: string;
-  rank: number;
-  score: number;
-  marginScore: number;
-  state: CharacterCropAssignmentState;
-  diagnostics?: Record<string, unknown>;
-}
-
-export interface CharacterScriptEntry {
-  clusterId: string;
-  canonicalName: string;
-  displayLabel: string;
-  lockName: boolean;
-}
-
-export interface CharacterScriptContext {
-  chapterId: string;
-  characters: CharacterScriptEntry[];
-  panelCharacterRefs: Record<string, string[]>;
-  unknownPanelIds: string[];
-}
-
-export interface ChapterCharacterState {
-  chapterId: string;
-  chapterContentHash: string;
-  prepassVersion: string;
-  generatedAt: string;
-  updatedAt: string;
-  needsReview: boolean;
-  clusters: CharacterCluster[];
-  crops: CharacterCrop[];
-  candidateAssignments: CharacterCandidateAssignment[];
-  panelCharacterRefs: PanelCharacterRef[];
-  unresolvedPanelIds: string[];
-  clusterDiagnostics?: Record<string, unknown>;
-  diagnostics?: Record<string, unknown>;
-}
 
 export interface ScriptContext {
   mangaName?: string;
   mainCharacter?: string;
   summary?: string;
   language?: "vi" | "en";
-  chapterId?: string;
-  characterContext?: CharacterScriptContext | null;
 }
 
 export interface PanelUnderstanding {
@@ -389,7 +299,6 @@ export interface Metrics {
   retryCount: number;
   rateLimitedCount: number;
   throttleWaitMs: number;
-  identityConfirmedCount: number;
 }
 
 export interface ScriptJobResult {

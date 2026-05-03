@@ -108,19 +108,29 @@ export function StepVoice() {
       });
 
       let url = previewCacheRef.current[cacheKey];
+      const targetVoice = activeVoices.find(v => v.key === voiceKey);
+
       if (!url) {
-        const blob = await generateVoiceAudio(config.apiBaseUrl, {
-          text: PREVIEW_TEXT,
-          provider: activeProvider?.id || voiceConfig.provider,
-          voiceKey,
-          speed: voiceConfig.speed,
-        });
-        url = URL.createObjectURL(blob);
-        previewCacheRef.current[cacheKey] = url;
+        if (targetVoice?.sampleUrl) {
+          url = targetVoice.sampleUrl.startsWith("http") 
+            ? targetVoice.sampleUrl 
+            : `${config.apiBaseUrl}${targetVoice.sampleUrl}`;
+        } else {
+          const blob = await generateVoiceAudio(config.apiBaseUrl, {
+            text: PREVIEW_TEXT,
+            provider: activeProvider?.id || voiceConfig.provider,
+            voiceKey,
+            speed: voiceConfig.speed,
+          });
+          url = URL.createObjectURL(blob);
+          previewCacheRef.current[cacheKey] = url;
+        }
       }
 
       if (previewAudioRef.current) {
         previewAudioRef.current.src = url;
+        previewAudioRef.current.playbackRate = targetVoice?.sampleUrl ? voiceConfig.speed : 1.0;
+        previewAudioRef.current.preservesPitch = true; // Try to preserve pitch when changing playbackRate
         previewAudioRef.current.onended = () => setPlayingPreview(null);
         void previewAudioRef.current.play();
         setPlayingPreview(voiceKey);
@@ -156,14 +166,14 @@ export function StepVoice() {
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h2 className="bg-gradient-to-r from-white to-white/60 bg-clip-text text-3xl font-bold tracking-tight text-transparent">
-            AI Voiceover
+            Lồng Tiếng AI
           </h2>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <p>Generate narration clips through the backend VieNeu-TTS-0.3B runtime.</p>
+            <p>Tạo giọng đọc thuyết minh tự động bằng AI (VieNeu TTS).</p>
             {totalDuration > 0 && !isLoading && (
               <div className="flex items-center gap-1.5 rounded-md border border-primary/20 bg-primary/10 px-2 py-0.5 font-medium text-primary">
                 <Clock className="h-3.5 w-3.5" />
-                Total: {totalDuration.toFixed(1)}s
+                Tổng: {totalDuration.toFixed(1)}s
               </div>
             )}
           </div>
@@ -175,7 +185,7 @@ export function StepVoice() {
               onClick={clearAllVoices}
               className="border-red-500/30 bg-red-500/10 px-6 font-bold text-red-200 hover:bg-red-500/15"
             >
-              <Trash2 className="h-4 w-4" /> Clear voice cache
+              <Trash2 className="h-4 w-4" /> Xóa giọng cũ
             </Button>
           )}
           <Button
@@ -184,10 +194,10 @@ export function StepVoice() {
             disabled={isLoading}
             className="border-white/10 bg-white/5 px-6 font-bold text-white hover:bg-white/10"
           >
-            <ChevronLeft className="h-4 w-4" /> Back
+            <ChevronLeft className="h-4 w-4" /> Quay lại
           </Button>
           <Button onClick={nextStep} disabled={timeline.length === 0 || isLoading} className="group px-8 font-bold">
-            Continue <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            Tiếp tục <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Button>
         </div>
       </div>
@@ -195,19 +205,19 @@ export function StepVoice() {
       {activeVoices.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1 text-sm">
-            <span className="font-medium text-muted-foreground">Select Voice Preset</span>
-            <span className="text-xs uppercase tracking-[0.2em] text-white/45">{activeProvider?.label || "Voice"}</span>
+            <span className="font-medium text-muted-foreground">Chọn Giọng Đọc</span>
+            <span className="text-xs uppercase tracking-[0.2em] text-white/45">{activeProvider?.label || "Giọng"}</span>
           </div>
           <div className="flex items-center justify-between px-1 text-sm">
             <span className="font-medium text-muted-foreground">
-              Tap a preset to keep it active, then press play to preview at {voiceConfig.speed.toFixed(2)}x.
+              Chọn mẫu giọng để sử dụng, bạn có thể nghe thử ở tốc độ {voiceConfig.speed.toFixed(2)}x.
             </span>
             {staleClipCount > 0 ? (
               <span className="text-xs text-amber-200/85">
-                {staleClipCount} stale clip{staleClipCount === 1 ? "" : "s"}
+                {staleClipCount} đoạn cần cập nhật
               </span>
             ) : (
-              <span className="text-xs uppercase tracking-[0.2em] text-white/45">Preview follows current speed</span>
+              <span className="text-xs uppercase tracking-[0.2em] text-white/45">Bản nghe thử tuân theo tốc độ</span>
             )}
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -250,13 +260,13 @@ export function StepVoice() {
                     <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                       {voice.description || "Backend voice preset"}
                     </p>
-                    {!voice.isAvailable && <p className="text-[10px] text-destructive">Missing assets</p>}
+                    {!voice.isAvailable && <p className="text-[10px] text-destructive">Thiếu dữ liệu</p>}
                   </div>
 
                   {isSelected ? (
                     <div className="relative z-10 mb-5 space-y-2 rounded-2xl border border-white/10 bg-black/20 p-3">
                       <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.2em] text-white/45">
-                        <span>Speed</span>
+                        <span>Tốc độ đọc</span>
                         <span>{voiceConfig.speed.toFixed(2)}x</span>
                       </div>
                       <div className="flex items-center gap-3">
@@ -328,9 +338,9 @@ export function StepVoice() {
             <Volume2 className="h-16 w-16 text-primary" />
           </div>
           <div className="space-y-2 text-center">
-            <h3 className="text-xl font-semibold">Create narration audio</h3>
+            <h3 className="text-xl font-semibold">Tạo giọng đọc thuyết minh</h3>
             <p className="max-w-sm px-4 text-muted-foreground">
-              Turn the generated script into WAV clips from the backend VieNeu-TTS-0.3B pipeline.
+              Chuyển đổi kịch bản thành các tệp âm thanh WAV chất lượng cao bằng AI.
             </p>
           </div>
 
@@ -348,7 +358,7 @@ export function StepVoice() {
               disabled={isLoading}
               className="h-14 w-full rounded-2xl border-none bg-primary text-lg font-bold text-primary-foreground shadow-glow transition-all hover:opacity-90 active:scale-[0.98]"
             >
-              {isLoading ? "Generating audio..." : "Generate all clips"}
+              {isLoading ? "Đang tạo giọng đọc..." : "Bắt đầu lồng tiếng toàn bộ"}
             </Button>
             {isLoading && (
               <div className="space-y-3">
@@ -419,17 +429,17 @@ export function StepVoice() {
                         >
                           {playingIdx === index ? (
                             <>
-                              <Pause className="mr-2 h-3 w-3" /> Stop
+                              <Pause className="mr-2 h-3 w-3" /> Dừng
                             </>
                           ) : (
                             <>
-                              <Play className="mr-2 h-3 w-3" /> Preview
+                              <Play className="mr-2 h-3 w-3" /> Nghe thử
                             </>
                           )}
                         </Button>
                       ) : (
                         <span className="flex items-center gap-1 text-[10px] text-destructive">
-                          <AlertCircle className="h-3 w-3" /> No audio yet
+                          <AlertCircle className="h-3 w-3" /> Chưa có âm thanh
                         </span>
                       )}
                       <span className="text-[10px] uppercase text-muted-foreground">

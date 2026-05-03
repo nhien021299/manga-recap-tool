@@ -44,24 +44,6 @@ class Settings(BaseSettings):
         alias="AI_BACKEND_CORS_ORIGINS",
     )
     temp_root_raw: str = Field(default=".temp/jobs", alias="AI_BACKEND_TEMP_ROOT")
-    character_state_db_raw: str = Field(
-        default=".temp/characters/character-state.sqlite3",
-        alias="AI_BACKEND_CHARACTER_STATE_DB",
-    )
-    character_cache_root_raw: str = Field(
-        default=".temp/characters/cache",
-        alias="AI_BACKEND_CHARACTER_CACHE_ROOT",
-    )
-    character_detector_mode: str = Field(default="hybrid", alias="AI_BACKEND_CHARACTER_DETECTOR_MODE")
-    character_device: str = Field(default="auto", alias="AI_BACKEND_CHARACTER_DEVICE")
-    character_clusterer: str = Field(default="hdbscan", alias="AI_BACKEND_CHARACTER_CLUSTERER")
-    character_object_model: str = Field(default="yolov8n.pt", alias="AI_BACKEND_CHARACTER_OBJECT_MODEL")
-    character_min_cluster_size: int = Field(default=2, alias="AI_BACKEND_CHARACTER_MIN_CLUSTER_SIZE")
-    character_embedder: str = Field(default="handcrafted", alias="AI_BACKEND_CHARACTER_EMBEDDER")
-    character_dino_model_path: str = Field(default="", alias="AI_BACKEND_CHARACTER_DINO_MODEL_PATH")
-    character_arcface_model_path: str = Field(default="", alias="AI_BACKEND_CHARACTER_ARCFACE_MODEL_PATH")
-    character_embed_device: str = Field(default="auto", alias="AI_BACKEND_CHARACTER_EMBED_DEVICE")
-    character_anime_face_model_path: str = Field(default="", alias="AI_BACKEND_CHARACTER_ANIME_FACE_MODEL_PATH")
     render_temp_root_raw: str = Field(default=".temp/render-jobs", alias="AI_BACKEND_RENDER_TEMP_ROOT")
     render_ffmpeg_path: str = Field(default="ffmpeg", alias="AI_BACKEND_RENDER_FFMPEG_PATH")
     render_result_ttl_seconds: int = Field(default=3600, alias="AI_BACKEND_RENDER_RESULT_TTL_SECONDS")
@@ -93,54 +75,6 @@ class Settings(BaseSettings):
         alias="AI_BACKEND_TTS_VIENEU_VOICE_ROOT",
     )
 
-    @field_validator("character_detector_mode", mode="before")
-    @classmethod
-    def _normalize_character_detector_mode(cls, value: object) -> str:
-        normalized = str(value or "hybrid").strip().lower()
-        if normalized in {"hybrid", "heuristic", "anime", "object"}:
-            return normalized
-        raise ValueError("AI_BACKEND_CHARACTER_DETECTOR_MODE must be one of: hybrid, heuristic, anime, object.")
-
-    @field_validator("character_device", mode="before")
-    @classmethod
-    def _normalize_character_device(cls, value: object) -> str:
-        normalized = str(value or "auto").strip().lower()
-        if normalized in {"auto", "cpu", "gpu"}:
-            return normalized
-        raise ValueError("AI_BACKEND_CHARACTER_DEVICE must be one of: auto, cpu, gpu.")
-
-    @field_validator("character_clusterer", mode="before")
-    @classmethod
-    def _normalize_character_clusterer(cls, value: object) -> str:
-        normalized = str(value or "hdbscan").strip().lower()
-        if normalized in {"hdbscan", "agglomerative"}:
-            return normalized
-        raise ValueError("AI_BACKEND_CHARACTER_CLUSTERER must be one of: hdbscan, agglomerative.")
-
-    @field_validator("character_embedder", mode="before")
-    @classmethod
-    def _normalize_character_embedder(cls, value: object) -> str:
-        normalized = str(value or "handcrafted").strip().lower()
-        aliases = {
-            "directml": "arcface-directml",
-            "dml": "arcface-directml",
-            "onnx-directml": "arcface-directml",
-        }
-        normalized = aliases.get(normalized, normalized)
-        if normalized in {"handcrafted", "arcface", "arcface-directml", "dinov2", "hybrid-dinov2", "arcface-dino"}:
-            return normalized
-        raise ValueError(
-            "AI_BACKEND_CHARACTER_EMBEDDER must be one of: handcrafted, arcface, arcface-directml, dinov2, hybrid-dinov2, arcface-dino."
-        )
-
-    @field_validator("character_min_cluster_size", mode="before")
-    @classmethod
-    def _normalize_character_min_cluster_size(cls, value: object) -> int:
-        try:
-            parsed = int(value or 2)
-        except (TypeError, ValueError) as exc:
-            raise ValueError("AI_BACKEND_CHARACTER_MIN_CLUSTER_SIZE must be an integer.") from exc
-        return max(2, parsed)
 
     @field_validator("tts_runtime", mode="before")
     @classmethod
@@ -185,31 +119,6 @@ class Settings(BaseSettings):
     def render_temp_root(self) -> Path:
         return _resolve_backend_path(self.render_temp_root_raw)
 
-    @property
-    def character_state_db(self) -> Path:
-        return _resolve_backend_path(self.character_state_db_raw)
-
-    @property
-    def character_cache_root(self) -> Path:
-        return _resolve_backend_path(self.character_cache_root_raw)
-
-    @property
-    def character_dino_model_resolved_path(self) -> str:
-        if not self.character_dino_model_path:
-            return ""
-        return str(_resolve_backend_path(self.character_dino_model_path))
-
-    @property
-    def character_arcface_model_resolved_path(self) -> str:
-        if not self.character_arcface_model_path:
-            return ""
-        return str(_resolve_backend_path(self.character_arcface_model_path))
-
-    @property
-    def character_anime_face_model_resolved_path(self) -> str:
-        if not self.character_anime_face_model_path:
-            return ""
-        return str(_resolve_backend_path(self.character_anime_face_model_path))
 
     @property
     def tts_vieneu_voice_root(self) -> Path:

@@ -382,32 +382,32 @@ export function StepCharacters() {
             Re-run prepass
           </Button>
           <Button onClick={() => setCurrentStep("script")} className="px-8 font-bold" disabled={loading}>
-            Sang Script <ChevronRight className="ml-2 h-4 w-4" />
+            Tiếp tục <ChevronRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
       </div>
 
       {(error || loading) && (
         <Card className="rounded-3xl border border-white/10 bg-black/20 p-4 text-sm text-white/80">
-          {loading ? "Dang chay character prepass..." : error}
+          {loading ? "Đang chạy nhận diện nhân vật..." : error}
         </Card>
       )}
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <Card className="rounded-3xl border border-white/10 bg-black/20 p-5">
-          <p className="text-xs uppercase tracking-[0.2em] text-white/40">Clusters</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-white/40">Số nhóm (Clusters)</p>
           <p className="mt-2 text-3xl font-bold text-white">{activeClusters.length}</p>
-          <p className="mt-1 text-sm text-white/55">reviewable identities in current chapter</p>
+          <p className="mt-1 text-sm text-white/55">danh tính đã được phân loại</p>
         </Card>
         <Card className="rounded-3xl border border-white/10 bg-black/20 p-5">
-          <p className="text-xs uppercase tracking-[0.2em] text-white/40">Possible Wrong Merge</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-white/40">Cảnh báo nhầm lẫn</p>
           <p className="mt-2 text-3xl font-bold text-white">{possibleWrongMergeClusters.length}</p>
-          <p className="mt-1 text-sm text-white/55">clusters with centroid overlap warning</p>
+          <p className="mt-1 text-sm text-white/55">cần kiểm tra lại độ chính xác</p>
         </Card>
         <Card className="rounded-3xl border border-white/10 bg-black/20 p-5">
-          <p className="text-xs uppercase tracking-[0.2em] text-white/40">Near-Threshold Unknown</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-white/40">Chưa xác định</p>
           <p className="mt-2 text-3xl font-bold text-white">{unresolvedPanels.length}</p>
-          <p className="mt-1 text-sm text-white/55">panels that still need crop review</p>
+          <p className="mt-1 text-sm text-white/55">hình ảnh cần được gán nhân vật</p>
         </Card>
       </div>
 
@@ -416,26 +416,26 @@ export function StepCharacters() {
           <Card className="glass rounded-3xl border-white/10 bg-white/5 p-6">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold text-white">Character List</h3>
+                <h3 className="text-lg font-bold text-white">Danh sách nhân vật</h3>
                 <p className="text-sm text-white/50">
-                  {activeClusters.length} clusters, {characterState?.needsReview ? "can review" : "ready"}
+                  {activeClusters.length} nhóm nhân vật, {characterState?.needsReview ? "cần kiểm tra" : "đã sẵn sàng"}
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <Input
                   value={splitName}
                   onChange={(event) => setSplitName(event.target.value)}
-                  placeholder="Ten character split"
+                  placeholder="Tên nhóm mới khi tách"
                   className="h-10 w-48 rounded-xl border-white/15 bg-white/10 text-white"
                 />
                 <Input
                   value={newCharacterName}
                   onChange={(event) => setNewCharacterName(event.target.value)}
-                  placeholder="Them character thu cong"
+                  placeholder="Thêm nhân vật mới"
                   className="h-10 w-56 rounded-xl border-white/15 bg-white/10 text-white"
                 />
                 <Button onClick={createManualCharacter} disabled={saving || !newCharacterName.trim()} className="font-bold">
-                  <UserPlus className="mr-2 h-4 w-4" /> Add
+                  <UserPlus className="mr-2 h-4 w-4" /> Thêm
                 </Button>
               </div>
             </div>
@@ -508,7 +508,7 @@ export function StepCharacters() {
 
                         <div className="flex flex-wrap gap-2">
                           <Button size="sm" onClick={() => void saveRename(cluster.clusterId, true)} disabled={saving} className="font-bold">
-                            Save + Lock
+                            Lưu & Khóa
                           </Button>
                           <Button
                             size="sm"
@@ -517,7 +517,7 @@ export function StepCharacters() {
                             disabled={saving}
                             className="border-white/15 bg-white/5 text-white hover:bg-white/10"
                           >
-                            Save Draft
+                            Lưu nháp
                           </Button>
                           <Button
                             size="sm"
@@ -527,7 +527,7 @@ export function StepCharacters() {
                             className="border-amber-300/25 bg-amber-400/10 text-amber-100 hover:bg-amber-400/15"
                           >
                             <Scissors className="mr-2 h-4 w-4" />
-                            Split {splitCropCount + splitPanelCount || ""}
+                            Tách {splitCropCount + splitPanelCount || ""}
                           </Button>
                           <Button
                             size="sm"
@@ -536,7 +536,7 @@ export function StepCharacters() {
                             disabled={saving}
                             className="border-white/15 bg-white/5 text-white hover:bg-white/10"
                           >
-                            Mark Unknown
+                            Chưa biết
                           </Button>
                           <Button
                             size="sm"
@@ -545,7 +545,7 @@ export function StepCharacters() {
                             disabled={saving}
                             className="border-white/15 bg-white/5 text-white hover:bg-white/10"
                           >
-                            Ignore
+                            Bỏ qua
                           </Button>
                         </div>
                       </div>
@@ -700,13 +700,13 @@ export function StepCharacters() {
           <Card className="glass rounded-3xl border-white/10 bg-white/5 p-6">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold text-white">Panel Inspector</h3>
+                <h3 className="text-lg font-bold text-white">Chi tiết cảnh quay</h3>
                 <p className="text-sm text-white/50">
-                  Quick override o cap panel va crop-level assignment cho tung detection.
+                  Gán nhanh nhân vật cho toàn bộ cảnh hoặc từng khuôn mặt riêng biệt.
                 </p>
               </div>
               <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-white/60">
-                {selectedPanel ? `Panel ${selectedPanel.order + 1}` : "No panel"}
+                {selectedPanel ? `Cảnh ${selectedPanel.order + 1}` : "Chưa chọn"}
               </span>
             </div>
 
@@ -725,7 +725,7 @@ export function StepCharacters() {
                   >
                     <img src={panel.thumbnail || panel.base64} alt={panel.id} className="h-24 w-full object-cover" />
                     <div className="px-3 py-2 text-xs text-white/70">
-                      Panel {panel.order + 1} • {panelCropCount} crops • {assignedCount} refs {unresolved ? "• review" : ""}
+                      Cảnh {panel.order + 1} • {panelCropCount} khuôn mặt • {assignedCount} gán {unresolved ? "• kiểm tra" : ""}
                     </div>
                   </button>
                 );
@@ -735,14 +735,14 @@ export function StepCharacters() {
             {selectedPanel && (
               <div className="mt-5 space-y-4 rounded-2xl border border-white/10 bg-black/20 p-4">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-semibold uppercase tracking-wide text-white/65">Quick Panel Override</Label>
+                  <Label className="text-[10px] font-semibold uppercase tracking-wide text-white/65">Gán nhanh cho toàn bộ cảnh</Label>
                   <div className="flex flex-wrap gap-2">
                     <select
                       value={panelOverrideTarget}
                       onChange={(event) => setPanelOverrideTarget(event.target.value)}
                       className="h-10 min-w-44 rounded-xl border border-white/15 bg-white/10 px-3 text-sm text-white"
                     >
-                      <option value="">Set unknown</option>
+                      <option value="">Chưa biết</option>
                       {activeClusters.map((cluster) => (
                         <option key={cluster.clusterId} value={cluster.clusterId}>
                           {cluster.canonicalName || cluster.displayLabel || cluster.clusterId}
@@ -756,7 +756,7 @@ export function StepCharacters() {
                       disabled={saving}
                       className="border-white/15 bg-white/5 text-white hover:bg-white/10"
                     >
-                      Apply
+                      Áp dụng
                     </Button>
                     <Button
                       size="sm"
@@ -769,25 +769,25 @@ export function StepCharacters() {
                       }
                     >
                       <Scissors className="mr-2 h-4 w-4" />
-                      {splitPanelSelections[selectedPanel.id] ? "Panel selected for split" : "Select panel for split"}
+                      {splitPanelSelections[selectedPanel.id] ? "Đã chọn" : "Chọn để tách"}
                     </Button>
                   </div>
                   <p className="text-xs text-white/45">
-                    Override nhanh cho Script. Neu can chinh dung crop thi su dung crop inspector ben duoi.
+                    Gán nhanh cho toàn bộ cảnh. Nếu cần chi tiết, hãy gán cho từng khuôn mặt bên dưới.
                   </p>
                 </div>
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-white">Detected Crops</p>
+                    <p className="text-sm font-semibold text-white">Các khuôn mặt phát hiện được</p>
                     <span className="text-xs text-white/45">
-                      panel ref: {(selectedRef?.clusterIds || []).join(", ") || "unknown"}
+                      tham chiếu: {(selectedRef?.clusterIds || []).join(", ") || "chưa biết"}
                     </span>
                   </div>
 
                   {selectedPanelCrops.length === 0 && (
                     <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 p-4 text-sm text-white/55">
-                      Panel nay chua co detection crop du chat luong. Neu can, tao manual character va dung panel override.
+                      Cảnh này chưa phát hiện được khuôn mặt rõ ràng. Hãy gán thủ công nếu cần.
                     </div>
                   )}
 
@@ -806,7 +806,7 @@ export function StepCharacters() {
                             >
                               <img src={crop.previewImage} alt={crop.cropId} className="h-full w-full object-cover" />
                               <span className="absolute right-1 top-1 rounded bg-black/70 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white/80">
-                                split
+                                tách
                               </span>
                             </button>
                             <div className="min-w-0 flex-1 space-y-2">
@@ -822,16 +822,16 @@ export function StepCharacters() {
                                   {crop.assignmentState}
                                 </span>
                                 <span className="text-xs text-white/45">
-                                  quality {Math.round(crop.qualityScore * 100)}% • detect {Math.round(crop.detectionScore * 100)}%
+                                  chất lượng {Math.round(crop.qualityScore * 100)}% • phát hiện {Math.round(crop.detectionScore * 100)}%
                                 </span>
                               </div>
                               <p className="text-xs text-white/45">
-                                bbox [{crop.bbox.join(", ")}] • assigned {crop.assignedClusterId || "unknown"} • {crop.detectorSource}
+                                vùng chọn [{crop.bbox.join(", ")}] • đã gán {crop.assignedClusterId || "chưa biết"} • {crop.detectorSource}
                                 {crop.detectorModel ? ` / ${crop.detectorModel}` : ""}
                               </p>
                               <div className="flex flex-wrap gap-2">
                                 {cropCandidates.length === 0 && (
-                                  <span className="text-xs text-white/45">No strong cluster candidate.</span>
+                                  <span className="text-xs text-white/45">Không có gợi ý nhân vật phù hợp.</span>
                                 )}
                                 {cropCandidates.map((candidate) => (
                                   <Button
@@ -856,7 +856,7 @@ export function StepCharacters() {
                                   disabled={saving}
                                   className="border-white/15 bg-white/5 text-white hover:bg-white/10"
                                 >
-                                  Clear
+                                  Xóa
                                 </Button>
                               </div>
                             </div>

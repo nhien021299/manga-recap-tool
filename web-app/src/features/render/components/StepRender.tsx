@@ -331,10 +331,10 @@ export function StepRender() {
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h2 className="bg-gradient-to-r from-white to-white/60 bg-clip-text text-3xl font-bold tracking-tight text-transparent">
-            Timeline & Render
+            Dựng Phim & Xuất Bản
           </h2>
           <p className="text-sm text-white/65">
-            Official export now runs through backend native ffmpeg with cinematic keyframed panel motion.
+            Quá trình xuất video được thực hiện bằng engine Remotion với hiệu ứng chuyển động mượt mà và chất lượng cao.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -351,11 +351,11 @@ export function StepRender() {
             disabled={isRendering || staleClipCount === 0}
             className="border-amber-500/30 bg-amber-500/10 px-6 font-bold text-amber-100 hover:bg-amber-500/15"
           >
-            <RefreshCw className="h-4 w-4" /> Regenerate stale audio ({staleClipCount})
+            <RefreshCw className="h-4 w-4" /> Cập nhật giọng đọc ({staleClipCount})
           </Button>
           {canCancelExport ? (
             <Button variant="destructive" onClick={handleCancelExport} className="px-6 font-bold">
-              <XCircle className="h-4 w-4" /> Cancel export
+              <XCircle className="h-4 w-4" /> Hủy xuất bản
             </Button>
           ) : (
             <Button
@@ -368,7 +368,7 @@ export function StepRender() {
               ) : (
                 <Video className="h-4 w-4" />
               )}
-              Render MP4
+              Xuất Video MP4
             </Button>
           )}
         </div>
@@ -376,15 +376,15 @@ export function StepRender() {
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="glass rounded-3xl border-white/10 bg-white/5 p-5">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/45">Active Clips</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/45">Số cảnh quay</p>
           <p className="mt-2 text-2xl font-bold text-white">{activeClipCount}</p>
         </Card>
         <Card className="glass rounded-3xl border-white/10 bg-white/5 p-5">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/45">Total Duration</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/45">Tổng thời lượng</p>
           <p className="mt-2 text-2xl font-bold text-white">{formatSeconds(totalDurationMs)}</p>
         </Card>
         <Card className="glass rounded-3xl border-white/10 bg-white/5 p-5">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/45">Render Output</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/45">Độ phân giải</p>
           <p className="mt-2 text-2xl font-bold text-white">
             {renderConfig.outputWidth} x {Math.round(renderConfig.outputWidth / renderConfig.aspectRatio)}
           </p>
@@ -394,7 +394,7 @@ export function StepRender() {
       {blockingIssues.length > 0 && (
         <Card className="rounded-3xl border border-red-500/25 bg-red-500/10 p-5 text-red-50">
           <div className="flex items-center gap-2 text-sm font-semibold">
-            <AlertCircle className="h-4 w-4" /> Blocking Issues
+            <AlertCircle className="h-4 w-4" /> Vấn đề cần xử lý
           </div>
           <div className="mt-3 space-y-2 text-sm text-red-100/90">
             {blockingIssues.map((error) => (
@@ -417,8 +417,8 @@ export function StepRender() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="rounded-2xl border border-white/10 bg-white/5 p-1.5">
-          <TabsTrigger value="timeline">Timeline</TabsTrigger>
-          <TabsTrigger value="export">Export</TabsTrigger>
+          <TabsTrigger value="timeline">Dòng thời gian</TabsTrigger>
+          <TabsTrigger value="export">Xuất bản</TabsTrigger>
         </TabsList>
 
         <TabsContent value="timeline" className="space-y-4 pt-4">
@@ -442,10 +442,10 @@ export function StepRender() {
                       ) : null}
                     </div>
                     <div className="space-y-2">
-                      <p className="text-lg font-bold text-white">Clip {index + 1}</p>
+                      <p className="text-lg font-bold text-white">Cảnh {index + 1}</p>
                       <div className="flex flex-wrap gap-2 text-xs text-white/60">
                         <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1">
-                          {item.audioStatus || "missing"}
+                          Trạng thái: {item.audioStatus === 'ready' ? 'Sẵn sàng' : 'Chưa có âm thanh'}
                         </span>
                         <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1">
                           {formatSeconds(
@@ -467,7 +467,7 @@ export function StepRender() {
                         className="rounded-xl"
                       >
                         {isEnabled ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-                        {isEnabled ? "Active" : "Disabled"}
+                        {isEnabled ? "Hoạt động" : "Tạm tắt"}
                       </Button>
                       <Button
                         size="sm"
@@ -476,7 +476,7 @@ export function StepRender() {
                         disabled={index === 0}
                         className="rounded-xl"
                       >
-                        <ArrowUp className="h-4 w-4" /> Move up
+                        <ArrowUp className="h-4 w-4" /> Lên trên
                       </Button>
                       <Button
                         size="sm"
@@ -485,7 +485,7 @@ export function StepRender() {
                         disabled={index === timeline.length - 1}
                         className="rounded-xl"
                       >
-                        <ArrowDown className="h-4 w-4" /> Move down
+                        <ArrowDown className="h-4 w-4" /> Xuống dưới
                       </Button>
                       <Button
                         size="sm"
@@ -493,7 +493,7 @@ export function StepRender() {
                         onClick={() => generateSingleVoice(index)}
                         className="rounded-xl"
                       >
-                        <RefreshCw className="h-4 w-4" /> Regenerate audio
+                        <RefreshCw className="h-4 w-4" /> Tạo lại âm thanh
                       </Button>
                       <Button
                         size="sm"
@@ -503,7 +503,7 @@ export function StepRender() {
                         className="rounded-xl"
                       >
                         {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                        {isPlaying ? "Stop" : "Preview"}
+                        {isPlaying ? "Dừng" : "Nghe thử"}
                       </Button>
                       <Button
                         size="sm"
@@ -512,7 +512,7 @@ export function StepRender() {
                         disabled={item.scriptStatus !== "edited"}
                         className="rounded-xl"
                       >
-                        <RotateCcw className="h-4 w-4" /> Reset auto
+                        <RotateCcw className="h-4 w-4" /> Khôi phục gốc
                       </Button>
                       <Button
                         size="sm"
@@ -520,7 +520,7 @@ export function StepRender() {
                         onClick={() => duplicateTimelineItem(index)}
                         className="rounded-xl"
                       >
-                        <Copy className="h-4 w-4" /> Duplicate
+                        <Copy className="h-4 w-4" /> Nhân bản
                       </Button>
                       <Button
                         size="sm"
@@ -529,14 +529,14 @@ export function StepRender() {
                         disabled={timeline.length <= 1}
                         className="rounded-xl border-red-500/30 text-red-100 hover:bg-red-500/10"
                       >
-                        <Trash2 className="h-4 w-4" /> Remove
+                        <Trash2 className="h-4 w-4" /> Xóa cảnh
                       </Button>
                     </div>
 
                     <div className="grid gap-4 lg:grid-cols-[1fr_180px]">
                       <div className="space-y-2">
                         <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/45">
-                          Narration
+                          Nội dung thuyết minh
                         </p>
                         <div className="flex flex-wrap gap-2 text-xs text-white/60">
                           <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1">
@@ -544,7 +544,7 @@ export function StepRender() {
                           </span>
                           {item.scriptStatus === "edited" ? (
                             <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-amber-100">
-                              Audio must be regenerated
+                              Cần tạo lại âm thanh
                             </span>
                           ) : null}
                         </div>
@@ -565,7 +565,7 @@ export function StepRender() {
                       <div className="space-y-4">
                         <div className="space-y-2">
                           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/45">
-                            Hold After (ms)
+                            Chờ thêm (ms)
                           </p>
                           <Input
                             type="number"
@@ -583,8 +583,7 @@ export function StepRender() {
                         </div>
 
                         <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/60">
-                          Active clip duration resolves from ready audio + hold. Backend export applies deterministic
-                          keyframed panel motion directly from the compiled render plan.
+                          Thời lượng cảnh được tính dựa trên âm thanh + thời gian chờ. Quá trình xuất video sẽ áp dụng các hiệu ứng chuyển động mượt mà cho từng khung hình.
                         </div>
                         {item.scriptStatus === "edited" && item.scriptBaseline ? (
                           <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/60">
@@ -609,7 +608,7 @@ export function StepRender() {
               <div className="space-y-5">
                 <div className="space-y-2">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/45">
-                    Output Format
+                    Định dạng đầu ra
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {(Object.entries(OUTPUT_PRESETS) as Array<
@@ -643,13 +642,13 @@ export function StepRender() {
 
                 <div className="space-y-2">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/45">
-                    Caption Burn-In
+                    Chèn phụ đề video
                   </p>
                   <p className="hidden text-xs leading-5 text-white/50">
                     Burned sẽ in narration trực tiếp lên video. Off sẽ xuất MP4 sạch, không có caption hiển thị trên khung hình.
                   </p>
                   <p className="text-xs leading-5 text-white/50">
-                    Burned overlays narration text directly on the video. Off exports a clean MP4 without on-frame captions.
+                    'Bật' sẽ in trực tiếp lời thoại lên video. 'Tắt' sẽ xuất video sạch không có chữ.
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -657,21 +656,21 @@ export function StepRender() {
                       onClick={() => setRenderConfig({ captionMode: "off" })}
                       className={getOptionButtonClass(renderConfig.captionMode === "off")}
                     >
-                      Off
+                      Tắt
                     </Button>
                     <Button
                       variant="outline"
                       onClick={() => setRenderConfig({ captionMode: "burned" })}
                       className={getOptionButtonClass(renderConfig.captionMode === "burned")}
                     >
-                      Burned
+                      Bật
                     </Button>
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/45">
-                    Export Actions
+                    Thao tác xuất bản
                   </p>
                   <div className="space-y-3">
                     {canCancelExport ? (
@@ -682,7 +681,7 @@ export function StepRender() {
                         className="h-14 w-full rounded-2xl text-lg font-bold"
                       >
                         <XCircle className="h-5 w-5" />
-                        Cancel export
+                        Hủy xuất bản
                       </Button>
                     ) : null}
                     <Button
@@ -696,14 +695,13 @@ export function StepRender() {
                       ) : (
                         <Sparkles className="h-5 w-5" />
                       )}
-                      Official backend export
+                      Bắt đầu xuất video
                     </Button>
                   </div>
                 </div>
 
                 <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/65">
-                  Backend export uploads a self-contained render payload to native ffmpeg and applies cinematic
-                  keyframed panel motion per clip before final MP4 encoding.
+                  Hệ thống sẽ tổng hợp kịch bản, âm thanh và hình ảnh để tạo video MP4 hoàn chỉnh bằng engine Remotion.
                 </div>
 
                 {renderProgress && (
@@ -719,7 +717,7 @@ export function StepRender() {
                         <p className="max-w-xl text-sm leading-6 text-white/72">{progressDetail}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/45">Progress</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/45">Tiến độ</p>
                         <p className="mt-2 text-4xl font-black tracking-tight text-white">{progressValue}%</p>
                       </div>
                     </div>
@@ -732,8 +730,8 @@ export function StepRender() {
                         />
                       </div>
                       <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-white/45">
-                        <span>Native Backend Export</span>
-                        <span>{progressState === "running" ? "Live" : progressState}</span>
+                        <span>Engine Remotion</span>
+                        <span>{progressState === "running" ? "Đang chạy" : (progressState === "completed" ? "Hoàn tất" : "Lỗi")}</span>
                       </div>
                     </div>
                   </div>
@@ -741,7 +739,7 @@ export function StepRender() {
 
                 {recentBackendLogs.length > 0 && (
                   <div className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-white/70">
-                    <p className="font-semibold text-white">Backend logs</p>
+                    <p className="font-semibold text-white">Nhật ký hệ thống</p>
                     <div className="mt-3 space-y-2">
                       {recentBackendLogs.map((log) => (
                         <div key={log.id} className="space-y-1">
@@ -769,10 +767,10 @@ export function StepRender() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Button size="sm" variant="outline" onClick={handleOpenResult} className="rounded-xl">
-                          <FolderOpen className="h-4 w-4" /> Open folder
+                          <FolderOpen className="h-4 w-4" /> Mở thư mục
                         </Button>
                         <Button size="sm" variant="outline" onClick={handleDownloadResult} className="rounded-xl">
-                          <Download className="h-4 w-4" /> Download
+                          <Download className="h-4 w-4" /> Tải về
                         </Button>
                       </div>
                     </div>
@@ -780,7 +778,7 @@ export function StepRender() {
                   </Card>
                 ) : (
                   <Card className="flex min-h-[320px] items-center justify-center rounded-3xl border border-dashed border-white/10 bg-black/20 p-6 text-center text-white/55">
-                    Completed backend result preview will appear here.
+                    Video sau khi xuất xong sẽ hiển thị tại đây.
                   </Card>
                 )}
               </div>

@@ -5,7 +5,6 @@ import { get, set as idbSet } from "idb-keyval";
 import {
   type AudioStatus,
   type BenchmarkRecord,
-  type ChapterCharacterState,
   DEFAULT_ASPECT,
   STRIP_WIDTH,
   type AppConfig,
@@ -15,7 +14,6 @@ import {
   type PanelUnderstandingMeta,
   type RenderConfig,
   type Scene,
-  type CharacterScriptContext,
   type ScriptContext,
   type ScriptMeta,
   type Step,
@@ -68,9 +66,6 @@ interface RecapState {
 
   scriptContext: ScriptContext;
   setScriptContext: (context: Partial<ScriptContext>) => void;
-  characterState: ChapterCharacterState | null;
-  setCharacterState: (state: ChapterCharacterState | null) => void;
-  clearCharacterState: () => void;
   panelUnderstandings: PanelUnderstanding[];
   setPanelUnderstandings: (items: PanelUnderstanding[]) => void;
   panelUnderstandingMeta: PanelUnderstandingMeta;
@@ -167,38 +162,6 @@ const EMPTY_PANEL_UNDERSTANDING_META: PanelUnderstandingMeta = {
   rawOutput: "",
 };
 
-const buildCharacterScriptContext = (state: ChapterCharacterState | null): CharacterScriptContext | null => {
-  if (!state) return null;
-
-  const activeClusters = state.clusters.filter(
-    (cluster) => cluster.status !== "ignored" && cluster.status !== "merged" && cluster.status !== "unknown"
-  );
-  const characters = activeClusters
-    .map((cluster) => ({
-      clusterId: cluster.clusterId,
-      canonicalName: cluster.canonicalName || "",
-      displayLabel: cluster.displayLabel || cluster.canonicalName || "",
-      lockName: !!cluster.lockName,
-    }))
-    .filter((item) => item.displayLabel.trim().length > 0 || item.canonicalName.trim().length > 0);
-
-  const activeClusterIds = new Set(characters.map((character) => character.clusterId));
-  const panelCharacterRefs = Object.fromEntries(
-    state.panelCharacterRefs
-      .map((ref) => [ref.panelId, ref.clusterIds.filter((clusterId) => activeClusterIds.has(clusterId))] as const)
-      .filter(([, clusterIds]) => clusterIds.length > 0)
-  );
-  const unknownPanelIds = state.panelCharacterRefs
-    .filter((ref) => ref.clusterIds.filter((clusterId) => activeClusterIds.has(clusterId)).length === 0)
-    .map((ref) => ref.panelId);
-
-  return {
-    chapterId: state.chapterId,
-    characters,
-    panelCharacterRefs,
-    unknownPanelIds,
-  };
-};
 
 const normalizeSceneRect = (scene: Scene, stripWidth: number): Scene => {
   const x = Math.min(Math.max(scene.x ?? 0, 0), Math.max(0, stripWidth - 1));
@@ -445,13 +408,10 @@ export const useRecapStore = create<RecapState>()(
 
           return {
             panels,
-            characterState: signatureChanged ? null : state.characterState,
             panelUnderstandings: signatureChanged ? [] : state.panelUnderstandings,
             panelUnderstandingMeta: signatureChanged ? EMPTY_PANEL_UNDERSTANDING_META : state.panelUnderstandingMeta,
             storyMemories: signatureChanged ? [] : state.storyMemories,
-            scriptContext: signatureChanged
-              ? { ...state.scriptContext, chapterId: "", characterContext: null }
-              : state.scriptContext,
+            scriptContext: state.scriptContext,
             scriptMeta:
               state.timeline.length > 0 && signatureChanged
                 ? {
@@ -475,31 +435,10 @@ export const useRecapStore = create<RecapState>()(
         mainCharacter: "",
         summary: "",
         language: "vi",
-        chapterId: "",
-        characterContext: null,
       },
       setScriptContext: (context) =>
         set((state) => ({
           scriptContext: { ...state.scriptContext, ...context },
-        })),
-      characterState: null,
-      setCharacterState: (characterState) =>
-        set((state) => ({
-          characterState,
-          scriptContext: {
-            ...state.scriptContext,
-            chapterId: characterState?.chapterId || "",
-            characterContext: buildCharacterScriptContext(characterState),
-          },
-        })),
-      clearCharacterState: () =>
-        set((state) => ({
-          characterState: null,
-          scriptContext: {
-            ...state.scriptContext,
-            chapterId: "",
-            characterContext: null,
-          },
         })),
       panelUnderstandings: [],
       setPanelUnderstandings: (items) =>
@@ -766,8 +705,7 @@ export const useRecapStore = create<RecapState>()(
           storyMemories: [],
           timeline: [],
           scriptMeta: EMPTY_SCRIPT_META,
-          scriptContext: { mangaName: "", mainCharacter: "", summary: "", language: "vi", chapterId: "", characterContext: null },
-          characterState: null,
+          scriptContext: { mangaName: "", mainCharacter: "", summary: "", language: "vi" },
           benchmarkRecords: getStore().benchmarkRecords,
           progress: 0,
           currentVoiceGeneration: null,
@@ -794,7 +732,6 @@ export const useRecapStore = create<RecapState>()(
         storyMemories: state.storyMemories,
         scriptMeta: state.scriptMeta,
         scriptContext: state.scriptContext,
-        characterState: state.characterState,
         logs: state.logs,
         aspectRatio: state.aspectRatio,
         benchmarkRecords: state.benchmarkRecords,

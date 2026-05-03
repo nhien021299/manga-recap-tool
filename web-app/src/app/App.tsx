@@ -25,7 +25,6 @@ function App() {
         return <StepUpload />;
       case "extract":
         return <StepExtract />;
-
       case "script":
         return <StepScript />;
       case "voice":

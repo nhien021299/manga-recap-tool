@@ -548,7 +548,7 @@ export function StepExtract() {
     const canReusePrepared = preparedPanelsKey === extractionKey && preparedPanels && preparedPanels.length > 0;
     if (canReusePrepared) {
       setPanels(preparedPanels);
-      setCurrentStep("characters");
+      setCurrentStep("script");
       return;
     }
 
@@ -557,7 +557,7 @@ export function StepExtract() {
     try {
       const allProcessedPanels = await preparePanels(100);
       setPanels(allProcessedPanels);
-      setCurrentStep("characters");
+      setCurrentStep("script");
     } catch (error) {
       console.error(error);
     } finally {
@@ -621,21 +621,21 @@ export function StepExtract() {
       <div className="flex items-center justify-between bg-white/5 p-4 rounded-3xl border border-white/5 glass shrink-0">
         <div className="flex items-center gap-3">
           <h2 className="text-xl font-bold tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
-            Tách Panel
+            Tách Panel & Cảnh quay
           </h2>
           <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-[10px] font-bold border border-primary/20 uppercase tracking-wider">
-            {displayScenes.length} scenes
+            {displayScenes.length} cảnh
           </span>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" onClick={prevStep} disabled={isExporting || isSavingExport} className="bg-white/5 border-white/10 text-white hover:bg-white/10 px-6 font-bold">
-            <ChevronLeft className="w-4 h-4" /> Quay lại
+            <ChevronLeft className="w-4 h-4 mr-2" /> Quay lại
           </Button>
           <Button onClick={exportScenes} disabled={isExporting || isSavingExport} className="group px-8 font-bold">
             {isExporting ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /> Xuất ({exportProgress}%)</>
+              <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Đang xử lý ({exportProgress}%)</>
             ) : (
-              <>Tiếp tục<ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>
+              <>Tiếp tục<ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform ml-2" /></>
             )}
           </Button>
         </div>
@@ -645,7 +645,7 @@ export function StepExtract() {
         <div className="w-full md:w-[74%] lg:w-[76%] glass border border-white/5 rounded-3xl overflow-hidden relative flex flex-col bg-black/40 h-full">
           {activeScene && (
             <div className="absolute top-14 left-4 z-10 flex items-center gap-2 bg-black/70 border border-cyan-400/40 px-2.5 py-1.5 text-[10px] font-mono text-cyan-100">
-              <span className="uppercase tracking-widest text-cyan-300/90">Scene</span>
+              <span className="uppercase tracking-widest text-cyan-300/90">Cảnh</span>
               <span>#{displayScenes.findIndex((s) => s.id === activeScene.id) + 1}</span>
               <span className="text-white/60">|</span>
               <span>X:{Math.round(activeScene.x ?? 0)}</span>
@@ -655,14 +655,14 @@ export function StepExtract() {
             </div>
           )}
           <div className="absolute top-4 right-4 z-10 flex items-center gap-1.5 rounded-xl border border-white/15 bg-black/60 p-2 backdrop-blur-md">
-            <Button size="icon-sm" variant="ghost" className="h-9 w-9 rounded-lg text-white/70 hover:text-white" onClick={() => updateZoom(zoomLevel - 0.1)} title="Zoom out">
+            <Button size="icon-sm" variant="ghost" className="h-9 w-9 rounded-lg text-white/70 hover:text-white" onClick={() => updateZoom(zoomLevel - 0.1)} title="Thu nhỏ">
               <ZoomOut className="h-4 w-4" />
             </Button>
             <span className="min-w-14 text-center text-xs font-mono text-white/75">{Math.round(zoomLevel * 100)}%</span>
-            <Button size="icon-sm" variant="ghost" className="h-9 w-9 rounded-lg text-white/70 hover:text-white" onClick={() => updateZoom(zoomLevel + 0.1)} title="Zoom in">
+            <Button size="icon-sm" variant="ghost" className="h-9 w-9 rounded-lg text-white/70 hover:text-white" onClick={() => updateZoom(zoomLevel + 0.1)} title="Phóng to">
               <ZoomIn className="h-4 w-4" />
             </Button>
-            <Button size="icon-sm" variant="ghost" className="h-9 w-9 rounded-lg text-white/70 hover:text-white" onClick={() => updateZoom(DEFAULT_ZOOM)} title="Reset zoom">
+            <Button size="icon-sm" variant="ghost" className="h-9 w-9 rounded-lg text-white/70 hover:text-white" onClick={() => updateZoom(DEFAULT_ZOOM)} title="Đặt lại zoom">
               <RotateCcw className="h-4 w-4" />
             </Button>
           </div>
@@ -672,18 +672,18 @@ export function StepExtract() {
               variant="outline"
               className="h-9 text-xs border-white/20 text-white/80 hover:bg-white/10 rounded-lg shrink-0 px-3"
               onClick={locateCurrentScene}
-              title="Locate current scene in list (S)"
+              title="Tìm vị trí cảnh hiện tại (S)"
             >
-              <LocateFixed className="w-4 h-4 mr-1.5" /> Locate (S)
+              <LocateFixed className="w-4 h-4 mr-1.5" /> Tìm (S)
             </Button>
             <Button
               size="sm"
               variant="outline"
               className="h-9 text-xs border-primary/30 text-primary hover:bg-primary/10 rounded-lg shrink-0 px-3"
               onClick={addManualScene}
-              title="Add manual scene (A)"
+              title="Thêm cảnh thủ công (A)"
             >
-              <Plus className="w-4 h-4 mr-1.5" /> Add (A)
+              <Plus className="w-4 h-4 mr-1.5" /> Thêm (A)
             </Button>
           </div>
 
@@ -738,7 +738,7 @@ export function StepExtract() {
 
         <div className="w-full md:w-[26%] lg:w-[24%] flex flex-col min-h-0 glass border border-white/5 rounded-3xl overflow-hidden bg-black/20 p-4 gap-4 h-full">
           <div className="flex justify-between items-center px-2 shrink-0 gap-2">
-            <h3 className="font-bold text-white/80 tracking-wider text-xs">Danh sách scene ({displayScenes.length})</h3>
+            <h3 className="font-bold text-white/80 tracking-wider text-xs">Danh sách cảnh ({displayScenes.length})</h3>
             <Button
               size="sm"
               variant="outline"
@@ -747,9 +747,9 @@ export function StepExtract() {
               disabled={isExporting || isSavingExport || displayScenes.length === 0}
             >
               {isSavingExport ? (
-                <span className="flex items-center"><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Export to ({exportProgress}%)</span>
+                <span className="flex items-center"><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Đang lưu ({exportProgress}%)</span>
               ) : (
-                <span className="flex items-center"><Download className="w-4 h-4 mr-2" /> Export to</span>
+                <span className="flex items-center"><Download className="w-4 h-4 mr-2" /> Lưu thư mục</span>
               )}
             </Button>
           </div>
@@ -777,7 +777,7 @@ export function StepExtract() {
                       {scene.isAuto && <span className="absolute top-0 right-0 bg-primary/20 text-primary text-[8px] font-bold px-1 rounded-bl">A</span>}
                     </div>
                     <div className="flex-1">
-                      <h4 className="text-white/80 font-bold text-xs">Scene {index + 1}</h4>
+                      <h4 className="text-white/80 font-bold text-xs">Cảnh {index + 1}</h4>
                       <p className="text-[10px] text-white/40 font-mono mt-1">X: {Math.round(scene.x ?? 0)}px</p>
                       <p className="text-[10px] text-white/40 font-mono">Y: {Math.round(scene.y)}px</p>
                       <p className="text-[10px] text-white/40 font-mono">W: {Math.round(scene.width ?? stripWidth)}px</p>

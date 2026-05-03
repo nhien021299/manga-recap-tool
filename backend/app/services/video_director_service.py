@@ -181,12 +181,13 @@ class VideoDirectorService:
             tts = tts_map.get(scene.scene)
             audio_ms = tts.audio_duration_ms if tts else 0
             dialogue_ms = tts.dialogue_duration_ms if tts else 0
+            target_ms = tts.target_duration_ms if tts else int(scene.duration_seconds * 1000)
             scene_lines.append(
                 f"  Scene {scene.scene:02d}: \"{scene.title}\"\n"
                 f"    Narration: \"{scene.narration[:100]}...\"\n"
                 f"    Audio duration: {audio_ms}ms"
                 + (f" + {dialogue_ms}ms dialogue" if dialogue_ms else "")
-                + f"\n    Target visual duration: {int(scene.duration_seconds * 1000)}ms\n"
+                + f"\n    Target visual duration: {target_ms}ms\n"
                 f"    Has dialogue: {'yes' if scene.dialogue else 'no'}\n"
                 f"    Retention beat: {scene.retention_beat or 'none'}"
             )
@@ -441,7 +442,7 @@ class VideoDirectorService:
             if scene.scene not in directed_scenes:
                 tts = tts_map.get(scene.scene)
                 audio_ms = tts.audio_duration_ms if tts else 0
-                target_ms = int(scene.duration_seconds * 1000)
+                target_ms = tts.target_duration_ms if tts else int(scene.duration_seconds * 1000)
                 scenes.append(
                     self._default_scene_direction(
                         scene_num=scene.scene,
@@ -493,7 +494,7 @@ class VideoDirectorService:
         for index, scene in enumerate(package.scenes):
             tts = tts_map.get(scene.scene)
             audio_ms = tts.audio_duration_ms if tts else 0
-            target_ms = int(scene.duration_seconds * 1000)
+            target_ms = tts.target_duration_ms if tts else int(scene.duration_seconds * 1000)
             duration_ms = max(target_ms, audio_ms + 500)
             preset = motion_presets[index % len(motion_presets)]
 

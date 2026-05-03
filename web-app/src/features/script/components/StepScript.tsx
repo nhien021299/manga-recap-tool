@@ -23,10 +23,7 @@ import { createBenchmarkRecord } from "@/features/benchmark/lib/benchmarkScore";
 import { useRecapStore } from "@/shared/storage/useRecapStore";
 import type { Metrics, ScriptItem } from "@/shared/types";
 import {
-  submitNarrationProduction,
-  pollVideoJobStatus,
   type NarrationPayload,
-  type VideoJobStatus,
 } from "@/features/script/api/scriptApi";
 
 type ScriptMode = "ai" | "narration";
@@ -44,7 +41,7 @@ const parseMetricsFromLogDetails = (details?: string | null): Metrics | null => 
       totalPromptTokens: parsed.totalPromptTokens ?? 0, totalCandidatesTokens: parsed.totalCandidatesTokens ?? 0,
       totalTokens: parsed.totalTokens ?? 0, batchSizeUsed: parsed.batchSizeUsed ?? 0,
       retryCount: parsed.retryCount ?? 0, rateLimitedCount: parsed.rateLimitedCount ?? 0,
-      throttleWaitMs: parsed.throttleWaitMs ?? 0, identityConfirmedCount: parsed.identityConfirmedCount ?? 0,
+      throttleWaitMs: parsed.throttleWaitMs ?? 0,
     };
   } catch { return null; }
 };
@@ -62,9 +59,6 @@ export function StepScript() {
   // Narration upload state
   const [narrationPayload, setNarrationPayload] = useState<NarrationPayload | null>(null);
   const [narrationError, setNarrationError] = useState<string | null>(null);
-  const [videoJob, setVideoJob] = useState<VideoJobStatus | null>(null);
-  const [isProducing, setIsProducing] = useState(false);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const navigateZoom = useCallback((dir: number) => {
     if (zoomedIdx === null) return;
@@ -83,8 +77,6 @@ export function StepScript() {
     return () => window.removeEventListener("keydown", handleKey);
   }, [navigateZoom, zoomedIdx]);
 
-  // Cleanup polling on unmount
-  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
 
   const panelById = useMemo(() => new Map(panels.map((panel) => [panel.id, panel])), [panels]);
   const latestErrorDetails = useMemo(() => {
@@ -117,7 +109,6 @@ export function StepScript() {
   // --- Narration JSON Upload ---
   const handleNarrationUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setNarrationError(null);
-    setVideoJob(null);
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -144,6 +135,10 @@ export function StepScript() {
         const timelineItems = data.scenes.map((scene, idx) => {
           const panel = panels[idx];
           const scriptItem: ScriptItem = { panel_index: idx + 1, voiceover_text: scene.narration };
+          
+          const existingItem = timeline[idx];
+          const isSameText = existingItem?.scriptItem.voiceover_text === scene.narration;
+
           return {
             panelId: panel?.id ?? `narration-${idx}`,
             imageBlob: panel?.blob ?? new Blob(),
@@ -152,51 +147,24 @@ export function StepScript() {
             scriptSource: { panelId: panel?.id ?? `narration-${idx}`, orderIndex: idx },
             scriptSegment: { narration: scene.narration, status: "auto" as const },
             scriptStatus: "auto" as const,
-            enabled: true,
-            holdAfterMs: 250,
-            audioStatus: "missing" as const,
+            enabled: existingItem?.enabled ?? true,
+            holdAfterMs: existingItem?.holdAfterMs ?? 250,
+            audioStatus: isSameText ? existingItem.audioStatus : ("missing" as const),
+            audioUrl: isSameText ? existingItem.audioUrl : undefined,
+            audioDuration: isSameText ? existingItem.audioDuration : undefined,
           };
         });
         setTimeline(timelineItems);
+        setCurrentStep("voice");
       } catch (err) {
         setNarrationError(`Lỗi parse JSON: ${err instanceof Error ? err.message : String(err)}`);
       }
     };
     reader.readAsText(file);
     e.target.value = "";
-  }, [panels, setTimeline]);
+  }, [panels, setTimeline, timeline, setCurrentStep]);
 
-  // --- Video Production ---
-  const startProduction = useCallback(async () => {
-    if (!narrationPayload || panels.length === 0) return;
-    setIsProducing(true);
-    setNarrationError(null);
-    setVideoJob(null);
-    try {
-      const status = await submitNarrationProduction(config.apiBaseUrl, narrationPayload, panels, {
-        voiceKey: voiceConfig.voiceKey,
-        speed: voiceConfig.speed,
-        provider: voiceConfig.provider,
-      });
-      setVideoJob(status);
-      // Start polling
-      if (pollRef.current) clearInterval(pollRef.current);
-      pollRef.current = setInterval(async () => {
-        try {
-          const updated = await pollVideoJobStatus(config.apiBaseUrl, status.job_id);
-          setVideoJob(updated);
-          if (updated.phase === "completed" || updated.phase === "failed" || updated.phase === "cancelled") {
-            if (pollRef.current) clearInterval(pollRef.current);
-            pollRef.current = null;
-            setIsProducing(false);
-          }
-        } catch { /* ignore polling errors */ }
-      }, 2000);
-    } catch (err) {
-      setNarrationError(err instanceof Error ? err.message : "Lỗi kết nối backend.");
-      setIsProducing(false);
-    }
-  }, [narrationPayload, panels, config.apiBaseUrl, voiceConfig]);
+
 
   const activeError = mode === "ai" ? (error || latestErrorDetails) : narrationError;
 
@@ -208,7 +176,7 @@ export function StepScript() {
             Kịch Bản Recap
           </h2>
           <p className="text-white/70">
-            {mode === "ai" ? "Backend Gemini tự động viết kịch bản từ panel." : "Upload narration JSON → TTS → Gemini Direction → Remotion render."}
+            {mode === "ai" ? "Trí tuệ nhân tạo Gemini sẽ tự động soạn nội dung dựa trên hình ảnh." : "Tải lên file kịch bản sẵn có để lồng tiếng và dựng video."}
           </p>
         </div>
         <div className="flex gap-3">
@@ -217,18 +185,18 @@ export function StepScript() {
               {availableMetrics && (
                 <Button variant="outline" onClick={handleSaveBenchmark} disabled={isLoading}
                   className="border-emerald-500/30 bg-emerald-500/10 px-6 font-bold text-emerald-100 hover:bg-emerald-500/15">
-                  <Save className="mr-2 h-4 w-4" /> Save benchmark
+                  <Save className="mr-2 h-4 w-4" /> Lưu Benchmark
                 </Button>
               )}
               <Button variant="outline" onClick={clearScriptData} disabled={isLoading}
                 className="border-red-500/30 bg-red-500/10 px-6 font-bold text-red-200 hover:bg-red-500/15">
-                <Trash2 className="mr-2 h-4 w-4" /> Xóa cache
+                <Trash2 className="mr-2 h-4 w-4" /> Xóa kịch bản cũ
               </Button>
               {mode === "ai" && (
                 <Button variant="outline" onClick={generateScript} disabled={generateDisabled}
                   className="border-primary/30 bg-primary/10 px-6 font-bold text-primary hover:bg-primary/15">
                   {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                  Regenerate
+                  Tạo lại
                 </Button>
               )}
             </>
@@ -247,11 +215,11 @@ export function StepScript() {
       <div className="flex gap-2">
         <button onClick={() => setMode("ai")}
           className={`rounded-xl px-5 py-2.5 text-sm font-bold transition-all ${mode === "ai" ? "bg-primary text-primary-foreground shadow-glow" : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"}`}>
-          <Wand2 className="mr-2 inline h-4 w-4" /> AI Script (Gemini)
+          <Wand2 className="mr-2 inline h-4 w-4" /> Viết kịch bản tự động (AI)
         </button>
         <button onClick={() => setMode("narration")}
           className={`rounded-xl px-5 py-2.5 text-sm font-bold transition-all ${mode === "narration" ? "bg-primary text-primary-foreground shadow-glow" : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"}`}>
-          <FileUp className="mr-2 inline h-4 w-4" /> Upload Narration JSON
+          <FileUp className="mr-2 inline h-4 w-4" /> Tải lên kịch bản (.json)
         </button>
       </div>
 
@@ -277,21 +245,20 @@ export function StepScript() {
             <Button size="lg" onClick={generateScript} disabled={generateDisabled}
               className="group btn-pop h-16 w-full rounded-2xl border-none bg-primary text-xl font-black uppercase tracking-tighter text-primary-foreground ring-2 ring-white/10 shadow-glow transition-all hover:opacity-100 active:scale-[0.98]">
               {isGenerating ? <Loader2 className="mr-2 h-5 w-5 animate-spin text-white" /> : <Wand2 className="mr-2 h-5 w-5" />}
-              {isGenerating ? "Đang chạy backend Gemini..." : "Tự động viết kịch bản"}
+              {isGenerating ? "Đang xử lý nội dung..." : "Tự động viết kịch bản"}
             </Button>
           </Card>
         ) : (
           /* ===== Narration Upload Mode ===== */
           <Card className="glass space-y-6 rounded-3xl border-white/10 bg-white/5 p-8 shadow-2xl">
             <div className="space-y-3">
-              <Label className="text-[10px] font-semibold uppercase tracking-wide text-white/80">Upload file JSON narration</Label>
+              <Label className="text-[10px] font-semibold uppercase tracking-wide text-white/80">Tải lên file nội dung (JSON)</Label>
               <p className="text-xs text-white/50 leading-5">
-                File JSON cần có mảng <code className="text-accent">"scenes"</code>, mỗi scene cần có: <code className="text-accent">scene</code> (số thứ tự), <code className="text-accent">title</code>, <code className="text-accent">narration</code>, <code className="text-accent">duration_seconds</code>.
-                Số scene phải khớp với số panel đã extract ({panels.length}).
+                File cần tuân thủ cấu trúc của công cụ. Số cảnh phải khớp với số hình ảnh đã xử lý ({panels.length}).
               </p>
               <label className="group flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/20 bg-white/5 px-6 py-10 transition-all hover:border-accent/40 hover:bg-accent/5">
                 <FileUp className="mb-3 h-10 w-10 text-white/30 group-hover:text-accent transition-colors" />
-                <span className="text-sm font-bold text-white/60 group-hover:text-white transition-colors">Chọn file .json</span>
+                <span className="text-sm font-bold text-white/60 group-hover:text-white transition-colors">Chọn file kịch bản</span>
                 <input type="file" accept=".json,application/json" className="hidden" onChange={handleNarrationUpload} />
               </label>
               {narrationPayload && (
@@ -303,37 +270,7 @@ export function StepScript() {
               )}
             </div>
 
-            {/* Produce Video button */}
-            {narrationPayload && panels.length > 0 && (
-              <Button size="lg" onClick={startProduction} disabled={isProducing}
-                className="group btn-pop h-16 w-full rounded-2xl border-none bg-gradient-to-r from-violet-600 to-fuchsia-600 text-xl font-black uppercase tracking-tighter text-white ring-2 ring-white/10 shadow-glow transition-all hover:opacity-90 active:scale-[0.98]">
-                {isProducing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Wand2 className="mr-2 h-5 w-5" />}
-                {isProducing ? "Đang sản xuất video..." : "Sản Xuất Video (TTS → Direction → Render)"}
-              </Button>
-            )}
 
-            {/* Job status */}
-            {videoJob && (
-              <div className={`rounded-2xl border p-5 space-y-3 ${videoJob.phase === "failed" ? "border-red-500/30 bg-red-500/10" : videoJob.phase === "completed" ? "border-emerald-500/30 bg-emerald-500/10" : "border-accent/20 bg-accent/5"}`}>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-widest text-white/60">Trạng thái</span>
-                  <span className={`rounded-full px-3 py-1 text-xs font-bold ${videoJob.phase === "completed" ? "bg-emerald-500/20 text-emerald-300" : videoJob.phase === "failed" ? "bg-red-500/20 text-red-300" : "bg-accent/20 text-accent"}`}>
-                    {videoJob.phase}
-                  </span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full rounded-full bg-accent transition-all duration-700 ease-out" style={{ width: `${videoJob.progress}%` }} />
-                </div>
-                <p className="text-sm text-white/80">{videoJob.detail}</p>
-                {videoJob.error && <p className="text-sm text-red-300">{videoJob.error}</p>}
-                {videoJob.download_url && (
-                  <a href={`${config.apiBaseUrl}${videoJob.download_url}`} target="_blank" rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-500/20 px-5 py-2.5 text-sm font-bold text-emerald-200 transition-colors hover:bg-emerald-500/30">
-                    Tải video xuống
-                  </a>
-                )}
-              </div>
-            )}
           </Card>
         )}
       </div>

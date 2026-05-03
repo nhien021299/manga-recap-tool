@@ -68,7 +68,7 @@ export function SettingsDialog() {
       } catch (error) {
         if (!cancelled) {
           setVoiceOptions(null);
-          setVoiceOptionsError(error instanceof Error ? error.message : "Failed to load voice options.");
+          setVoiceOptionsError(error instanceof Error ? error.message : "Không thể tải danh sách giọng đọc.");
         }
       }
     };
@@ -140,13 +140,13 @@ export function SettingsDialog() {
       />
       <DialogContent className="glass border-white/10 sm:max-width-[520px]">
         <DialogHeader>
-          <DialogTitle>System Settings</DialogTitle>
-          <DialogDescription>Configure the backend API and choose the active VieNeu-TTS-0.3B voice preset.</DialogDescription>
+          <DialogTitle>Cài Đặt Hệ Thống</DialogTitle>
+          <DialogDescription>Cấu hình kết nối máy chủ và lựa chọn công nghệ giọng đọc mặc định cho dự án.</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="apiBaseUrl">Backend API Base URL</Label>
+            <Label htmlFor="apiBaseUrl">Địa chỉ máy chủ (Backend API)</Label>
             <Input
               id="apiBaseUrl"
               placeholder="http://127.0.0.1:8000"
@@ -157,7 +157,7 @@ export function SettingsDialog() {
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="provider">TTS Provider</Label>
+            <Label htmlFor="provider">Công nghệ giọng đọc (TTS Provider)</Label>
             <select
               id="provider"
               value={localVoiceConfig.provider}
@@ -178,7 +178,7 @@ export function SettingsDialog() {
               {(voiceOptions?.providers || []).map((provider) => (
                 <option key={provider.id} value={provider.id}>
                   {provider.label}
-                  {provider.enabled ? "" : " (unavailable)"}
+                  {provider.enabled ? "" : " (không khả dụng)"}
                 </option>
               ))}
             </select>
@@ -189,7 +189,7 @@ export function SettingsDialog() {
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="voiceKey">Voice Preset</Label>
+            <Label htmlFor="voiceKey">Mẫu giọng mặc định</Label>
             <select
               id="voiceKey"
               value={localVoiceConfig.voiceKey}
@@ -199,7 +199,7 @@ export function SettingsDialog() {
               {activeVoices.map((voice) => (
                 <option key={voice.key} value={voice.key}>
                   {voice.label}
-                  {voice.isAvailable ? "" : " (missing assets)"}
+                  {voice.isAvailable ? "" : " (thiếu dữ liệu)"}
                 </option>
               ))}
             </select>
@@ -218,13 +218,13 @@ export function SettingsDialog() {
                 onClick={handlePreview}
                 className="justify-start border-white/10 bg-white/5"
               >
-                {previewUrl ? "Stop sample" : "Play sample"}
+                {previewUrl ? "Dừng nghe thử" : "Nghe thử mẫu"}
               </Button>
             )}
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="speed">Speed</Label>
+            <Label htmlFor="speed">Tốc độ đọc</Label>
             <Input
               id="speed"
               type="number"
@@ -246,7 +246,7 @@ export function SettingsDialog() {
 
         <DialogFooter>
           <Button onClick={handleSave} className="bg-primary transition-all duration-300 hover:bg-primary/80">
-            Save Configuration
+            Lưu cấu hình
           </Button>
         </DialogFooter>
       </DialogContent>

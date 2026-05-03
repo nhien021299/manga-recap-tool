@@ -16,11 +16,11 @@ import { useRecapStore } from "@/shared/storage/useRecapStore";
 import type { Step } from "@/shared/types";
 
 const steps: Array<{ id: Step; label: string; icon: LucideIcon }> = [
-  { id: "upload", label: "Tai Len", icon: Upload },
-  { id: "extract", label: "Tach Panel", icon: Scissors },
-  { id: "script", label: "Kich Ban", icon: FileText },
-  { id: "voice", label: "Long Tieng", icon: Mic2 },
-  { id: "render", label: "Xuat Video", icon: Video },
+  { id: "upload", label: "Tải Lên", icon: Upload },
+  { id: "extract", label: "Tách Panel", icon: Scissors },
+  { id: "script", label: "Kịch Bản", icon: FileText },
+  { id: "voice", label: "Lồng Tiếng", icon: Mic2 },
+  { id: "render", label: "Xuất Video", icon: Video },
   { id: "benchmark", label: "Benchmark", icon: BarChart3 },
 ];
 
@@ -91,7 +91,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <header className="flex h-14 items-center justify-between border-b border-border/80 bg-background/90 px-6 backdrop-blur-sm">
           <div className="flex items-center gap-4">
             <span className="text-[10px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
-              Tien do du an
+              Tiến độ dự án
             </span>
             <div className="h-2 w-52 overflow-hidden rounded-full border border-border bg-muted/65 p-[1px]">
               <div className="h-full rounded-full bg-accent transition-all duration-500 ease-out" style={{ width: progress }} />

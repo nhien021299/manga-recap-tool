@@ -284,18 +284,18 @@ class VideoOrchestrator:
 
         logger.info("Remotion render command: %s", " ".join(render_cmd))
 
-        process = await asyncio.create_subprocess_exec(
-            *render_cmd,
-            cwd=str(remotion_root),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
+        def run_remotion():
+            return subprocess.run(
+                render_cmd,
+                cwd=str(remotion_root),
+                capture_output=True,
+            )
 
-        stdout, stderr = await process.communicate()
+        process = await asyncio.to_thread(run_remotion)
 
         if process.returncode != 0:
-            stderr_text = stderr.decode("utf-8", errors="replace").strip()
-            stdout_text = stdout.decode("utf-8", errors="replace").strip()
+            stderr_text = process.stderr.decode("utf-8", errors="replace").strip()
+            stdout_text = process.stdout.decode("utf-8", errors="replace").strip()
             detail = stderr_text or stdout_text or f"Remotion exit code {process.returncode}"
             logger.error("Remotion render stderr:\n%s", detail[:2000])
             raise RuntimeError(f"Remotion render failed: {detail[:500]}")

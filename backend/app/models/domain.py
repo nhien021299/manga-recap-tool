@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field
 
-from app.models.characters import CharacterScriptContext
 
 
 class ScriptContext(BaseModel):
@@ -8,7 +7,6 @@ class ScriptContext(BaseModel):
     mainCharacter: str = ""
     summary: str = ""
     language: str = "vi"
-    characterContext: CharacterScriptContext | None = None
 
 
 class PanelReference(BaseModel):
@@ -131,5 +129,3 @@ class Metrics(BaseModel):
     retryCount: int = 0
     rateLimitedCount: int = 0
     throttleWaitMs: int = 0
-    identityOcrMs: int = 0
-    identityConfirmedCount: int = 0

@@ -29,15 +29,6 @@ MAX_HINT_NAMES = 2
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
 
-@dataclass(frozen=True)
-class IdentityEvidence:
-    candidate_pool: list[str]
-    confirmed_names: list[str]
-    carryover_names: list[str]
-    locked_names: list[str]
-    has_text_signal: bool
-    use_neutral_fallback: bool
-    neutral_fallback_reason: str
 
 
 @dataclass
@@ -133,7 +124,6 @@ class GeminiScriptService:
                 retryCount=stats.retry_count,
                 rateLimitedCount=stats.rate_limited_count,
                 throttleWaitMs=stats.throttle_wait_ms,
-                identityConfirmedCount=self._count_confirmed_character_mappings(context),
             ),
         )
 
@@ -161,10 +151,6 @@ class GeminiScriptService:
             batch_panels = panels[start:end]
             start_index = start + 1
 
-            identity_evidence = self._build_identity_evidence(
-                context=context,
-                previous_memory=previous_memory,
-            )
 
             prompt = self._build_unified_prompt(
                 context=context,
@@ -172,7 +158,6 @@ class GeminiScriptService:
                 panel_count=len(batch_paths),
                 start_index=start_index,
                 previous_memory=previous_memory,
-                identity_evidence=identity_evidence,
             )
             inline_data = [self._image_part(path) for path in batch_paths]
 
@@ -187,23 +172,6 @@ class GeminiScriptService:
                         "imageCount": len(batch_paths),
                         "continuityApplied": bool(previous_memory and previous_memory.summary),
                         "recentNames": previous_memory.recentNames if previous_memory else [],
-                    },
-                    ensure_ascii=False,
-                    indent=2,
-                ),
-            )
-            self._log(
-                on_log,
-                "request",
-                "Identity evidence prepared for current script batch.",
-                json.dumps(
-                    {
-                        "candidatePool": identity_evidence.candidate_pool,
-                        "confirmedNames": identity_evidence.confirmed_names,
-                        "carryoverNames": identity_evidence.carryover_names,
-                        "hasTextSignal": identity_evidence.has_text_signal,
-                        "useNeutralFallback": identity_evidence.use_neutral_fallback,
-                        "neutralFallbackReason": identity_evidence.neutral_fallback_reason,
                     },
                     ensure_ascii=False,
                     indent=2,
@@ -256,39 +224,6 @@ class GeminiScriptService:
 
         return all_results, story_memories, "\n\n---\n\n".join(raw_outputs), stats
 
-    def _build_identity_evidence(
-        self,
-        *,
-        context: ScriptContext,
-        previous_memory: StoryMemory | None,
-    ) -> IdentityEvidence:
-        candidate_pool = self._dedupe_names(
-            [
-                *(previous_memory.recentNames if previous_memory else []),
-                *self._manual_known_names(context),
-            ]
-        )
-        if not candidate_pool:
-            return IdentityEvidence(
-                candidate_pool=[],
-                confirmed_names=[],
-                carryover_names=[],
-                locked_names=[],
-                has_text_signal=False,
-                use_neutral_fallback=True,
-                neutral_fallback_reason="no candidate names available",
-            )
-
-        locked_names = self._locked_character_names(context)
-        return IdentityEvidence(
-            candidate_pool=candidate_pool,
-            confirmed_names=[],
-            carryover_names=candidate_pool[:MAX_HINT_NAMES],
-            locked_names=locked_names,
-            has_text_signal=False,
-            use_neutral_fallback=not bool(locked_names),
-            neutral_fallback_reason="locked character mapping available" if locked_names else "using carryover hints only",
-        )
 
     async def _call_gemini(
         self,
@@ -505,7 +440,6 @@ class GeminiScriptService:
         panel_count: int,
         start_index: int,
         previous_memory: StoryMemory | None,
-        identity_evidence: IdentityEvidence,
     ) -> str:
         title = self._compact_summary(context.mangaName)
         setup_summary = self._compact_summary(context.summary)
@@ -553,37 +487,6 @@ class GeminiScriptService:
                         "Previous context:",
                         previous_summary,
                         "If the current images do not show a clear scene change, keep continuity with that context.",
-                    ]
-                )
-            )
-        if identity_evidence.confirmed_names:
-            sections.append(
-                "\n".join(
-                    [
-                        "Confirmed from visible text/dialogue in this batch:",
-                        f"- {', '.join(identity_evidence.confirmed_names)}",
-                    ]
-                )
-            )
-        if identity_evidence.carryover_names:
-            sections.append(
-                "\n".join(
-                    [
-                        "Carryover names from previous chunk:",
-                        f"- {', '.join(identity_evidence.carryover_names)}",
-                        "Use these only as continuity hints, not as proof of identity in the current images.",
-                    ]
-                )
-            )
-        character_guidance = self._build_character_guidance(context=context, batch_panels=batch_panels)
-        if character_guidance:
-            sections.append(character_guidance)
-        if identity_evidence.use_neutral_fallback:
-            sections.append(
-                "\n".join(
-                    [
-                        "Identity confidence is low for this batch.",
-                        "Use neutral labels for people instead of names unless the visible dialogue in this batch clearly names them.",
                     ]
                 )
             )
@@ -866,89 +769,9 @@ class GeminiScriptService:
         best_mode = max(scores, key=scores.get)
         return best_mode if scores[best_mode] > 0 else "mystery"
 
-    def _manual_known_names(self, context: ScriptContext) -> list[str]:
-        names: list[str] = []
-        main_character = " ".join(context.mainCharacter.split())
-        if main_character:
-            names.append(main_character)
-        if context.characterContext is not None:
-            for character in context.characterContext.characters:
-                canonical = " ".join(character.canonicalName.split())
-                display = " ".join(character.displayLabel.split())
-                if canonical:
-                    names.append(canonical)
-                elif display:
-                    names.append(display)
-        return names
 
-    def _locked_character_names(self, context: ScriptContext) -> list[str]:
-        if context.characterContext is None:
-            return []
-        return [
-            character.canonicalName.strip()
-            for character in context.characterContext.characters
-            if character.lockName and character.canonicalName.strip()
-        ]
 
-    def _build_character_guidance(self, *, context: ScriptContext, batch_panels: list[PanelReference]) -> str:
-        if context.characterContext is None or not context.characterContext.panelCharacterRefs:
-            return ""
 
-        character_by_id = {character.clusterId: character for character in context.characterContext.characters}
-        lines = [
-            "Character consistency rules:",
-            "- If a panel references a character with a canonical name, always use that canonical name.",
-            "- Do not rename the same character with a new descriptive label.",
-            "- If no canonical name exists, use the provided display label consistently.",
-            "- Only invent a new generic description when no character mapping is available.",
-            "Panel character mapping for this batch:",
-        ]
-        has_mapping = False
-        for panel in batch_panels:
-            cluster_ids = context.characterContext.panelCharacterRefs.get(panel.panelId, [])
-            if not cluster_ids:
-                continue
-            labels: list[str] = []
-            for cluster_id in cluster_ids:
-                character = character_by_id.get(cluster_id)
-                if character is None:
-                    continue
-                preferred_label = character.canonicalName.strip() or character.displayLabel.strip()
-                if not preferred_label:
-                    continue
-                labels.append(
-                    f"{preferred_label}{' (locked)' if character.lockName and character.canonicalName.strip() else ''}"
-                )
-            if not labels:
-                continue
-            has_mapping = True
-            lines.append(f"- Panel {panel.orderIndex + 1}: {', '.join(labels)}")
-
-        return "\n".join(lines) if has_mapping else ""
-
-    def _count_confirmed_character_mappings(self, context: ScriptContext) -> int:
-        if context.characterContext is None:
-            return 0
-        return sum(1 for cluster_ids in context.characterContext.panelCharacterRefs.values() if cluster_ids)
-
-    def _dedupe_names(self, names: list[str]) -> list[str]:
-        deduped: list[str] = []
-        seen: set[str] = set()
-        for name in names:
-            normalized = " ".join(name.split())
-            if not normalized:
-                continue
-            key = normalized.casefold()
-            if key in seen:
-                continue
-            seen.add(key)
-            deduped.append(normalized)
-        return deduped
-
-    def _contains_name(self, text: str, name: str) -> bool:
-        if not text or not name:
-            return False
-        return bool(re.search(re.escape(name), text, flags=re.IGNORECASE))
 
     def _compact_summary(self, value: str | None) -> str:
         if not value:

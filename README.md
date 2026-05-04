@@ -15,7 +15,7 @@ Active product flow:
 - Backend runs Gemini script generation from panel images
 - Step TTS runs only through backend routes
 - Official MP4 export runs through backend async render jobs with native `ffmpeg`
-- Browser export remains available as a cinematic fallback path
+- Browser export remains available as a cinematic fallback path powered by Remotion with CSS-based VFX layers and automated transitions
 - The only active TTS provider is `vieneu`
 - The active TTS model is `pnnbao-ump/VieNeu-TTS-0.3B`
 - The active cached preset is `voice_default`
@@ -27,6 +27,7 @@ POST /api/v1/script/generate
 GET  /api/v1/voice/options
 POST /api/v1/voice/generate
 GET  /api/v1/system/tts
+POST /api/v1/video/suggest-effects
 POST /api/v1/render/jobs
 GET  /api/v1/render/jobs/{job_id}
 GET  /api/v1/render/jobs/{job_id}/result

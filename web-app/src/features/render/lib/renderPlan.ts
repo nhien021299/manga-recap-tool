@@ -2,14 +2,19 @@ import type {
   Panel,
   RenderConfig,
   RenderMotionPreset,
+  RenderTransitionPreset,
   RenderPlan,
   TimelineItem,
+  CompiledRenderClip,
 } from "@/shared/types";
+import { resolveSceneEffects } from "./effectResolver";
+import type { SceneType, SceneMood, MotionPreset, TransitionPreset } from "./effectSchema";
 
 const MIN_SILENT_CLIP_MS = 1500;
 const DEFAULT_FRAME_RATE = 30;
 
 const MOTION_FAMILIES: Record<RenderMotionPreset, "push" | "drift" | "rise" | "reveal"> = {
+
   push_in_center: "push",
   push_in_upper_focus: "push",
   push_in_lower_focus: "push",
@@ -17,6 +22,16 @@ const MOTION_FAMILIES: Record<RenderMotionPreset, "push" | "drift" | "rise" | "r
   drift_right_to_left: "drift",
   rise_up_focus: "rise",
   pull_back_reveal: "reveal",
+  // New presets
+  still_hold: "push",
+  slow_zoom_in: "push",
+  slow_zoom_out: "reveal",
+  pan_left: "drift",
+  pan_right: "drift",
+  pan_up: "rise",
+  pan_down: "rise",
+  handheld_tension: "drift",
+  impact_shake: "push",
 };
 
 const hasNarration = (item: TimelineItem): boolean => !!item.scriptItem.voiceover_text.trim();
@@ -70,11 +85,12 @@ const selectMotionPreset = (
 
 const computeMotionIntensity = (item: TimelineItem, durationMs: number): number => {
   const hasAudio = item.audioStatus === "ready" && typeof item.audioDuration === "number" && item.audioDuration > 0;
-  let intensity = durationMs < 2200 ? 0.62 : durationMs < 4200 ? 0.8 : 1;
+  // Boosted: was 0.62/0.8/1 — too subtle for cinematic recaps
+  let intensity = durationMs < 2200 ? 0.7 : durationMs < 4200 ? 0.85 : 1;
   if (!hasAudio) {
-    intensity -= 0.12;
+    intensity -= 0.1;
   }
-  return Math.max(0.5, Math.min(1, Number(intensity.toFixed(2))));
+  return Math.max(0.55, Math.min(1, Number(intensity.toFixed(2))));
 };
 
 export const getTimelineClipDurationMs = (item: TimelineItem): number => {
@@ -149,10 +165,126 @@ export const buildRenderPlan = (
     }
 
     const durationMs = getTimelineClipDurationMs(item);
-    const motionPreset = selectMotionPreset(panel, durationMs, index, previousPreset);
+
+    // Determine motion and transition using preset resolver or legacy auto-selection
+    const hasEffectMetadata = !!(item.sceneType || item.mood || item.motionPreset || item.transition);
+    let motionPreset: RenderMotionPreset;
+    let motionIntensity: number;
+    let transition: RenderTransitionPreset;
+    let transitionDurationMs: number;
+
+    if (hasEffectMetadata) {
+      // Use preset-driven resolver: validates, clamps, applies mood modifiers
+      const resolved = resolveSceneEffects({
+        sceneType: item.sceneType as SceneType | undefined,
+        mood: item.mood as SceneMood | undefined,
+        motionPreset: item.motionPreset as MotionPreset | undefined,
+        motionIntensity: item.motionIntensity,
+        transition: item.transition as TransitionPreset | undefined,
+        transitionDurationMs: item.transitionDurationMs,
+      });
+      motionPreset = resolved.motionPreset as RenderMotionPreset;
+      motionIntensity = resolved.motionIntensity;
+      transition = resolved.transition as RenderTransitionPreset;
+      transitionDurationMs = resolved.transitionDurationMs;
+    } else {
+      // Fallback to legacy auto-selection based on panel aspect/duration
+      motionPreset = selectMotionPreset(panel, durationMs, index, previousPreset);
+      motionIntensity = computeMotionIntensity(item, durationMs);
+      transition = "crossfade";
+      transitionDurationMs = 500;
+    }
+
     previousPreset = motionPreset;
 
-    const clip = {
+    const text_overlays = renderConfig.captionMode === "burned" ? (() => {
+      const overlays: Array<{text: string; start_pct: number; end_pct: number; style: string; position: string}> = [];
+      const narrationText = (item.scriptItem.voiceover_text || "").trim();
+      const dialogueText = (item.scriptItem.dialogue_text || "").trim();
+      const dialogueSpeaker = (item.scriptItem.dialogue_speaker || "").trim();
+      const hasDialogue = dialogueText.length > 0;
+
+      // When dialogue exists, strip it from narration to avoid duplication.
+      // The TTS audio merges narration + dialogue, but subtitles should show them separately.
+      let pureNarration = narrationText;
+      if (hasDialogue) {
+        // Remove dialogue text from narration if it appears inside it
+        pureNarration = narrationText.replace(dialogueText, "").trim();
+        // Also try removing common merged patterns like "Speaker nói: dialogue"
+        const speakerPatterns = dialogueSpeaker
+          ? [
+              `${dialogueSpeaker} nói: ${dialogueText}`,
+              `${dialogueSpeaker} nói ${dialogueText}`,
+              `${dialogueSpeaker}: ${dialogueText}`,
+            ]
+          : [];
+        for (const pattern of speakerPatterns) {
+          if (pureNarration.includes(pattern)) {
+            pureNarration = pureNarration.replace(pattern, "").trim();
+          }
+        }
+        // Clean up trailing/leading punctuation artifacts
+        pureNarration = pureNarration.replace(/[,.:;]\s*$/, "").trim();
+      }
+
+      const hasPureNarration = pureNarration.length > 0;
+
+      // Calculate timeline split between narration and dialogue
+      const narrationWords = hasPureNarration ? pureNarration.split(/\s+/).length : 0;
+      const dialogueWords = hasDialogue ? dialogueText.split(/\s+/).length : 0;
+      const totalWords = narrationWords + dialogueWords || 1;
+      const narrationEndPct = hasDialogue ? narrationWords / totalWords : 1;
+
+      // Narration overlays (subtitle_stroke style — bold, no background, heavy outline)
+      if (hasPureNarration) {
+        const chunks = item.audioChunks && item.audioChunks.length > 0 
+          ? item.audioChunks 
+          : pureNarration.split(/(?<=[.!?])\s+/).map((t, i) => ({ i: i + 1, text: t, w: t.split(/\s+/).length }));
+
+        const chunkTotalWords = chunks.reduce((acc, c) => acc + (c.w || 1), 0);
+        let currentPct = 0;
+        for (const chunk of chunks) {
+          const durationPct = ((chunk.w || 1) / chunkTotalWords) * narrationEndPct;
+          overlays.push({
+            text: chunk.text,
+            start_pct: currentPct,
+            end_pct: currentPct + durationPct,
+            style: "subtitle_stroke",
+            position: "bottom_center",
+          });
+          currentPct += durationPct;
+        }
+      }
+
+      // Dialogue overlays (subtitle_stroke with speaker prefix)
+      if (hasDialogue) {
+        const prefix = dialogueSpeaker ? `"${dialogueSpeaker}: ` : `"`;
+        const dialogueChunks = dialogueText.split(/(?<=[.!?])\s+/);
+        const dialogueTotalWords = dialogueChunks.reduce((acc, t) => acc + t.split(/\s+/).length, 0);
+        let currentPct = narrationEndPct;
+        for (let i = 0; i < dialogueChunks.length; i++) {
+          const chunk = dialogueChunks[i];
+          const words = chunk.split(/\s+/).length;
+          const durationPct = (words / dialogueTotalWords) * (1 - narrationEndPct);
+          // Only first chunk gets speaker prefix, last chunk gets closing quote
+          const isFirst = i === 0;
+          const isLast = i === dialogueChunks.length - 1;
+          const displayText = (isFirst ? prefix : `"`) + chunk + (isLast ? `"` : ``);
+          overlays.push({
+            text: displayText,
+            start_pct: currentPct,
+            end_pct: currentPct + durationPct,
+            style: "subtitle_stroke",
+            position: "bottom_center",
+          });
+          currentPct += durationPct;
+        }
+      }
+
+      return overlays;
+    })() : [];
+
+    const clip: CompiledRenderClip = {
       clipId: `clip-${index + 1}-${panel.id}`,
       panelId: item.panelId,
       orderIndex: index,
@@ -164,10 +296,19 @@ export const buildRenderPlan = (
       audioFileKey: item.audioStatus === "ready" ? `audio-${index + 1}` : undefined,
       motionPreset,
       motionSeed: hashString(`${panel.id}:${index}:${durationMs}`),
-      motionIntensity: computeMotionIntensity(item, durationMs),
+      motionIntensity,
       panel,
       imageBlob: item.imageBlob,
       audioBlob: item.audioStatus === "ready" ? item.audioBlob : undefined,
+      // Effect metadata (resolved)
+      sceneType: item.sceneType,
+      mood: item.mood,
+      transition,
+      transitionDurationMs,
+      vfxTags: item.vfxTags,
+      sfxTags: item.sfxTags,
+      subtitleMood: item.subtitleMood,
+      text_overlays,
     };
     startMs += durationMs;
     return clip;

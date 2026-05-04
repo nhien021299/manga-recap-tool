@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useCallback, useRef } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
   AlertCircle,
@@ -79,18 +79,6 @@ export function StepScript() {
     }
     return null;
   }, [logs]);
-  const availableMetrics = useMemo(() => {
-    if (scriptMeta.metrics) return scriptMeta.metrics;
-    for (let i = logs.length - 1; i >= 0; i -= 1) {
-      const log = logs[i];
-      if (log.type !== "result") continue;
-      if (!log.message.toLowerCase().includes("script generation completed")) continue;
-      const parsed = parseMetricsFromLogDetails(log.details);
-      if (parsed) return parsed;
-    }
-    return null;
-  }, [logs, scriptMeta.metrics]);
-
   const generateDisabled = isLoading || panels.length === 0;
 
 

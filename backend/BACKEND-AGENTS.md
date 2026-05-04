@@ -3,9 +3,10 @@
 ## System Role
 This project is the AI backend for a manga/webtoon recap tool.
 
-Current active product flow on `2026-04-16`:
+Current active product flow on `2026-05-04`:
 - Step Script runs through backend Gemini
-- Active entrypoint is `POST /api/v1/script/generate`
+- Step Render queries `POST /api/v1/video/suggest-effects` for AI cinematic planning
+- Active entrypoints include `POST /api/v1/script/generate`
 
 Priorities:
 - API-first backend architecture
@@ -38,6 +39,7 @@ Automatically select the correct specialization:
 - Provider selection, adapters, model switching -> provider-abstraction-engineer
 - Caption understanding, panel/image processing -> vision-caption-pipeline
 - Script generation, structured outputs, memory flow -> script-generation-orchestrator
+- Cinematic effect suggestion (VFX, transitions) -> script-generation-orchestrator
 
 ### Runtime & Operations
 - Queueing, cancellation, progress, concurrency -> async-job-queue-specialist

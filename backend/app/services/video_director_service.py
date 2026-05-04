@@ -33,42 +33,36 @@ from app.utils.image_io import image_to_base64
 logger = logging.getLogger(__name__)
 
 EFFECTS_VOCABULARY = """
-Camera motions (use as keyframe "effect" values):
-- zoom_in: Slowly zoom into the scene center or focus point
-- zoom_out: Pull back to reveal more of the scene
-- pan_left / pan_right: Horizontal camera pan
-- pan_up / pan_down: Vertical camera tilt
-- ken_burns_tl: Ken Burns drift from top-left
-- ken_burns_br: Ken Burns drift from bottom-right
-- ken_burns_center: Ken Burns starting from center
-- push_in_upper_focus: Push into upper portion of image
-- push_in_lower_focus: Push into lower portion
-- drift_left_to_right: Gentle horizontal drift
-- drift_right_to_left: Reverse horizontal drift
-- rise_up_focus: Rising camera revealing upward
-- pull_back_reveal: Pull back to reveal the full scene
-- parallax_depth: Simulated depth parallax (foreground moves faster)
-- subtle_shake: Very light camera shake for impact moments
+Scene Types (scene_type):
+- establishing: Wide shots, landscapes, backgrounds.
+- dialogue: Characters speaking.
+- inner_thought: Character thinking, monologue.
+- mystery_reveal: Discovery, secrets, omens.
+- danger_build: Increasing danger, monsters appearing.
+- combat_action: Fast action, fighting, chasing.
+- shock_reveal: Shocking moments, blood, twists.
+- emotional_pause: Quiet, sad, lonely moments.
 
-Transitions between scenes (use as transition "type" values):
-- crossfade: Smooth dissolve between scenes (default, 300-800ms)
-- cut: Hard cut, no transition (0ms)
-- fade_black: Fade to black then fade in (400-1200ms)
-- fade_white: Flash to white then in (200-600ms, for impact moments)
-- wipe_left / wipe_right: Directional wipe
+Moods (mood):
+- calm, ominous, tense, violent, tragic, mystical, lonely, epic.
 
-Color grades (use as "color_grade" values):
-- warm_firelight: Warm orange/amber tones for tribal/bonfire scenes
-- cold_blue: Cold blue-green for mystery/night/danger
-- cold_dusk: Blue-purple dusk atmosphere
-- neutral: Balanced, no strong color shift
-- dark_jade: Dark jade-green for cultivation/qi scenes
-- blood_amber: Deep red-amber for ritual/wound scenes
+Motion Presets (motion_preset):
+- still_hold: Very slight zoom (for dialogue/calm).
+- slow_zoom_in/slow_zoom_out: Classic slow motion.
+- push_in_center: Stronger zoom into center.
+- pan_left/pan_right/pan_up/pan_down: Directional movement.
+- handheld_tension: Controlled camera shake for tension.
+- impact_shake: Short sharp shake for hits/shocks.
 
-Text overlay styles:
-- subtitle: Standard bottom subtitle for narration
-- dialogue_bubble: Character dialogue with slight style difference
-- title_card: Bold centered title (for chapter/scene transitions)
+Transitions (transition):
+- crossfade: Standard smooth dissolve (400-800ms).
+- dip_to_black: Fade to black (500-800ms).
+- flash_cut: White flash (200-400ms).
+- hard_cut: Instant cut (0ms).
+- blur_fade: Blur then crossfade (400-600ms).
+
+VFX Tags (vfx_tags): rain, cold_mist, fire_sparks, dark_smoke, etc.
+SFX Tags (sfx_tags): dark_pulse, low_wind, blade_clash, heartbeat, etc.
 """.strip()
 
 MAX_OUTPUT_TOKENS = 16384
@@ -164,6 +158,59 @@ class VideoDirectorService:
 
         return direction
 
+    async def suggest_effects(
+        self,
+        *,
+        package: NarrationPackage,
+        style: str = "dark_xianxia_recap",
+    ) -> list[dict]:
+        """Suggest high-level effects (metadata only) using Gemini."""
+        api_key = self.settings.effective_gemini_api_key
+        if not api_key:
+            raise RuntimeError("Gemini API key is not configured.")
+
+        # Build prompt for suggestion only
+        prompt = (
+            "You are a professional video editor specializing in manhwa recap videos.\n"
+            "Based on the following narration script and scene descriptions, suggest cinematic effects metadata for each scene.\n\n"
+            f"Style: {style}\n\n"
+            "Scenes:\n"
+        )
+        for s in package.scenes:
+            prompt += f"- Scene {s.scene}: {s.narration[:150]}\n"
+            if s.dialogue:
+                prompt += f"  Dialogue: {s.dialogue}\n"
+
+        prompt += (
+            "\nAVAILABLE PRESETS:\n"
+            f"{EFFECTS_VOCABULARY}\n\n"
+            "Rules:\n"
+            "- Gemini should only select metadata (presets, mood, intensity).\n"
+            "- Return a JSON array of objects, one for each scene.\n"
+            "- Required fields: scene, scene_type, mood, motion_preset, motion_intensity (0.1 to 1.0), transition, transition_duration_ms, vfx_tags (array), sfx_tags (array).\n"
+            "Return ONLY the JSON array. No explanation."
+        )
+
+        image_parts = self._build_image_parts(package)
+        
+        raw_text = await self._call_gemini(
+            api_key=api_key,
+            prompt=prompt,
+            image_parts=image_parts,
+        )
+
+        # Parse JSON
+        cleaned = raw_text.strip()
+        if cleaned.startswith("```"):
+            cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+            cleaned = re.sub(r"\s*```$", "", cleaned)
+        
+        try:
+            return json.loads(cleaned)
+        except json.JSONDecodeError:
+            logger.error("Failed to parse suggested effects JSON from Gemini.")
+            return []
+
     def _build_prompt(
         self,
         *,
@@ -192,6 +239,8 @@ class VideoDirectorService:
                 f"    Has dialogue: {'yes' if scene.dialogue else 'no'}\n"
                 f"    Retention beat: {scene.retention_beat or 'none'}"
             )
+            if scene.scene_type:
+                scene_lines[-1] += f"\n    Preset Suggestion: {scene.scene_type} ({scene.mood}), motion: {scene.motion_preset} (intensity: {scene.motion_intensity}), vfx: {scene.vfx_tags}"
 
         scene_block = "\n".join(scene_lines)
 
@@ -276,6 +325,12 @@ class VideoDirectorService:
                     ],
                     "color_grade": "cold_blue",
                     "motion_preset": "push_in_center",
+                    "scene_type": "mystery_reveal",
+                    "mood": "ominous",
+                    "motion_intensity": 0.55,
+                    "vfx_tags": ["cold_mist"],
+                    "sfx_tags": ["dark_pulse"],
+                    "subtitle_mood": "ominous"
                 },
                 indent=2,
                 ensure_ascii=False,
@@ -290,10 +345,12 @@ class VideoDirectorService:
         """Build image parts for Gemini vision input."""
         parts: list[dict] = []
         for scene in package.scenes:
+            if not scene.image_path:
+                continue
             image_path = Path(scene.image_path)
-            if not image_path.exists():
+            if not image_path.is_file():
                 logger.warning(
-                    "Scene %d image not found: %s", scene.scene, image_path
+                    "Scene %d image not found or not a file: %s", scene.scene, image_path
                 )
                 continue
 
@@ -319,10 +376,22 @@ class VideoDirectorService:
         if base_url and not base_url.endswith("/v1") and not base_url.endswith("/v1/"):
             base_url = f"{base_url.rstrip('/')}/v1"
 
+        import httpx
+        
+        # Create a custom client to avoid SSL context issues on some Windows environments
+        # especially when using a local HTTP proxy for Gemini.
+        verify_ssl = not (base_url and base_url.startswith("http://127.0.0.1"))
+        
+        http_client = httpx.AsyncClient(
+            verify=verify_ssl,
+            timeout=120.0,
+            limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
+        )
+
         client = openai.AsyncOpenAI(
             api_key=api_key,
             base_url=base_url,
-            timeout=120.0,
+            http_client=http_client,
             max_retries=0,
         )
 
@@ -449,6 +518,7 @@ class VideoDirectorService:
                         scene_num=scene.scene,
                         duration_ms=max(target_ms, audio_ms + 500),
                         narration=scene.narration,
+                        scene_input=scene,
                     )
                 )
 
@@ -505,6 +575,7 @@ class VideoDirectorService:
                     duration_ms=duration_ms,
                     narration=scene.narration,
                     motion_preset=preset,
+                    scene_input=scene,
                 )
             )
 
@@ -531,8 +602,34 @@ class VideoDirectorService:
         duration_ms: int,
         narration: str,
         motion_preset: str = "push_in_center",
+        scene_input: SceneInput | None = None,
     ) -> SceneDirection:
         """Create a single default scene direction."""
+        # Use overrides from input if available
+        preset = motion_preset
+        intensity = 0.7
+        vfx = []
+        mood = None
+        scene_type = None
+        transition = "crossfade"
+        trans_duration = 500
+        
+        if scene_input:
+            if scene_input.motion_preset:
+                preset = scene_input.motion_preset
+            if scene_input.motion_intensity is not None:
+                intensity = scene_input.motion_intensity
+            if scene_input.vfx_tags:
+                vfx = scene_input.vfx_tags
+            if scene_input.mood:
+                mood = scene_input.mood
+            if scene_input.scene_type:
+                scene_type = scene_input.scene_type
+            if scene_input.transition:
+                transition = scene_input.transition
+            if scene_input.transition_duration_ms is not None:
+                trans_duration = scene_input.transition_duration_ms
+
         return SceneDirection(
             scene=scene_num,
             total_duration_ms=duration_ms,
@@ -540,13 +637,13 @@ class VideoDirectorService:
             keyframes=[
                 KeyframeEffect(
                     time_pct=0.0,
-                    effect=motion_preset,
-                    intensity=0.7,
+                    effect=preset,
+                    intensity=intensity,
                     easing="ease_in_out",
                 ),
             ],
             transition_in=None,
-            transition_out=SceneTransition(type="crossfade", duration_ms=500),
+            transition_out=SceneTransition(type=transition, duration_ms=trans_duration),
             text_overlays=[
                 TextOverlay(
                     text=narration,
@@ -557,5 +654,10 @@ class VideoDirectorService:
                 ),
             ],
             color_grade="neutral",
-            motion_preset=motion_preset,
+            motion_preset=preset,
+            motion_intensity=intensity,
+            vfx_tags=vfx,
+            mood=mood,
+            scene_type=scene_type,
+            subtitle_mood=scene_input.subtitle_mood if scene_input else None,
         )

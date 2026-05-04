@@ -18,10 +18,11 @@ Your job:
 - Backend app: `./backend`
 - Backend agent guide: `./backend/BACKEND-AGENTS.md`
 
-Active product architecture on `2026-04-16`:
+Active product architecture on `2026-05-04`:
 - FE-BE structure is active
 - Step Script runs through backend Gemini
-- Active backend route is `POST /api/v1/script/generate`
+- Step Render uses Remotion for cinematic composition and VFX
+- Active backend routes include `POST /api/v1/script/generate` and `POST /api/v1/video/suggest-effects`
 
 ---
 
@@ -34,11 +35,13 @@ Load `./web-app/WEB-AGENTS.md` only when the prompt is mainly about:
 - crop editor, image workspace, scene UI, extraction UI
 - frontend API calls, polling, request state in UI
 - design system, tokens, visual consistency
+- Remotion player, CSS-based VFX layers, cinematic transitions, motion presets
 
 ### Route To Backend Only
 Load `./backend/BACKEND-AGENTS.md` only when the prompt is mainly about:
 - FastAPI routes, request/response models, validation
 - Gemini backend flow, providers, model config, retries, logging
+- AI cinematic effect suggestion (vfx tags, moods, transitions)
 - legacy Ollama, llama.cpp, OCR, model switching
 - caption generation, script generation, parsing, retries
 - job queue, progress, cancellation, temp files

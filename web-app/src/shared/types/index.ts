@@ -39,10 +39,12 @@ export interface Panel {
 
 
 export interface ScriptContext {
+  chapterId?: string;
   mangaName?: string;
   mainCharacter?: string;
   summary?: string;
   language?: "vi" | "en";
+  characterContext?: string;
 }
 
 export interface PanelUnderstanding {
@@ -87,13 +89,30 @@ export type ScriptPipeline = "backend-gemini-unified";
 export type AudioStatus = "missing" | "ready" | "stale" | "generating" | "error";
 export type CaptionMode = "off" | "burned";
 export type RenderMotionPreset =
+  // Legacy presets (used by auto-selection and FFmpeg render)
   | "push_in_center"
   | "push_in_upper_focus"
   | "push_in_lower_focus"
   | "drift_left_to_right"
   | "drift_right_to_left"
   | "rise_up_focus"
-  | "pull_back_reveal";
+  | "pull_back_reveal"
+  // Plan presets (used by preset-driven system)
+  | "still_hold"
+  | "slow_zoom_in"
+  | "slow_zoom_out"
+  | "pan_left"
+  | "pan_right"
+  | "pan_up"
+  | "pan_down"
+  | "handheld_tension"
+  | "impact_shake";
+
+export type RenderTransitionPreset =
+  | "crossfade"
+  | "dip_to_black"
+  | "smooth_zoom_fade"
+  | "hard_cut";
 
 export interface StoryMemory {
   chunkIndex: number;
@@ -132,6 +151,16 @@ export interface TimelineItem {
   audioUrl?: string;
   audioStatus?: AudioStatus;
   audioChunks?: TtsChunk[];
+  // Effect metadata from preset-driven plan
+  sceneType?: string;
+  mood?: string;
+  motionPreset?: string;
+  motionIntensity?: number;
+  transition?: string;
+  transitionDurationMs?: number;
+  vfxTags?: string[];
+  sfxTags?: string[];
+  subtitleMood?: string;
 }
 
 export interface AppConfig {
@@ -216,6 +245,15 @@ export interface CompiledRenderClip {
   panel: Panel;
   imageBlob: Blob;
   audioBlob?: Blob;
+  // Effect metadata
+  sceneType?: string;
+  mood?: string;
+  transition: RenderTransitionPreset;
+  transitionDurationMs: number;
+  vfxTags?: string[];
+  sfxTags?: string[];
+  subtitleMood?: string;
+  text_overlays?: any[];
 }
 
 export interface RenderPlan {

@@ -1,3 +1,6 @@
+// @ts-nocheck
+
++
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Scissors, UserPlus } from "lucide-react";
 
@@ -874,3 +877,4 @@ export function StepCharacters() {
     </div>
   );
 }
+

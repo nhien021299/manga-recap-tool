@@ -254,16 +254,16 @@ function getOverlayStyle(
      * - No background box.
      * - Stronger stroke.
      *
-     * Now the PRIMARY style for all subtitles in manhwa recaps.
-     * Matches YouTube recap channel aesthetic: bold, clean, no-box.
+     * Use only if the scene/video style is more comic or meme-like.
+     * For Cau Ma dark manhwa, the default "subtitle" style is safer.
      */
     case "subtitle_stroke":
       return {
         container: { ...baseContainer, ...containerPos },
         motionWrapper: baseMotionWrapper,
         textBox: {
-          maxWidth: isPortrait ? "86%" : "72%",
-          padding: "0 8px",
+          maxWidth: isPortrait ? "84%" : "64%",
+          padding: "0 4px",
           textAlign: "center",
         },
         text: {
@@ -271,24 +271,24 @@ function getOverlayStyle(
           color: "#FFFFFF",
           fontSize: isPortrait
             ? isVeryLongText
-              ? 48
-              : isLongText
-                ? 50
-                : 54
-            : isVeryLongText
               ? 44
               : isLongText
                 ? 46
-                : 50,
-          fontWeight: 900,
-          lineHeight: 1.22,
+                : 48
+            : isVeryLongText
+              ? 40
+              : isLongText
+                ? 42
+                : 44,
+          fontWeight: 800,
+          lineHeight: 1.18,
           WebkitTextStroke: isPortrait
-            ? "3.5px rgba(0,0,0,0.95)"
-            : "3px rgba(0,0,0,0.95)",
+            ? "2.4px rgba(0,0,0,0.92)"
+            : "2px rgba(0,0,0,0.92)",
           paintOrder: "stroke fill",
           textShadow:
-            "0 2px 0 rgba(0,0,0,0.85), 0 4px 0 rgba(0,0,0,0.6), 0 6px 14px rgba(0,0,0,0.5)",
-          letterSpacing: "-0.3px",
+            "0 3px 0 rgba(0,0,0,0.75), 0 6px 12px rgba(0,0,0,0.55)",
+          letterSpacing: "-0.2px",
         },
       };
 

@@ -29,6 +29,7 @@ export function getCameraTransform(
   totalFrames: number,
   keyframes: KeyframeEffect[],
   motionPreset: string,
+  motionIntensity: number,
 ): CameraTransform {
   const progress = totalFrames <= 1 ? 1 : frame / (totalFrames - 1);
 
@@ -40,7 +41,7 @@ export function getCameraTransform(
           {
             time_pct: 0,
             effect: motionPreset,
-            intensity: 0.7,
+            intensity: motionIntensity,
             easing: "ease_in_out",
             params: {},
           },
@@ -76,10 +77,33 @@ function applyEffect(
   progress: number,
   intensity: number,
 ): CameraTransform {
-  const maxZoom = 0.08 * intensity;
-  const maxPan = 40 * intensity;
+  // Boosted for cinematic feel (was 0.08/40, too subtle for manhwa recaps)
+  const maxZoom = 0.18 * intensity;
+  const maxPan = 80 * intensity;
 
   switch (effect) {
+    case "still_hold":
+      // Very subtle breathe — keeps scene alive without distracting
+      return {
+        scale: 1 + maxZoom * 0.12 * Math.sin(progress * Math.PI),
+        translateX: 0,
+        translateY: 0,
+      };
+
+    case "slow_zoom_in":
+      return {
+        scale: 1 + maxZoom * 0.65 * progress,
+        translateX: 0,
+        translateY: 0,
+      };
+
+    case "slow_zoom_out":
+      return {
+        scale: 1 + maxZoom * 0.65 * (1 - progress),
+        translateX: 0,
+        translateY: 0,
+      };
+
     case "zoom_in":
     case "push_in_center":
       return {
@@ -99,7 +123,7 @@ function applyEffect(
     case "pan_left":
     case "drift_right_to_left":
       return {
-        scale: 1 + maxZoom * 0.3,
+        scale: 1 + maxZoom * 0.25,
         translateX: -maxPan * progress,
         translateY: 0,
       };
@@ -107,7 +131,7 @@ function applyEffect(
     case "pan_right":
     case "drift_left_to_right":
       return {
-        scale: 1 + maxZoom * 0.3,
+        scale: 1 + maxZoom * 0.25,
         translateX: maxPan * progress,
         translateY: 0,
       };
@@ -115,7 +139,7 @@ function applyEffect(
     case "pan_up":
     case "rise_up_focus":
       return {
-        scale: 1 + maxZoom * 0.4,
+        scale: 1 + maxZoom * 0.35,
         translateX: 0,
         translateY: -maxPan * progress,
       };
@@ -123,7 +147,7 @@ function applyEffect(
     case "pan_down":
     case "tilt_down":
       return {
-        scale: 1 + maxZoom * 0.4,
+        scale: 1 + maxZoom * 0.35,
         translateX: 0,
         translateY: maxPan * progress,
       };
@@ -158,7 +182,7 @@ function applyEffect(
 
     case "ken_burns_center":
       return {
-        scale: 1 + maxZoom * 1.2 * progress,
+        scale: 1 + maxZoom * 1.1 * progress,
         translateX: 0,
         translateY: 0,
       };
@@ -166,13 +190,36 @@ function applyEffect(
     case "parallax_depth":
       return {
         scale: 1 + maxZoom * 0.5 * progress,
-        translateX: maxPan * 0.2 * Math.sin(progress * Math.PI),
+        translateX: maxPan * 0.25 * Math.sin(progress * Math.PI),
         translateY: -maxPan * 0.15 * progress,
       };
 
+    case "handheld_tension": {
+      // Organic handheld camera — low frequency, moderate sway
+      const freq = 5 * intensity;
+      const amp = 12 * intensity;
+      return {
+        scale: 1 + maxZoom * 0.18,
+        translateX: Math.sin(progress * Math.PI * freq) * amp,
+        translateY: Math.cos(progress * Math.PI * freq * 0.7) * amp * 0.6,
+      };
+    }
+
+    case "impact_shake": {
+      // Punchy decay shake — strong start, fast fade
+      const decay = Math.exp(-progress * 4.5);
+      const freq = 22;
+      const amp = 40 * intensity * decay;
+      return {
+        scale: 1 + 0.06 * decay,
+        translateX: Math.sin(progress * Math.PI * freq) * amp,
+        translateY: Math.cos(progress * Math.PI * freq * 1.2) * amp,
+      };
+    }
+
     case "subtle_shake": {
-      const shakeX = Math.sin(progress * Math.PI * 6) * 3 * intensity;
-      const shakeY = Math.cos(progress * Math.PI * 4) * 2 * intensity;
+      const shakeX = Math.sin(progress * Math.PI * 6) * 5 * intensity;
+      const shakeY = Math.cos(progress * Math.PI * 4) * 3.5 * intensity;
       return {
         scale: 1,
         translateX: shakeX,

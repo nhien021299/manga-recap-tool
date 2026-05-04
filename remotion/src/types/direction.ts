@@ -21,7 +21,7 @@ export interface TextOverlay {
   text: string;
   start_pct: number;
   end_pct: number;
-  style: "subtitle" | "dialogue_bubble" | "title_card";
+  style: "subtitle" | "subtitle_stroke" | "dialogue_bubble" | "title_card";
   position: string;
 }
 
@@ -35,6 +35,14 @@ export interface SceneDirection {
   text_overlays: TextOverlay[];
   color_grade: string;
   motion_preset: string;
+  scene_type?: string;
+  mood?: string;
+  motion_intensity?: number;
+  transition?: string;
+  transition_duration_ms?: number;
+  vfx_tags?: string[];
+  sfx_tags?: string[];
+  subtitle_mood?: string;
 }
 
 export interface SceneAsset {

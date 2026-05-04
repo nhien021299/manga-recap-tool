@@ -19,9 +19,11 @@ import {
   type Step,
   type StoryMemory,
   type TimelineItem,
+  type RenderJobStatusResponse,
   type VirtualStripImage,
   type VoiceConfig,
   type VoiceGenerationProgress,
+  type BenchmarkRecord,
 } from "@/shared/types";
 
 interface RecapState {
@@ -80,6 +82,10 @@ interface RecapState {
   setScriptMeta: (meta: ScriptMeta) => void;
   markScriptOutdated: (reason: string) => void;
   clearScriptData: () => void;
+
+  benchmarkRecords: BenchmarkRecord[];
+  addBenchmarkRecord: (record: BenchmarkRecord) => void;
+  removeBenchmarkRecord: (id: string) => void;
 
   activeJobId: string | null;
   setActiveJobId: (id: string | null) => void;

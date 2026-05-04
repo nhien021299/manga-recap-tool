@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   ChevronLeft,
@@ -11,7 +11,6 @@ import {
   Sparkles,
   Trash2,
   Video,
-  Volume2,
   Wand2,
   XCircle,
   CheckCircle2,
@@ -27,7 +26,7 @@ import {
   revealRenderResult,
   resolveRenderResultUrl,
 } from "@/features/render/api/renderApi";
-import { submitNarrationProduction, pollVideoJobStatus, cancelVideoJob, purgeVideoData } from "@/features/script/api/scriptApi";
+import { submitNarrationProduction, pollVideoJobStatus, cancelVideoJob, purgeVideoData, suggestEffectMetadata } from "@/features/script/api/scriptApi";
 import { buildRenderPlan, validateRenderPlan } from "@/features/render/lib/renderPlan";
 import { useVoiceGeneration } from "@/features/voice/hooks/useVoiceGeneration";
 import { useRecapStore } from "@/shared/storage/useRecapStore";
@@ -107,7 +106,9 @@ export function StepRender() {
     setPreviewUrl,
     backendStatus,
     setBackendStatus,
+    setTimeline,
   } = useRecapStore();
+  const [isSuggesting, setIsSuggesting] = useState(false);
   const { generateStaleVoices, error: voiceError } = useVoiceGeneration();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const backendPollInFlightRef = useRef(false);
@@ -156,6 +157,7 @@ export function StepRender() {
           detail: videoStatus.detail,
           error: videoStatus.error || undefined,
           downloadUrl: videoStatus.download_url || undefined,
+          logs: [],
         };
 
         setBackendStatus(status);
@@ -206,6 +208,49 @@ export function StepRender() {
     };
   }, [activeJobId, config.apiBaseUrl, isRendering, renderMode]);
 
+  const handleSuggestEffects = async () => {
+    if (!timeline.length) return;
+    setIsSuggesting(true);
+    try {
+      const scenes = timeline
+        .filter((item) => item.enabled !== false)
+        .map((item, index) => ({
+          scene: index + 1,
+          title: `Scene ${index + 1}`,
+          narration: item.scriptItem.voiceover_text,
+          duration_seconds: item.audioDuration || 0,
+          dialogue: item.scriptItem.dialogue_text || null,
+        }));
+
+      const response = await suggestEffectMetadata(config.apiBaseUrl, scenes);
+      
+      const newTimeline = timeline.map((item, index) => {
+        const suggestion = response.scenes.find(s => s.scene === index + 1);
+        if (suggestion) {
+          return {
+            ...item,
+            sceneType: suggestion.scene_type,
+            mood: suggestion.mood,
+            motionPreset: suggestion.motion_preset,
+            motionIntensity: suggestion.motion_intensity,
+            transition: suggestion.transition,
+            transitionDurationMs: suggestion.transition_duration_ms,
+            vfxTags: suggestion.vfx_tags,
+            sfxTags: suggestion.sfx_tags,
+            subtitleMood: suggestion.subtitle_mood || suggestion.mood,
+          };
+        }
+        return item;
+      });
+      
+      setTimeline(newTimeline);
+    } catch (error) {
+      setRenderError(describeRenderError(error));
+    } finally {
+      setIsSuggesting(false);
+    }
+  };
+
   const handleBackendRender = async () => {
     if (!timeline.length) return;
 
@@ -233,6 +278,15 @@ export function StepRender() {
             narration: item.scriptItem.voiceover_text,
             duration_seconds: item.audioDuration || 0,
             dialogue: item.scriptItem.dialogue_text || null,
+            scene_type: item.sceneType,
+            mood: item.mood,
+            motion_preset: item.motionPreset,
+            motion_intensity: item.motionIntensity,
+            transition: item.transition,
+            transition_duration_ms: item.transitionDurationMs,
+            vfx_tags: item.vfxTags,
+            sfx_tags: item.sfxTags,
+            subtitle_mood: item.subtitleMood,
           })),
       };
 
@@ -291,6 +345,7 @@ export function StepRender() {
         detail: statusResponse.detail,
         error: statusResponse.error || undefined,
         downloadUrl: statusResponse.download_url || undefined,
+        logs: [],
       };
 
       setBackendStatus(status);
@@ -335,7 +390,6 @@ export function StepRender() {
   const blockingIssues = [...validationErrors, ...(renderError ? [renderError] : [])];
   const canCancelBackendExport = renderMode === "backend" && isRendering && !!activeJobId;
   const canCancelExport = canCancelBackendExport;
-  const recentBackendLogs = backendStatus?.logs?.slice(-5) ?? [];
   const progressValue = clampProgress(renderProgress?.progress ?? 0);
   const progressPhaseLabel = renderProgress?.phase ? titleCasePhase(renderProgress.phase) : "Preparing Export";
   const progressDetail = renderProgress?.detail || "Preparing render workflow.";
@@ -369,78 +423,65 @@ export function StepRender() {
   const playerProps = useMemo<VideoDirectionProps | null>(() => {
     if (!timeline.length || !panels.length) return null;
 
-    const fps = 30;
-    const directionScenes: SceneDirection[] = timeline
-      .filter((item) => item.enabled !== false)
-      .map((item, idx) => {
-        const isFirst = idx === 0;
-        const transitionInMs = isFirst ? 0 : 500;
-        const pauseAfterTransitionMs = 250;
-        const audioStartMs = transitionInMs + (isFirst ? 400 : pauseAfterTransitionMs);
-        
-        const audioDurationMs = Math.round((item.audioDuration || 0) * 1000);
-        const holdAfterMs = item.holdAfterMs || 300;
-        const totalDurationMs = audioStartMs + audioDurationMs + holdAfterMs;
+    const plan = buildRenderPlan(timeline, panels, renderConfig);
+    
+    const directionScenes: SceneDirection[] = plan.clips.map((clip, idx) => {
+      // Use previous clip's transition for transition_in (cinematic flow)
+      const prevClip = idx > 0 ? plan.clips[idx - 1] : null;
 
-        return {
-          scene: idx + 1,
-          total_duration_ms: totalDurationMs,
-          audio_start_ms: audioStartMs,
-          keyframes: [],
-          transition_in: isFirst ? null : { type: "crossfade", duration_ms: 500, params: {} },
-          transition_out: { type: "crossfade", duration_ms: 500, params: {} },
-          text_overlays: (renderConfig.captionMode === "burned" && item.scriptItem.voiceover_text) ? (
-            (() => {
-              const text = item.scriptItem.voiceover_text;
-              const chunks = item.audioChunks && item.audioChunks.length > 0 
-                ? item.audioChunks 
-                : text.split(/(?<=[.!?])\s+/).map((t, i) => ({ i: i + 1, text: t, w: t.split(/\s+/).length }));
+      // Brief visual lead-in before audio starts (shorter = tighter pacing)
+      const audioStartMs = idx === 0 ? 350 : 150;
 
-              const totalWords = chunks.reduce((acc, c) => acc + (c.w || 1), 0);
-              let currentPct = 0;
-              return chunks.map((chunk) => {
-                const durationPct = (chunk.w || 1) / totalWords;
-                const start = currentPct;
-                const end = currentPct + durationPct;
-                currentPct = end;
-                return {
-                  text: chunk.text,
-                  start_pct: start,
-                  end_pct: end,
-                  style: "subtitle" as const,
-                  position: "bottom_center" as const
-                };
-              });
-            })()
-          ) : [],
-          color_grade: "normal",
-          motion_preset: "push_in_center",
-        };
-      });
+      // Map mood to color grade
+      const colorGrade = clip.mood === "ominous" || clip.mood === "tense" ? "cold_blue" :
+                         clip.mood === "violent" || clip.mood === "epic" ? "warm_firelight" :
+                         clip.mood === "tragic" || clip.mood === "lonely" ? "cold_dusk" :
+                         clip.mood === "mystical" ? "dark_jade" : "neutral";
 
-    const assets: SceneAsset[] = timeline
-      .filter((item) => item.enabled !== false)
-      .map((item, idx) => {
-        const panel = panels.find(p => p.id === item.panelId);
-        return {
-          scene: idx + 1,
-          title: `Scene ${idx + 1}`,
-          imagePath: panel?.base64 || panel?.thumbnail || null,
-          audioPath: item.audioUrl || null,
-          dialogueAudioPath: null,
-          audioDurationMs: Math.round((item.audioDuration || 0) * 1000),
-          dialogueDurationMs: null,
-        };
-      });
+      return {
+        scene: clip.orderIndex + 1,
+        // CRITICAL: scene must be long enough for audio_start_delay + full audio + hold
+        total_duration_ms: clip.durationMs + audioStartMs,
+        audio_start_ms: audioStartMs,
+        keyframes: [], // Plan Phase 1: no custom keyframes, motion from resolver
+        transition_in: idx === 0 ? null : {
+          type: prevClip?.transition || "crossfade",
+          duration_ms: prevClip?.transitionDurationMs || 500,
+          params: {},
+        },
+        transition_out: { 
+          type: clip.transition, 
+          duration_ms: clip.transitionDurationMs, 
+          params: {},
+        },
+        text_overlays: clip.text_overlays || [],
+        color_grade: colorGrade,
+        motion_preset: clip.motionPreset,
+        motion_intensity: clip.motionIntensity,
+        vfx_tags: clip.vfxTags || [],
+        sfx_tags: clip.sfxTags || [],
+      };
+    });
 
-    const totalDurationMs = directionScenes.reduce((acc, s) => acc + s.total_duration_ms, 0);
+    const assets: SceneAsset[] = plan.clips.map((clip, idx) => {
+      return {
+        scene: clip.orderIndex + 1,
+        title: `Scene ${clip.orderIndex + 1}`,
+        imagePath: clip.panel.base64 || clip.panel.thumbnail || null,
+        audioPath: clip.audioBlob ? URL.createObjectURL(clip.audioBlob) : null,
+        dialogueAudioPath: null,
+        // Audio duration = clip duration minus hold (audio portion only)
+        audioDurationMs: Math.max(0, clip.durationMs - (clip.holdAfterMs || 250)),
+        dialogueDurationMs: null,
+      };
+    });
 
     return {
       chapter: Number(scriptContext.chapterId) || 1,
-      total_duration_ms: totalDurationMs,
-      fps,
-      width: renderConfig.outputWidth,
-      height: Math.round(renderConfig.outputWidth / renderConfig.aspectRatio),
+      total_duration_ms: plan.totalDurationMs,
+      fps: plan.frameRate,
+      width: plan.outputWidth,
+      height: plan.outputHeight,
       scenes: directionScenes,
       assets,
       publicDir: "",
@@ -519,6 +560,99 @@ export function StepRender() {
           </p>
         </Card>
       </div>
+
+      <Card className="glass rounded-3xl border-white/10 bg-white/5 p-6 overflow-hidden">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/20 text-purple-400">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white">Kế Hoạch Hiệu Ứng (AI Suggestion)</h3>
+              <p className="text-xs text-white/45">Bản phác thảo phong cách và chuyển động được Gemini gợi ý cho từng phân cảnh.</p>
+            </div>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleSuggestEffects}
+            disabled={isSuggesting || isRendering}
+            className="rounded-xl border-purple-500/30 bg-purple-500/5 text-purple-100 hover:bg-purple-500/10"
+          >
+            {isSuggesting ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Wand2 className="mr-2 h-3 w-3" />}
+            Refresh Plan
+          </Button>
+        </div>
+
+        <div className="overflow-x-auto rounded-2xl border border-white/5 bg-black/20">
+          <table className="w-full text-left text-sm text-white/80">
+            <thead>
+              <tr className="border-b border-white/5 bg-white/5 text-[10px] font-semibold uppercase tracking-wider text-white/40">
+                <th className="px-4 py-3">Cảnh</th>
+                <th className="px-4 py-3">Loại & Tâm trạng</th>
+                <th className="px-4 py-3">Chuyển động</th>
+                <th className="px-4 py-3">Chuyển cảnh</th>
+                <th className="px-4 py-3 text-right">VFX/SFX</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {timeline.map((item, idx) => (
+                <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
+                  <td className="px-4 py-4 font-mono text-xs font-bold text-white/50">
+                    #{idx + 1}
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-white">{item.sceneType || "default"}</span>
+                      <span className="text-[10px] text-white/40 uppercase tracking-wider italic">{item.mood || "normal"}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs">{item.motionPreset || "push_in_center"}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="h-1.5 flex-1 rounded-full bg-white/5 overflow-hidden">
+                          <div 
+                            className="h-full bg-cyan-400/60" 
+                            style={{ width: `${(item.motionIntensity || 0.7) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-white/40">{item.motionIntensity || 0.7}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs">{item.transition || "crossfade"}</span>
+                      <span className="text-[10px] text-white/40">{item.transitionDurationMs || 500}ms</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 text-right">
+                    <div className="flex flex-wrap justify-end gap-1">
+                      {((item.vfxTags?.length || 0) + (item.sfxTags?.length || 0)) > 0 ? (
+                        <>
+                          {item.vfxTags?.map(tag => (
+                            <span key={tag} className="rounded-md border border-cyan-500/20 bg-cyan-500/10 px-1.5 py-0.5 text-[9px] text-cyan-300">
+                              {tag}
+                            </span>
+                          ))}
+                          {item.sfxTags?.map(tag => (
+                            <span key={tag} className="rounded-md border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[9px] text-amber-300">
+                              {tag}
+                            </span>
+                          ))}
+                        </>
+                      ) : (
+                        <span className="text-[10px] text-white/20">—</span>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
 
       {blockingIssues.length > 0 && (
         <Card className="rounded-3xl border border-red-500/25 bg-red-500/10 p-5 text-red-50">
@@ -634,12 +768,28 @@ export function StepRender() {
                   </Button>
                 </div>
 
-                <Button
-                  size="lg"
-                  onClick={handleBackendRender}
-                  disabled={isRendering || !!validationErrors.length}
-                  className="h-14 w-full rounded-2xl text-lg font-bold"
-                >
+                <div className="space-y-3">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={handleSuggestEffects}
+                    disabled={isSuggesting || isRendering || !timeline.length}
+                    className="h-14 w-full rounded-2xl border-purple-500/30 bg-purple-500/5 text-purple-100 hover:bg-purple-500/10 font-bold"
+                  >
+                    {isSuggesting ? (
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    ) : (
+                      <Wand2 className="mr-2 h-5 w-5" />
+                    )}
+                    Gợi ý Effect bằng AI (Gemini)
+                  </Button>
+
+                  <Button
+                    size="lg"
+                    onClick={handleBackendRender}
+                    disabled={isRendering || !!validationErrors.length}
+                    className="h-14 w-full rounded-2xl text-lg font-bold"
+                  >
                   {renderMode === "backend" && isRendering ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
@@ -649,8 +799,9 @@ export function StepRender() {
                 </Button>
               </div>
             </div>
+          </div>
 
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/65">
+          <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/65">
               Hệ thống sẽ tổng hợp kịch bản, âm thanh và hình ảnh để tạo video MP4 hoàn chỉnh bằng engine Remotion.
             </div>
 
@@ -718,6 +869,7 @@ export function StepRender() {
             ) : playerProps ? (
               <div className="h-full w-full">
                 <Player
+                  key={JSON.stringify(playerProps.scenes.map(s => s.motion_preset + s.transition_out?.type))}
                   component={ChapterRecap}
                   inputProps={playerProps}
                   durationInFrames={playerDurationFrames}

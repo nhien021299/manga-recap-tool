@@ -148,6 +148,69 @@ const getMotionTransform = (
   const panY = drawHeight * (0.03 + intensity * 0.025);
 
   switch (clip.motionPreset) {
+    // --- Plan presets ---
+    case "still_hold":
+      return {
+        scale: 1.01 + intensity * 0.02 * eased,
+        offsetX: 0,
+        offsetY: 0,
+      };
+    case "slow_zoom_in":
+      return {
+        scale: 1.02 + intensity * 0.06 * eased,
+        offsetX: 0,
+        offsetY: 0,
+      };
+    case "slow_zoom_out":
+      return {
+        scale: 1.08 - intensity * 0.06 * eased,
+        offsetX: 0,
+        offsetY: 0,
+      };
+    case "pan_left":
+      return {
+        scale: 1.05 + intensity * 0.03 * eased,
+        offsetX: -panX * eased,
+        offsetY: 0,
+      };
+    case "pan_right":
+      return {
+        scale: 1.05 + intensity * 0.03 * eased,
+        offsetX: panX * eased,
+        offsetY: 0,
+      };
+    case "pan_up":
+      return {
+        scale: 1.04 + intensity * 0.04 * eased,
+        offsetX: 0,
+        offsetY: -panY * eased,
+      };
+    case "pan_down":
+      return {
+        scale: 1.04 + intensity * 0.04 * eased,
+        offsetX: 0,
+        offsetY: panY * eased,
+      };
+    case "handheld_tension": {
+      const shakeX = Math.sin(progress * Math.PI * 4 * intensity) * 5 * intensity;
+      const shakeY = Math.cos(progress * Math.PI * 3 * intensity) * 3 * intensity;
+      return {
+        scale: 1.04 + intensity * 0.04 * eased,
+        offsetX: shakeX,
+        offsetY: shakeY,
+      };
+    }
+    case "impact_shake": {
+      const decay = Math.exp(-progress * 5);
+      const impactX = Math.sin(progress * Math.PI * 12) * 8 * intensity * decay;
+      const impactY = Math.cos(progress * Math.PI * 10) * 6 * intensity * decay;
+      return {
+        scale: 1.04 + 0.05 * decay,
+        offsetX: impactX,
+        offsetY: impactY,
+      };
+    }
+    // --- Legacy presets ---
     case "push_in_upper_focus":
       return {
         scale: 1.04 + intensity * 0.09 * eased,

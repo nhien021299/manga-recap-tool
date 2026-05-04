@@ -105,6 +105,16 @@ export interface NarrationScene {
   dialogue?: string | null;
   dialogue_speaker?: string | null;
   dialogue_timing?: string | null;
+  // Effect metadata
+  scene_type?: string;
+  mood?: string;
+  motion_preset?: string;
+  motion_intensity?: number;
+  transition?: string;
+  transition_duration_ms?: number;
+  vfx_tags?: string[];
+  sfx_tags?: string[];
+  subtitle_mood?: string;
 }
 
 export interface NarrationPayload {
@@ -112,6 +122,23 @@ export interface NarrationPayload {
   chapter?: number;
   language?: string;
   scenes: NarrationScene[];
+}
+
+export interface EffectSuggestion {
+  scene: number;
+  scene_type: string;
+  mood: string;
+  motion_preset: string;
+  motion_intensity: number;
+  transition: string;
+  transition_duration_ms: number;
+  vfx_tags: string[];
+  sfx_tags: string[];
+  subtitle_mood?: string | null;
+}
+
+export interface EffectSuggestionResponse {
+  scenes: EffectSuggestion[];
 }
 
 export interface VideoJobStatus {
@@ -207,6 +234,30 @@ export async function purgeVideoData(apiBaseUrl: string): Promise<any> {
   try {
     const response = await fetch(`${base}/api/v1/video/jobs/purge`, {
       method: "POST",
+    });
+    if (!response.ok) {
+      throw new Error(await parseResponseError(response));
+    }
+    return response.json();
+  } catch (error) {
+    throw parseFetchError(error, apiBaseUrl);
+  }
+}
+
+/**
+ * Suggest cinematic effects for a narration package using Gemini.
+ */
+export async function suggestEffectMetadata(
+  apiBaseUrl: string,
+  scenes: NarrationScene[],
+  style: string = "dark_xianxia_recap"
+): Promise<EffectSuggestionResponse> {
+  const base = normalizeBaseUrl(apiBaseUrl);
+  try {
+    const response = await fetch(`${base}/api/v1/video/suggest-effects`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scenes, style }),
     });
     if (!response.ok) {
       throw new Error(await parseResponseError(response));

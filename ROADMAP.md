@@ -19,7 +19,7 @@ manga-recap-tool/
 - `PLAN.md`: approved direction for native backend render jobs with browser fallback
 - `PLAN_EXPORT.md`: approved direction for cinematic Ken Burns / keyframed browser export motion
 
-Active architecture as of `2026-04-22`:
+Active architecture as of `2026-05-04`:
 
 - FE-BE structure is the active product shape
 - Upload and extraction stay browser-side
@@ -29,6 +29,19 @@ Active architecture as of `2026-04-22`:
 - Timeline state lives in frontend store
 - Official MP4 export now runs through backend async native `ffmpeg`
 - Browser FFmpeg export remains as fallback/preview with deterministic motion
+- Remotion is integrated to provide dynamic CSS-based VFX and cinematic transitions.
+
+## Checkpoint: Cinematic Manga Pipeline Optimization (2026-05-04)
+
+### Completed
+
+- Implemented an advanced, metadata-driven cinematic Remotion rendering engine.
+- Replaced basic transitions with professional motion profiles: `crossfade`, `smooth_zoom_fade`, `dip_to_black`, `hard_cut`.
+- Introduced dynamic VFX layers (e.g., film grain, rain, fire embers, camera shake, edge glow) using pure CSS and SVGs.
+- Resolved audio cut-offs during crossfades by decoupling `SceneAudio` from the `TransitionWrapper`.
+- Integrated a new backend Gemini API endpoint (`POST /api/v1/video/suggest-effects`) to suggest moods, VFX tags, and transitions for each scene based on narrative context.
+- Fixed TypeScript build errors regarding verbatim module syntax and unresolved dependencies.
+- Added Remotion path aliases in `tsconfig.app.json` for cleaner imports.
 
 ## Checkpoint: Character System 4-Phase Upgrade (2026-04-24)
 
@@ -345,6 +358,7 @@ Implemented:
 | M6 Native Export | Done | Backend async render jobs with native `ffmpeg` are now the official export path. |
 | M7 Motion Polish | Done | Browser fallback now ships cinematic panel motion with hard cuts. |
 | M8 Character System | Code Complete | All 4 phases implemented: heuristic block, anime face/head identity, cast-anchor propagation, DINOv2 hybrid embedding. Effective runtime quality depends on available dependencies (~6/10 baseline, up to 9/10 with full stack). |
+| M9 Cinematic Engine | Done | Remotion rendering with automated, AI-suggested CSS VFX, advanced transitions, and decoupled audio/visual playback. |
 
 ## Active API Surface
 
@@ -360,6 +374,7 @@ Implemented:
 - `GET /api/v1/voice/options`
 - `POST /api/v1/voice/generate`
 - `GET /api/v1/system/tts`
+- `POST /api/v1/video/suggest-effects`
 - `POST /api/v1/render/jobs`
 - `GET /api/v1/render/jobs/{job_id}`
 - `GET /api/v1/render/jobs/{job_id}/result`

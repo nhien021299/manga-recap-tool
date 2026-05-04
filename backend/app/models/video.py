@@ -27,13 +27,23 @@ class SceneInput(BaseModel):
     scene: int
     title: str
     status: str = ""
-    image_path: str
+    image_path: str = ""
     duration_seconds: float
     narration: str
     retention_beat: str | None = None
     dialogue: str | None = None
     dialogue_speaker: str | None = None
     dialogue_timing: str = "after_narration"
+    # Optional effect overrides from preset-driven plan
+    scene_type: str | None = None
+    mood: str | None = None
+    motion_preset: str | None = None
+    motion_intensity: float | None = None
+    transition: str | None = None
+    transition_duration_ms: int | None = None
+    vfx_tags: list[str] = Field(default_factory=list)
+    sfx_tags: list[str] = Field(default_factory=list)
+    subtitle_mood: str | None = None
 
 
 class NarrationPackage(BaseModel):
@@ -120,6 +130,13 @@ class SceneDirection(BaseModel):
     text_overlays: list[TextOverlay] = Field(default_factory=list)
     color_grade: str = "neutral"
     motion_preset: str = "push_in_center"
+    # New fields from preset-driven plan
+    scene_type: str | None = None
+    mood: str | None = None
+    motion_intensity: float | None = None
+    vfx_tags: list[str] = Field(default_factory=list)
+    sfx_tags: list[str] = Field(default_factory=list)
+    subtitle_mood: str | None = None
 
 
 class VideoDirection(BaseModel):
@@ -165,3 +182,31 @@ class VideoProduceRequest(BaseModel):
     width: int = 1920
     height: int = 1080
     fps: int = 30
+
+
+# ---------------------------------------------------------------------------
+# Effect suggestion (Gemini)
+# ---------------------------------------------------------------------------
+
+
+class SceneEffectSuggestion(BaseModel):
+    scene: int
+    scene_type: str
+    mood: str
+    motion_preset: str
+    motion_intensity: float
+    transition: str
+    transition_duration_ms: int
+    vfx_tags: list[str] = Field(default_factory=list)
+    sfx_tags: list[str] = Field(default_factory=list)
+    subtitle_mood: str | None = None
+
+
+class EffectSuggestionRequest(BaseModel):
+    narration_path: str | None = None
+    scenes: list[dict] | None = None  # Raw scenes if narration_path not yet saved
+    style: str = "dark_xianxia_recap"
+
+
+class EffectSuggestionResult(BaseModel):
+    scenes: list[SceneEffectSuggestion]

@@ -23,6 +23,9 @@ from app.deps import get_app_settings, get_video_orchestrator, get_video_tts_ser
 from app.models.video import (
     BatchTtsRequest,
     BatchTtsResult,
+    EffectSuggestionRequest,
+    EffectSuggestionResult,
+    NarrationPackage,
     VideoJobStatus,
     VideoProduceRequest,
 )
@@ -30,6 +33,37 @@ from app.models.video import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/video", tags=["video"])
+
+
+@router.post("/suggest-effects", response_model=EffectSuggestionResult)
+async def suggest_effects(
+    request: EffectSuggestionRequest,
+    settings=Depends(get_app_settings),
+    video_director=Depends(lambda: None),  # Need to get director service
+) -> EffectSuggestionResult:
+    """Suggest cinematic effects for a narration package using Gemini."""
+    # We need to resolve the video_director_service. 
+    # Since it's not in deps.py yet, I'll need to check how to get it.
+    from app.services.video_director_service import VideoDirectorService
+    director = VideoDirectorService(settings)
+
+    if request.narration_path:
+        path = Path(request.narration_path)
+        if not path.exists():
+            raise HTTPException(status_code=404, detail="Narration file not found.")
+        package = NarrationPackage.model_validate_json(path.read_text(encoding="utf-8"))
+    elif request.scenes:
+        # Build a temporary package
+        package = NarrationPackage(
+            project="suggest",
+            chapter=0,
+            scenes=request.scenes
+        )
+    else:
+        raise HTTPException(status_code=400, detail="Either narration_path or scenes must be provided.")
+
+    suggestions = await director.suggest_effects(package=package, style=request.style)
+    return EffectSuggestionResult(scenes=suggestions)
 
 
 @router.post("/tts-batch", response_model=BatchTtsResult)

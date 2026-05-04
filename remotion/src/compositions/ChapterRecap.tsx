@@ -7,6 +7,10 @@
  *
  * Output: 1920×1080 (16:9 horizontal YouTube)
  * Input images: 9:16 vertical manhwa scenes
+ *
+ * Audio architecture:
+ * - Audio is rendered OUTSIDE TransitionWrapper so opacity fades
+ *   don't mute narration. This fixes the "audio cut" bug.
  */
 
 import React from "react";
@@ -15,8 +19,9 @@ import {
   Sequence,
   interpolate,
   useCurrentFrame,
+  Easing,
 } from "remotion";
-import { Scene } from "../components/Scene";
+import { Scene, SceneAudio } from "../components/Scene";
 import type {
   VideoDirectionProps,
   SceneDirection,
@@ -26,7 +31,6 @@ import { transitionFrames } from "../effects/camera";
 
 export const ChapterRecap: React.FC<VideoDirectionProps> = (props) => {
   const { scenes, assets, fps } = props;
-  const frame = useCurrentFrame();
 
   // Build asset lookup
   const assetMap = new Map<number, SceneAsset>();
@@ -51,36 +55,60 @@ export const ChapterRecap: React.FC<VideoDirectionProps> = (props) => {
 
         // Transition overlap with next scene
         const transOutMs = direction.transition_out?.duration_ms ?? 0;
-        const transOutFrames = transitionFrames(transOutMs, fps);
+        const transOutFr = transitionFrames(transOutMs, fps);
 
         // Previous scene transition overlap
         const prevDirection = index > 0 ? scenes[index - 1] : null;
         const transInMs = prevDirection?.transition_out?.duration_ms ?? 0;
-        const transInFrames = transitionFrames(transInMs, fps);
+        const transInFr = transitionFrames(transInMs, fps);
 
         return (
-          <Sequence
-            key={direction.scene}
-            from={timing.startFrame}
-            durationInFrames={sceneFrames}
-            name={`Scene ${direction.scene}: ${asset.title}`}
-          >
-            {/* Transition in: fade from previous */}
-            <TransitionWrapper
-              transInFrames={transInFrames}
-              transOutFrames={transOutFrames}
-              totalFrames={sceneFrames}
-              transInType={direction.transition_in?.type ?? "crossfade"}
-              transOutType={direction.transition_out?.type ?? "crossfade"}
+          <React.Fragment key={direction.scene}>
+            {/* ── Audio layer (outside TransitionWrapper, unaffected by opacity) ── */}
+            <Sequence
+              from={timing.startFrame}
+              durationInFrames={sceneFrames}
+              name={`Audio ${direction.scene}`}
             >
-              <Scene direction={direction} asset={asset} />
-            </TransitionWrapper>
-          </Sequence>
+              <SceneAudio direction={direction} asset={asset} />
+            </Sequence>
+
+            {/* ── Visual layer (wrapped in transitions) ── */}
+            <Sequence
+              from={timing.startFrame}
+              durationInFrames={sceneFrames}
+              name={`Scene ${direction.scene}: ${asset.title}`}
+            >
+              <TransitionWrapper
+                transInFrames={transInFr}
+                transOutFrames={transOutFr}
+                totalFrames={sceneFrames}
+                transInType={direction.transition_in?.type ?? "crossfade"}
+                transOutType={direction.transition_out?.type ?? "crossfade"}
+              >
+                <Scene direction={direction} asset={asset} />
+              </TransitionWrapper>
+            </Sequence>
+          </React.Fragment>
         );
       })}
     </AbsoluteFill>
   );
 };
+
+/* ═══════════════════════════════════════════════════════════════
+   Cinematic Transitions
+   ═══════════════════════════════════════════════════════════════
+
+   Design philosophy:
+   - 90% of transitions should be smooth crossfade (professional, invisible)
+   - dip_to_black: dramatic pause, slow and intentional
+   - hard_cut: action sequences only, instant and punchy
+   - smooth_zoom_fade: crossfade + subtle zoom for reveal moments
+
+   Removed: flash_cut (cheesy), blur_fade (gimmicky)
+   Legacy names still mapped for backwards compatibility.
+   ═══════════════════════════════════════════════════════════════ */
 
 interface TransitionWrapperProps {
   children: React.ReactNode;
@@ -90,6 +118,12 @@ interface TransitionWrapperProps {
   transInType: string;
   transOutType: string;
 }
+
+const isHardCut = (type: string) => type === "cut" || type === "hard_cut";
+const isDipToBlack = (type: string) =>
+  type === "fade_black" || type === "dip_to_black";
+const isZoomFade = (type: string) =>
+  type === "smooth_zoom_fade" || type === "blur_fade" || type === "flash_cut";
 
 const TransitionWrapper: React.FC<TransitionWrapperProps> = ({
   children,
@@ -103,62 +137,92 @@ const TransitionWrapper: React.FC<TransitionWrapperProps> = ({
 
   let opacity = 1;
 
-  // Fade in
-  if (transInFrames > 0 && transInType !== "cut") {
-    const fadeInOpacity = interpolate(frame, [0, transInFrames], [0, 1], {
+  // ── Fade in (smooth ease-out curve) ──
+  if (transInFrames > 0 && !isHardCut(transInType)) {
+    opacity *= interpolate(frame, [0, transInFrames], [0, 1], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: Easing.out(Easing.cubic),
+    });
+  }
+
+  // ── Fade out (smooth ease-in curve) ──
+  if (transOutFrames > 0 && !isHardCut(transOutType)) {
+    const fadeOutStart = totalFrames - transOutFrames;
+    opacity *= interpolate(frame, [fadeOutStart, totalFrames], [1, 0], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: Easing.in(Easing.cubic),
+    });
+  }
+
+  // ── Dip to Black ──
+  // Cinematic black overlay — used for dramatic pauses.
+  // Keeps scene content visible underneath with slight darken.
+  if (isDipToBlack(transOutType) || isDipToBlack(transInType)) {
+    const blackOpacity = interpolate(opacity, [0, 1], [1, 0], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     });
-    opacity *= fadeInOpacity;
-  }
-
-  // Fade out
-  if (transOutFrames > 0 && transOutType !== "cut") {
-    const fadeOutStart = totalFrames - transOutFrames;
-    const fadeOutOpacity = interpolate(
-      frame,
-      [fadeOutStart, totalFrames],
-      [1, 0],
-      {
-        extrapolateLeft: "clamp",
-        extrapolateRight: "clamp",
-      },
-    );
-    opacity *= fadeOutOpacity;
-  }
-
-  // Fade to black: add black overlay instead of changing opacity
-  if (transOutType === "fade_black" || transInType === "fade_black") {
     return (
       <AbsoluteFill style={{ opacity }}>
         {children}
         <AbsoluteFill
           style={{
-            backgroundColor: "#000",
-            opacity: 1 - opacity,
+            backgroundColor: "#020408",
+            opacity: blackOpacity,
+            pointerEvents: "none",
           }}
         />
       </AbsoluteFill>
     );
   }
 
-  // Fade to white (flash): similar but white
-  if (transOutType === "fade_white" || transInType === "fade_white") {
+  // ── Smooth Zoom Fade ──
+  // Replaces flash_cut and blur_fade: elegant crossfade with subtle scale
+  // that draws the eye forward. Used for reveals and mystery moments.
+  if (isZoomFade(transOutType) || isZoomFade(transInType)) {
+    const scaleVal = interpolate(opacity, [0, 1], [1.06, 1], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    });
     return (
-      <AbsoluteFill style={{ opacity }}>
+      <AbsoluteFill
+        style={{
+          opacity,
+          transform: `scale(${scaleVal})`,
+          transformOrigin: "center center",
+        }}
+      >
         {children}
-        <AbsoluteFill
-          style={{
-            backgroundColor: "#fff",
-            opacity: Math.max(0, 1 - opacity) * 0.8,
-          }}
-        />
       </AbsoluteFill>
     );
   }
 
-  return <AbsoluteFill style={{ opacity }}>{children}</AbsoluteFill>;
+  // ── Default Crossfade ──
+  // The workhorse: simple, elegant, professional.
+  // Tiny scale breath (1.015→1) adds subtle life without being noticeable.
+  const breathe = interpolate(opacity, [0, 1], [1.015, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  return (
+    <AbsoluteFill
+      style={{
+        opacity,
+        transform: `scale(${breathe})`,
+        transformOrigin: "center center",
+      }}
+    >
+      {children}
+    </AbsoluteFill>
+  );
 };
+
+/* ═══════════════════════════════════════════════════════════════
+   Scene Timing
+   ═══════════════════════════════════════════════════════════════ */
 
 interface SceneTiming {
   startFrame: number;

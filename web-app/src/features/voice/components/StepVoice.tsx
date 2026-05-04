@@ -10,8 +10,6 @@ import {
   RefreshCw,
   Trash2,
   Volume2,
-  Download,
-  Upload,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -19,7 +17,6 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Slider } from "@/components/ui/slider";
 import { fetchVoiceOptions, generateVoiceAudio } from "@/features/voice/api/voiceApi";
 import { useVoiceGeneration } from "@/features/voice/hooks/useVoiceGeneration";
 import { useRecapStore } from "@/shared/storage/useRecapStore";
@@ -82,7 +79,6 @@ export function StepVoice() {
   const activeProvider =
     voiceOptions?.providers.find((provider) => provider.id === voiceConfig.provider) || voiceOptions?.providers[0] || null;
   const activeVoices = activeProvider?.voices || [];
-  const staleClipCount = timeline.filter((item) => item.audioStatus === "stale").length;
 
   const handleSpeedChange = (nextSpeed: number) => {
     setVoiceConfig({ speed: clampVoiceSpeed(nextSpeed) });
@@ -117,7 +113,7 @@ export function StepVoice() {
             ? targetVoice.sampleUrl 
             : `${config.apiBaseUrl}${targetVoice.sampleUrl}`;
         } else {
-          const blob = await generateVoiceAudio(config.apiBaseUrl, {
+          const { blob } = await generateVoiceAudio(config.apiBaseUrl, {
             text: PREVIEW_TEXT,
             provider: activeProvider?.id || voiceConfig.provider,
             voiceKey,

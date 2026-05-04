@@ -28,7 +28,8 @@
       "@/*": ["./src/*"],
       "@/types": ["./src/shared/types/index.ts"],
       "@/store/*": ["./src/shared/storage/*"],
-      "@/components/ui/*": ["./src/shared/ui/*"]
+      "@/components/ui/*": ["./src/shared/ui/*"],
+      "@remotion-project/*": ["../remotion/src/*"]
     }
   },
   "include": ["src"]

@@ -3,12 +3,13 @@
 ## System Role
 This frontend is the editor and orchestration layer for a manga/webtoon recap tool.
 
-Current active product flow on `2026-04-22`:
+Current active product flow on `2026-05-04`:
 - Upload and extraction stay browser-side
 - Step Script sends extracted panel files to the backend Gemini route
 - Step Voice calls backend-owned VieNeu TTS routes
 - Timeline editing and clip state live in the frontend store
-- Browser FFmpeg export is active as the current export path
+- Step Render calls backend AI effect suggestion API
+- Browser export uses Remotion engine with cinematic VFX layers and transitions
 - Official final export is moving toward backend-native rendering with browser export kept as fallback/preview
 
 Priorities:
@@ -54,7 +55,7 @@ Automatically select the correct specialization:
 ### Render & Export
 - Timeline compilation, export orchestration, FFmpeg lifecycle -> react-ts-clean-architect
 - Progress, error surfacing, preview/result flow -> api-flow-orchestrator
-- Motion design, editor-facing export UX -> react-ui-composition + ui-art-direction
+- Remotion player, cinematic motion design, CSS-based VFX, transition presets -> react-ui-composition + ui-art-direction
 
 ### Design System
 - Visual style -> ui-art-direction
@@ -64,12 +65,13 @@ Automatically select the correct specialization:
 
 ## Render / Export Rules
 
-- Treat the compiled render plan as the frontend source of truth for clip order, duration, caption mode, and motion metadata.
+- Treat the compiled render plan as the frontend source of truth for clip order, duration, caption mode, transition, VFX, and motion metadata.
 - Keep render preparation, render execution, and preview/result handling separated from screen components.
 - Do not let render components assemble raw backend contracts inline; use dedicated helpers or API modules.
 - Surface render phases, progress, and actionable failures explicitly. Never collapse all failures into a generic `Render failed`.
 - Clean up temporary browser render assets aggressively to avoid WASM FS and memory blowups.
 - Keep browser export deterministic for the same timeline input.
+- Render pipeline now heavily depends on Remotion engine components (`ChapterRecap`, `SceneImage`) for cinematic visual effects. Keep audio and visuals decoupled in compositions to avoid audio-cuts during transitions.
 - If browser fallback and backend official export coexist, keep behavior aligned at the render-plan level instead of duplicating timeline logic in two places.
 - Voice preview or voice-option polling must not block export progress or poison the export UI with unrelated failures.
 

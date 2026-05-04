@@ -10,6 +10,8 @@ import {
   RefreshCw,
   Trash2,
   Volume2,
+  Download,
+  Upload,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -103,7 +105,6 @@ export function StepVoice() {
       const cacheKey = JSON.stringify({
         provider: activeProvider?.id || voiceConfig.provider,
         voiceKey,
-        speed: voiceConfig.speed,
         apiBaseUrl: config.apiBaseUrl,
       });
 
@@ -129,7 +130,7 @@ export function StepVoice() {
 
       if (previewAudioRef.current) {
         previewAudioRef.current.src = url;
-        previewAudioRef.current.playbackRate = targetVoice?.sampleUrl ? voiceConfig.speed : 1.0;
+        previewAudioRef.current.playbackRate = voiceConfig.speed;
         previewAudioRef.current.preservesPitch = true; // Try to preserve pitch when changing playbackRate
         previewAudioRef.current.onended = () => setPlayingPreview(null);
         void previewAudioRef.current.play();
@@ -158,6 +159,7 @@ export function StepVoice() {
     };
   }, []);
 
+
   return (
     <div className="space-y-6">
       <audio ref={audioRef} className="hidden" />
@@ -183,9 +185,9 @@ export function StepVoice() {
             <Button
               variant="outline"
               onClick={clearAllVoices}
-              className="border-red-500/30 bg-red-500/10 px-6 font-bold text-red-200 hover:bg-red-500/15"
+              className="border-red-500/30 bg-red-500/10 px-4 font-bold text-red-200 hover:bg-red-500/15"
             >
-              <Trash2 className="h-4 w-4" /> Xóa giọng cũ
+              <Trash2 className="h-4 w-4" /> Xóa
             </Button>
           )}
           <Button
@@ -385,6 +387,11 @@ export function StepVoice() {
                     <p className="line-clamp-2 text-sm font-medium italic leading-relaxed text-muted-foreground">
                       "{item.scriptItem.voiceover_text}"
                     </p>
+                    {item.scriptItem.dialogue_text && (
+                      <p className="line-clamp-2 text-xs font-medium italic leading-relaxed text-primary/80">
+                        {item.scriptItem.dialogue_speaker || "Ẩn danh"}: "{item.scriptItem.dialogue_text}"
+                      </p>
+                    )}
                     <div className="flex items-center gap-3">
                       {item.audioUrl ? (
                         <Button

@@ -66,6 +66,9 @@ export type SceneInput = PanelUnderstanding;
 export interface ScriptItem {
   panel_index: number;
   voiceover_text: string;
+  dialogue_text?: string | null;
+  dialogue_speaker?: string | null;
+  dialogue_timing?: string | null;
 }
 
 export interface ScriptSourceUnit {
@@ -187,6 +190,8 @@ export interface VoiceGenerateRequest {
   provider: TTSProvider;
   voiceKey: string;
   speed: number;
+  dialogue?: string | null;
+  speaker?: string | null;
 }
 
 export interface RenderConfig {

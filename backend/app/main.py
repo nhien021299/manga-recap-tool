@@ -137,3 +137,8 @@ app.include_router(render_router, prefix=prefix)
 voice_samples_dir = Path(__file__).resolve().parents[1] / ".bench" / "samples"
 voice_samples_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/assets/voice-samples", StaticFiles(directory=str(voice_samples_dir)), name="voice-samples")
+
+# Mount jobs directory to serve cached panels and voice files
+jobs_dir = get_settings().temp_root
+jobs_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/assets/jobs", StaticFiles(directory=str(jobs_dir)), name="jobs")

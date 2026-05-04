@@ -7,7 +7,6 @@ import {
   FileUp,
   Loader2,
   RefreshCw,
-  Save,
   Trash2,
   Wand2,
   X,
@@ -19,14 +18,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useScriptJob } from "@/features/script/hooks/useScriptJob";
-import { createBenchmarkRecord } from "@/features/benchmark/lib/benchmarkScore";
 import { useRecapStore } from "@/shared/storage/useRecapStore";
 import type { Metrics, ScriptItem } from "@/shared/types";
 import {
   type NarrationPayload,
 } from "@/features/script/api/scriptApi";
-
-type ScriptMode = "ai" | "narration";
 
 const parseMetricsFromLogDetails = (details?: string | null): Metrics | null => {
   if (!details) return null;
@@ -49,13 +45,11 @@ const parseMetricsFromLogDetails = (details?: string | null): Metrics | null => 
 export function StepScript() {
   const {
     logs, timeline, panels, virtualStrip, panelUnderstandings, panelUnderstandingMeta,
-    storyMemories, scriptMeta, scriptContext, setScriptContext, addBenchmarkRecord,
-    setCurrentStep, clearScriptData, isLoading, setTimeline, config, voiceConfig,
+    scriptMeta, scriptContext, setScriptContext,
+    setCurrentStep, clearScriptData, isLoading, setTimeline,
   } = useRecapStore();
   const { generateScript, error, isGenerating } = useScriptJob();
   const [zoomedIdx, setZoomedIdx] = useState<number | null>(null);
-  const [mode, setMode] = useState<ScriptMode>("ai");
-
   // Narration upload state
   const [narrationPayload, setNarrationPayload] = useState<NarrationPayload | null>(null);
   const [narrationError, setNarrationError] = useState<string | null>(null);
@@ -99,12 +93,6 @@ export function StepScript() {
 
   const generateDisabled = isLoading || panels.length === 0;
 
-  const handleSaveBenchmark = () => {
-    if (!availableMetrics || timeline.length === 0) return;
-    const record = createBenchmarkRecord({ mangaName: scriptContext.mangaName, timeline, storyMemories, metrics: availableMetrics });
-    addBenchmarkRecord(record);
-    setCurrentStep("benchmark");
-  };
 
   // --- Narration JSON Upload ---
   const handleNarrationUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,18 +114,29 @@ export function StepScript() {
             return;
           }
         }
-        if (panels.length > 0 && data.scenes.length !== panels.length) {
-          setNarrationError(`Số scene (${data.scenes.length}) phải bằng số panel đã extract (${panels.length}).`);
+        if (panels.length === 0) {
+          setNarrationError("Vui lòng thực hiện bước 'Tách Panel' trước khi tải lên kịch bản để đồng bộ hình ảnh.");
+          return;
+        }
+        if (data.scenes.length !== panels.length) {
+          setNarrationError(`Số lượng cảnh trong JSON (${data.scenes.length}) không khớp với số lượng panel đã tách (${panels.length}).`);
           return;
         }
         setNarrationPayload(data);
         // Populate timeline for preview
         const timelineItems = data.scenes.map((scene, idx) => {
           const panel = panels[idx];
-          const scriptItem: ScriptItem = { panel_index: idx + 1, voiceover_text: scene.narration };
-          
+          const scriptItem: ScriptItem = {
+            panel_index: idx + 1,
+            voiceover_text: scene.narration,
+            dialogue_text: scene.dialogue,
+            dialogue_speaker: scene.dialogue_speaker,
+            dialogue_timing: scene.dialogue_timing
+          };
+
           const existingItem = timeline[idx];
-          const isSameText = existingItem?.scriptItem.voiceover_text === scene.narration;
+          const isSameText = existingItem?.scriptItem.voiceover_text === scene.narration &&
+            existingItem?.scriptItem.dialogue_text === scene.dialogue;
 
           return {
             panelId: panel?.id ?? `narration-${idx}`,
@@ -155,7 +154,6 @@ export function StepScript() {
           };
         });
         setTimeline(timelineItems);
-        setCurrentStep("voice");
       } catch (err) {
         setNarrationError(`Lỗi parse JSON: ${err instanceof Error ? err.message : String(err)}`);
       }
@@ -166,7 +164,7 @@ export function StepScript() {
 
 
 
-  const activeError = mode === "ai" ? (error || latestErrorDetails) : narrationError;
+  const activeError = error || latestErrorDetails || narrationError;
 
   return (
     <div className="space-y-8">
@@ -176,29 +174,22 @@ export function StepScript() {
             Kịch Bản Recap
           </h2>
           <p className="text-white/70">
-            {mode === "ai" ? "Trí tuệ nhân tạo Gemini sẽ tự động soạn nội dung dựa trên hình ảnh." : "Tải lên file kịch bản sẵn có để lồng tiếng và dựng video."}
+            Trí tuệ nhân tạo Gemini sẽ tự động soạn nội dung dựa trên hình ảnh, hoặc bạn có thể tải lên file kịch bản có sẵn.
           </p>
         </div>
         <div className="flex gap-3">
           {timeline.length > 0 && (
             <>
-              {availableMetrics && (
-                <Button variant="outline" onClick={handleSaveBenchmark} disabled={isLoading}
-                  className="border-emerald-500/30 bg-emerald-500/10 px-6 font-bold text-emerald-100 hover:bg-emerald-500/15">
-                  <Save className="mr-2 h-4 w-4" /> Lưu Benchmark
-                </Button>
-              )}
+
               <Button variant="outline" onClick={clearScriptData} disabled={isLoading}
                 className="border-red-500/30 bg-red-500/10 px-6 font-bold text-red-200 hover:bg-red-500/15">
                 <Trash2 className="mr-2 h-4 w-4" /> Xóa kịch bản cũ
               </Button>
-              {mode === "ai" && (
-                <Button variant="outline" onClick={generateScript} disabled={generateDisabled}
-                  className="border-primary/30 bg-primary/10 px-6 font-bold text-primary hover:bg-primary/15">
-                  {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                  Tạo lại
-                </Button>
-              )}
+              <Button variant="outline" onClick={generateScript} disabled={generateDisabled}
+                className="border-primary/30 bg-primary/10 px-6 font-bold text-primary hover:bg-primary/15">
+                {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                Tạo lại
+              </Button>
             </>
           )}
           <Button variant="outline" onClick={() => setCurrentStep(virtualStrip.length > 0 ? "extract" : "upload")}
@@ -211,68 +202,50 @@ export function StepScript() {
         </div>
       </div>
 
-      {/* Mode toggle */}
-      <div className="flex gap-2">
-        <button onClick={() => setMode("ai")}
-          className={`rounded-xl px-5 py-2.5 text-sm font-bold transition-all ${mode === "ai" ? "bg-primary text-primary-foreground shadow-glow" : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"}`}>
-          <Wand2 className="mr-2 inline h-4 w-4" /> Viết kịch bản tự động (AI)
-        </button>
-        <button onClick={() => setMode("narration")}
-          className={`rounded-xl px-5 py-2.5 text-sm font-bold transition-all ${mode === "narration" ? "bg-primary text-primary-foreground shadow-glow" : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"}`}>
-          <FileUp className="mr-2 inline h-4 w-4" /> Tải lên kịch bản (.json)
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 gap-8">
-        {mode === "ai" ? (
-          /* ===== AI Script Mode ===== */
-          <Card className="glass space-y-6 rounded-3xl border-white/10 bg-white/5 p-8 shadow-2xl">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="mangaName" className="text-[10px] font-semibold uppercase tracking-wide text-white/80">Tên truyện (tùy chọn)</Label>
-                <Input id="mangaName" value={scriptContext.mangaName ?? ""} onChange={(e) => setScriptContext({ mangaName: e.target.value })} className="h-12 rounded-xl border-white/20 bg-white/10 text-white" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="mainChar" className="text-[10px] font-semibold uppercase tracking-wide text-white/80">Tên nhân vật gợi ý (tùy chọn)</Label>
-                <Input id="mainChar" value={scriptContext.mainCharacter ?? ""} onChange={(e) => setScriptContext({ mainCharacter: e.target.value })} className="h-12 rounded-xl border-white/20 bg-white/10 text-white" />
-                <p className="text-xs leading-5 text-white/45">Backend chỉ dùng tên này khi hình ảnh hoặc hội thoại xác nhận rõ.</p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="summary" className="text-[10px] font-semibold uppercase tracking-wide text-white/80">Bối cảnh tóm tắt</Label>
-                <Textarea id="summary" value={scriptContext.summary ?? ""} onChange={(e) => setScriptContext({ summary: e.target.value })} className="min-h-[120px] rounded-xl border-white/20 bg-white/10 text-white" />
-              </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <Card className="glass space-y-6 rounded-3xl border-white/10 bg-white/5 p-8 shadow-2xl flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="mangaName" className="text-[10px] font-semibold uppercase tracking-wide text-white/80">Tên truyện (tùy chọn)</Label>
+              <Input id="mangaName" value={scriptContext.mangaName ?? ""} onChange={(e) => setScriptContext({ mangaName: e.target.value })} className="h-12 rounded-xl border-white/20 bg-white/10 text-white" />
             </div>
-            <Button size="lg" onClick={generateScript} disabled={generateDisabled}
-              className="group btn-pop h-16 w-full rounded-2xl border-none bg-primary text-xl font-black uppercase tracking-tighter text-primary-foreground ring-2 ring-white/10 shadow-glow transition-all hover:opacity-100 active:scale-[0.98]">
-              {isGenerating ? <Loader2 className="mr-2 h-5 w-5 animate-spin text-white" /> : <Wand2 className="mr-2 h-5 w-5" />}
-              {isGenerating ? "Đang xử lý nội dung..." : "Tự động viết kịch bản"}
-            </Button>
-          </Card>
-        ) : (
-          /* ===== Narration Upload Mode ===== */
-          <Card className="glass space-y-6 rounded-3xl border-white/10 bg-white/5 p-8 shadow-2xl">
-            <div className="space-y-3">
-              <Label className="text-[10px] font-semibold uppercase tracking-wide text-white/80">Tải lên file nội dung (JSON)</Label>
-              <p className="text-xs text-white/50 leading-5">
-                File cần tuân thủ cấu trúc của công cụ. Số cảnh phải khớp với số hình ảnh đã xử lý ({panels.length}).
-              </p>
-              <label className="group flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/20 bg-white/5 px-6 py-10 transition-all hover:border-accent/40 hover:bg-accent/5">
-                <FileUp className="mb-3 h-10 w-10 text-white/30 group-hover:text-accent transition-colors" />
-                <span className="text-sm font-bold text-white/60 group-hover:text-white transition-colors">Chọn file kịch bản</span>
-                <input type="file" accept=".json,application/json" className="hidden" onChange={handleNarrationUpload} />
-              </label>
-              {narrationPayload && (
-                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
-                  <p className="text-sm font-bold text-emerald-100">
-                    ✓ Đã tải {narrationPayload.scenes.length} scene — {narrationPayload.project ?? "manga"} chương {narrationPayload.chapter ?? 1}
-                  </p>
-                </div>
-              )}
+            <div className="space-y-2">
+              <Label htmlFor="mainChar" className="text-[10px] font-semibold uppercase tracking-wide text-white/80">Tên nhân vật gợi ý (tùy chọn)</Label>
+              <Input id="mainChar" value={scriptContext.mainCharacter ?? ""} onChange={(e) => setScriptContext({ mainCharacter: e.target.value })} className="h-12 rounded-xl border-white/20 bg-white/10 text-white" />
+              <p className="text-xs leading-5 text-white/45">Backend chỉ dùng tên này khi hình ảnh hoặc hội thoại xác nhận rõ.</p>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="summary" className="text-[10px] font-semibold uppercase tracking-wide text-white/80">Bối cảnh tóm tắt</Label>
+              <Textarea id="summary" value={scriptContext.summary ?? ""} onChange={(e) => setScriptContext({ summary: e.target.value })} className="min-h-[120px] rounded-xl border-white/20 bg-white/10 text-white" />
+            </div>
+          </div>
+          <Button size="lg" onClick={generateScript} disabled={generateDisabled}
+            className="mt-6 group btn-pop h-16 w-full rounded-2xl border-none bg-primary text-xl font-black uppercase tracking-tighter text-primary-foreground ring-2 ring-white/10 shadow-glow transition-all hover:opacity-100 active:scale-[0.98]">
+            {isGenerating ? <Loader2 className="mr-2 h-5 w-5 animate-spin text-white" /> : <Wand2 className="mr-2 h-5 w-5" />}
+            {isGenerating ? "Đang xử lý nội dung..." : "Tạo kịch bản"}
+          </Button>
+        </Card>
 
-
-          </Card>
-        )}
+        <Card className="glass space-y-6 rounded-3xl border-white/10 bg-white/5 p-8 shadow-2xl">
+          <div className="space-y-3">
+            <Label className="text-[10px] font-semibold uppercase tracking-wide text-white/80">Tải lên file nội dung (JSON)</Label>
+            <p className="text-xs text-white/50 leading-5">
+              File cần tuân thủ cấu trúc của công cụ. Số cảnh phải khớp với số hình ảnh đã xử lý ({panels.length}).
+            </p>
+            <label className="group flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/20 bg-white/5 px-6 py-10 transition-all hover:border-accent/40 hover:bg-accent/5">
+              <FileUp className="mb-3 h-10 w-10 text-white/30 group-hover:text-accent transition-colors" />
+              <span className="text-sm font-bold text-white/60 group-hover:text-white transition-colors">Chọn file kịch bản</span>
+              <input type="file" accept=".json,application/json" className="hidden" onChange={handleNarrationUpload} />
+            </label>
+            {narrationPayload && (
+              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
+                <p className="text-sm font-bold text-emerald-100">
+                  ✓ Đã tải {narrationPayload.scenes.length} scene — {narrationPayload.project ?? "manga"} chương {narrationPayload.chapter ?? 1}
+                </p>
+              </div>
+            )}
+          </div>
+        </Card>
       </div>
 
       {/* Error display */}
@@ -310,7 +283,15 @@ export function StepScript() {
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold uppercase tracking-widest text-white/40">Nội dung thuyết minh</Label>
                     <div className="min-h-[140px] rounded-xl border border-white/10 bg-black/30 p-4 text-sm font-medium leading-relaxed text-white/90">
-                      {item.scriptItem.voiceover_text || "No narration generated."}
+                      <p>{item.scriptItem.voiceover_text || "No narration generated."}</p>
+                      {item.scriptItem.dialogue_text && (
+                        <div className="mt-3 border-t border-white/10 pt-3">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-primary/80">
+                            Thoại ({item.scriptItem.dialogue_speaker || "Ẩn danh"})
+                          </p>
+                          <p className="mt-1 text-sm italic text-white/80">"{item.scriptItem.dialogue_text}"</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

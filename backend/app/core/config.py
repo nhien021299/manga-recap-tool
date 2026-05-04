@@ -59,32 +59,22 @@ class Settings(BaseSettings):
     gemini_cooldown_on_429_ms: int = Field(default=20000, alias="AI_BACKEND_GEMINI_COOLDOWN_ON_429_MS")
     vision_max_width: int = Field(default=512, alias="AI_BACKEND_VISION_MAX_WIDTH")
     vision_max_height: int = Field(default=1024, alias="AI_BACKEND_VISION_MAX_HEIGHT")
-    tts_provider: str = Field(default="vieneu", alias="AI_BACKEND_TTS_PROVIDER")
-    tts_runtime: str = Field(default="auto", alias="AI_BACKEND_TTS_RUNTIME")
+    tts_provider: str = Field(default="vietvoice", alias="AI_BACKEND_TTS_PROVIDER")
+    tts_runtime: str = Field(default="directml", alias="AI_BACKEND_TTS_RUNTIME")
     tts_warm_on_startup: bool = Field(default=False, alias="AI_BACKEND_TTS_WARM_ON_STARTUP")
     tts_smoke_test_text: str = Field(default="", alias="AI_BACKEND_TTS_SMOKE_TEST_TEXT")
     tts_max_concurrent_jobs: int = Field(default=1, alias="AI_BACKEND_TTS_MAX_CONCURRENT_JOBS")
-    tts_vieneu_model_id: str = Field(
-        default="pnnbao-ump/VieNeu-TTS-0.3B",
-        alias="AI_BACKEND_TTS_VIENEU_MODEL_ID",
-    )
-    tts_vieneu_temperature: float = Field(default=0.1, alias="AI_BACKEND_TTS_VIENEU_TEMPERATURE")
-    tts_vieneu_default_voice_key: str = Field(default="voice_default", alias="AI_BACKEND_TTS_VIENEU_VOICE_KEY")
-    tts_vieneu_voice_root_raw: str = Field(
-        default=".models/vieneu-voices",
-        alias="AI_BACKEND_TTS_VIENEU_VOICE_ROOT",
-    )
 
 
     @field_validator("tts_runtime", mode="before")
     @classmethod
     def _normalize_tts_runtime(cls, value: object) -> str:
         if value is None:
-            return "auto"
+            return "directml"
         normalized = str(value).strip().lower()
-        if normalized in {"", "auto", "cpu", "gpu"}:
-            return normalized or "auto"
-        raise ValueError("AI_BACKEND_TTS_RUNTIME must be one of: auto, cpu, gpu.")
+        if normalized in {"", "auto", "cpu", "gpu", "directml"}:
+            return normalized or "directml"
+        raise ValueError("AI_BACKEND_TTS_RUNTIME must be one of: auto, cpu, gpu, directml.")
 
     @field_validator("tts_max_concurrent_jobs", mode="before")
     @classmethod
@@ -101,11 +91,11 @@ class Settings(BaseSettings):
     @classmethod
     def _normalize_tts_provider(cls, value: object) -> str:
         if value is None:
-            return "vieneu"
+            return "vietvoice"
         normalized = str(value).strip().lower()
-        if normalized in {"", "vieneu"}:
-            return normalized or "vieneu"
-        raise ValueError("AI_BACKEND_TTS_PROVIDER must be 'vieneu'.")
+        if normalized in {"", "vietvoice"}:
+            return normalized or "vietvoice"
+        raise ValueError("AI_BACKEND_TTS_PROVIDER must be 'vietvoice'.")
 
     @property
     def cors_origins(self) -> list[str]:
@@ -120,9 +110,6 @@ class Settings(BaseSettings):
         return _resolve_backend_path(self.render_temp_root_raw)
 
 
-    @property
-    def tts_vieneu_voice_root(self) -> Path:
-        return _resolve_backend_path(self.tts_vieneu_voice_root_raw)
 
     @property
     def effective_gemini_api_key(self) -> str:

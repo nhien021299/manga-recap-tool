@@ -14,8 +14,10 @@ export default defineConfig({
       { find: "@/store", replacement: path.resolve(__dirname, "./src/shared/storage") },
       { find: "@/types", replacement: path.resolve(__dirname, "./src/shared/types") },
       { find: "@/components/ui", replacement: path.resolve(__dirname, "./src/shared/ui") },
+      { find: "@remotion-project", replacement: path.resolve(__dirname, "../remotion/src") },
       { find: "@", replacement: path.resolve(__dirname, "./src") },
     ],
+    dedupe: ["react", "react-dom", "remotion"],
   },
   server: {
     host: "127.0.0.1",
@@ -25,6 +27,13 @@ export default defineConfig({
       'Cross-Origin-Opener-Policy': 'same-origin',
       'Cross-Origin-Embedder-Policy': 'require-corp',
     },
+    fs: {
+      allow: [
+        path.resolve(__dirname),
+        path.resolve(__dirname, '..'),
+        path.resolve(__dirname, '../remotion')
+      ]
+    }
   },
   optimizeDeps: {
     exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util'],

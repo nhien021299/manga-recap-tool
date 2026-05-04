@@ -16,11 +16,16 @@ import type { TextOverlay as TextOverlayType } from "../types/direction";
 
 interface TextOverlayProps {
   overlays: TextOverlayType[];
+  durationInFrames?: number;
 }
 
-export const TextOverlayLayer: React.FC<TextOverlayProps> = ({ overlays }) => {
+export const TextOverlayLayer: React.FC<TextOverlayProps> = ({ 
+  overlays, 
+  durationInFrames: customDuration 
+}) => {
   const frame = useCurrentFrame();
-  const { durationInFrames } = useVideoConfig();
+  const { durationInFrames: compositionDuration } = useVideoConfig();
+  const durationInFrames = customDuration ?? compositionDuration;
 
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
@@ -47,32 +52,43 @@ const SingleOverlay: React.FC<SingleOverlayProps> = ({
   frame,
   durationInFrames,
 }) => {
+  const { width, height } = useVideoConfig();
+  const isPortrait = height > width;
+
   const startFrame = Math.floor(overlay.start_pct * durationInFrames);
   const endFrame = Math.floor(overlay.end_pct * durationInFrames);
-  const fadeInFrames = 8;
-  const fadeOutFrames = 8;
+  const fadeInFrames = 6;
+  const fadeOutFrames = 6;
 
   if (frame < startFrame || frame > endFrame) return null;
 
+  const localFrame = frame - startFrame;
+  const localDuration = endFrame - startFrame;
+
+  // Fade animation
   const opacity = interpolate(
-    frame,
-    [
-      startFrame,
-      startFrame + fadeInFrames,
-      endFrame - fadeOutFrames,
-      endFrame,
-    ],
+    localFrame,
+    [0, fadeInFrames, localDuration - fadeOutFrames, localDuration],
     [0, 1, 1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
-  const style = getOverlayStyle(overlay.style, overlay.position);
+  // Subtle scale-up animation (0.96 to 1)
+  const scale = interpolate(
+    localFrame,
+    [0, 8],
+    [0.96, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+
+  const style = getOverlayStyle(overlay.style, overlay.position, isPortrait, overlay.text.length);
 
   return (
     <div
       style={{
         ...style.container,
         opacity,
+        transform: `scale(${scale})`,
       }}
     >
       <div style={style.textBox}>
@@ -91,6 +107,8 @@ interface OverlayStyles {
 function getOverlayStyle(
   styleType: string,
   position: string,
+  isPortrait: boolean,
+  textLength: number
 ): OverlayStyles {
   const baseContainer: React.CSSProperties = {
     position: "absolute",
@@ -98,11 +116,29 @@ function getOverlayStyle(
     right: 0,
     display: "flex",
     justifyContent: "center",
-    padding: "0 80px",
+    padding: isPortrait ? "0 40px" : "0 80px",
   };
 
+  // Responsive config
+  const config = {
+    landscape: {
+      bottom: "9%",
+      fontSize: textLength > 42 ? 42 : 46,
+      maxWidth: "68%",
+      padding: "14px 28px",
+    },
+    portrait: {
+      bottom: "9.5%",
+      fontSize: textLength > 42 ? 46 : 52,
+      maxWidth: "86%",
+      padding: "14px 24px",
+    },
+  };
+
+  const currentConfig = isPortrait ? config.portrait : config.landscape;
+
   const positionStyles: Record<string, React.CSSProperties> = {
-    bottom_center: { bottom: 60 },
+    bottom_center: { bottom: currentConfig.bottom },
     top_center: { top: 60 },
     center: { top: "50%", transform: "translateY(-50%)" },
     top_left: { top: 60, justifyContent: "flex-start" },
@@ -124,8 +160,7 @@ function getOverlayStyle(
           color: "#ffffff",
           fontSize: 42,
           fontWeight: 700,
-          fontFamily:
-            "'Be Vietnam Pro', 'Roboto', 'Noto Sans', sans-serif",
+          fontFamily: "'Be Vietnam Pro', 'Roboto', 'Noto Sans', sans-serif",
           textAlign: "center",
           lineHeight: 1.4,
           textShadow: "0 2px 8px rgba(0,0,0,0.6)",
@@ -146,8 +181,7 @@ function getOverlayStyle(
           color: "#d0e0ff",
           fontSize: 28,
           fontWeight: 500,
-          fontFamily:
-            "'Be Vietnam Pro', 'Roboto', 'Noto Sans', sans-serif",
+          fontFamily: "'Be Vietnam Pro', 'Roboto', 'Noto Sans', sans-serif",
           fontStyle: "italic",
           textAlign: "center",
           lineHeight: 1.5,
@@ -160,22 +194,24 @@ function getOverlayStyle(
       return {
         container: { ...baseContainer, ...containerPos },
         textBox: {
-          backgroundColor: "rgba(4, 8, 16, 0.82)",
-          borderRadius: 10,
-          padding: "12px 24px",
-          maxWidth: 1400,
-          backdropFilter: "blur(4px)",
+          background: "rgba(5, 10, 18, 0.72)",
+          backdropFilter: "blur(6px)",
+          WebkitBackdropFilter: "blur(6px)", // for Safari support in render
+          borderRadius: 12,
+          padding: currentConfig.padding,
+          maxWidth: currentConfig.maxWidth,
+          border: "1px solid rgba(255,255,255,0.08)",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
         },
         text: {
-          color: "#f0f4fa",
-          fontSize: 30,
-          fontWeight: 500,
-          fontFamily:
-            "'Be Vietnam Pro', 'Roboto', 'Noto Sans', sans-serif",
+          color: "#F4F7FB",
+          fontSize: currentConfig.fontSize,
+          fontWeight: 650,
+          fontFamily: "'Be Vietnam Pro', 'Roboto', 'Noto Sans', sans-serif",
           textAlign: "center",
-          lineHeight: 1.55,
-          textShadow: "0 1px 4px rgba(0,0,0,0.5)",
-          letterSpacing: "0.02em",
+          lineHeight: 1.35,
+          textShadow: "0 2px 6px rgba(0,0,0,0.85)",
+          letterSpacing: "0.01em",
         },
       };
   }

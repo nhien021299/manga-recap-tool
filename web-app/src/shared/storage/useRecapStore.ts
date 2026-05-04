@@ -4,7 +4,6 @@ import { get, set as idbSet } from "idb-keyval";
 
 import {
   type AudioStatus,
-  type BenchmarkRecord,
   DEFAULT_ASPECT,
   STRIP_WIDTH,
   type AppConfig,
@@ -76,19 +75,11 @@ interface RecapState {
 
   timeline: TimelineItem[];
   setTimeline: (timeline: TimelineItem[]) => void;
-  updateTimelineItem: (index: number, item: Partial<TimelineItem>) => void;
-  moveTimelineItem: (fromIndex: number, toIndex: number) => void;
-  removeTimelineItem: (index: number) => void;
-  duplicateTimelineItem: (index: number) => void;
-  resetTimelineItemToAuto: (index: number) => void;
   scriptMeta: ScriptMeta;
   setScriptMeta: (meta: ScriptMeta) => void;
   setScriptMeta: (meta: ScriptMeta) => void;
   markScriptOutdated: (reason: string) => void;
   clearScriptData: () => void;
-  benchmarkRecords: BenchmarkRecord[];
-  addBenchmarkRecord: (record: BenchmarkRecord) => void;
-  removeBenchmarkRecord: (id: string) => void;
 
   activeJobId: string | null;
   setActiveJobId: (id: string | null) => void;
@@ -104,9 +95,6 @@ interface RecapState {
   setPreviewUrl: (url: string | null) => void;
   backendStatus: RenderJobStatusResponse | null;
   setBackendStatus: (status: RenderJobStatusResponse | null) => void;
-
-  activeRenderTab: string;
-  setActiveRenderTab: (tab: string) => void;
 
   init: () => Promise<void>;
   reset: () => void;
@@ -137,7 +125,7 @@ const normalizeNumber = (value: unknown, fallback: number): number => {
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(max, Math.max(min, value));
 
-const DEFAULT_TTS_PROVIDER = "vieneu";
+const DEFAULT_TTS_PROVIDER = "vietvoice";
 const DEFAULT_TTS_VOICE_KEY = "voice_default";
 const DEFAULT_TTS_SPEED = 1.15;
 const DEFAULT_HOLD_AFTER_MS = 250;
@@ -146,13 +134,21 @@ const MAX_HOLD_AFTER_MS = 3000;
 const DEFAULT_OUTPUT_WIDTH = 1080;
 
 const normalizeVoiceConfig = (config?: Partial<VoiceConfig> | null): VoiceConfig => {
-  const provider = (config?.provider || import.meta.env.VITE_TTS_PROVIDER || DEFAULT_TTS_PROVIDER).trim() || DEFAULT_TTS_PROVIDER;
+  let provider = (config?.provider || import.meta.env.VITE_TTS_PROVIDER || DEFAULT_TTS_PROVIDER).trim() || DEFAULT_TTS_PROVIDER;
+  if (provider === "vieneu") {
+    provider = "vietvoice";
+  }
+  
   const requestedVoiceKey = (
     config?.voiceKey ||
     import.meta.env.VITE_TTS_VOICE_KEY ||
     DEFAULT_TTS_VOICE_KEY
   ).trim();
-  const voiceKey = requestedVoiceKey === "default" ? DEFAULT_TTS_VOICE_KEY : (requestedVoiceKey || DEFAULT_TTS_VOICE_KEY);
+  
+  let voiceKey = requestedVoiceKey === "default" ? DEFAULT_TTS_VOICE_KEY : (requestedVoiceKey || DEFAULT_TTS_VOICE_KEY);
+  if (voiceKey === "clone_recap") {
+    voiceKey = "voice_default";
+  }
 
   return {
     provider,
@@ -481,160 +477,6 @@ export const useRecapStore = create<RecapState>()(
         set({ timeline: normalizedTimeline });
         void idbSet("recap-timeline-data", normalizedTimeline);
       },
-      updateTimelineItem: (index, item) => {
-        const state = getStore();
-        const newTimeline = [...state.timeline];
-        const currentItem = newTimeline[index];
-        if (!currentItem) return;
-        const nextItem = normalizeTimelineItem({ ...currentItem, ...item }, index);
-        const scriptChanged =
-          !!item.scriptItem &&
-          JSON.stringify(item.scriptItem) !== JSON.stringify(currentItem?.scriptItem);
-
-        if (scriptChanged) {
-          nextItem.scriptStatus = "edited";
-          nextItem.scriptSegment = {
-            narration: nextItem.scriptItem.voiceover_text ?? "",
-            status: "edited",
-          };
-          delete nextItem.audioBlob;
-          delete nextItem.audioDuration;
-          delete nextItem.audioUrl;
-          nextItem.audioStatus = nextItem.scriptItem.voiceover_text.trim() ? "stale" : "missing";
-        }
-
-        if (currentItem.audioUrl && currentItem.audioUrl !== nextItem.audioUrl) {
-          try {
-            URL.revokeObjectURL(currentItem.audioUrl);
-          } catch {
-            // ignore
-          }
-        }
-
-        newTimeline[index] = nextItem;
-        set({
-          timeline: newTimeline,
-          scriptMeta: scriptChanged
-            ? {
-                ...state.scriptMeta,
-                status: "edited",
-                outdatedReason: undefined,
-              }
-            : state.scriptMeta,
-        });
-        void idbSet("recap-timeline-data", newTimeline);
-      },
-      moveTimelineItem: (fromIndex, toIndex) => {
-        const state = getStore();
-        if (
-          fromIndex < 0 ||
-          toIndex < 0 ||
-          fromIndex >= state.timeline.length ||
-          toIndex >= state.timeline.length ||
-          fromIndex === toIndex
-        ) {
-          return;
-        }
-
-        const nextTimeline = [...state.timeline];
-        const [moved] = nextTimeline.splice(fromIndex, 1);
-        nextTimeline.splice(toIndex, 0, moved);
-        const normalizedTimeline = nextTimeline.map(normalizeTimelineItem);
-        revokeTimelineAudioUrls(state.timeline);
-        set({ timeline: normalizedTimeline });
-        void idbSet("recap-timeline-data", normalizedTimeline);
-      },
-      removeTimelineItem: (index) => {
-        const state = getStore();
-        if (index < 0 || index >= state.timeline.length) return;
-
-        const removedItem = state.timeline[index];
-        if (removedItem?.audioUrl) {
-          try {
-            URL.revokeObjectURL(removedItem.audioUrl);
-          } catch {
-            // ignore
-          }
-        }
-
-        const nextTimeline = state.timeline.filter((_, timelineIndex) => timelineIndex !== index);
-        const normalizedTimeline = nextTimeline.map(normalizeTimelineItem);
-        set({ timeline: normalizedTimeline });
-        void idbSet("recap-timeline-data", normalizedTimeline);
-      },
-      duplicateTimelineItem: (index) => {
-        const state = getStore();
-        const currentItem = state.timeline[index];
-        if (!currentItem) return;
-
-        const duplicate: TimelineItem = {
-          ...currentItem,
-          audioBlob: undefined,
-          audioDuration: undefined,
-          audioUrl: undefined,
-          audioStatus: currentItem.scriptItem.voiceover_text.trim() ? "stale" : "missing",
-        };
-
-        const nextTimeline = [...state.timeline];
-        nextTimeline.splice(index + 1, 0, duplicate);
-        const normalizedTimeline = nextTimeline.map(normalizeTimelineItem);
-        set({
-          timeline: normalizedTimeline,
-          scriptMeta: {
-            ...state.scriptMeta,
-            status: "edited",
-            outdatedReason: undefined,
-          },
-        });
-        void idbSet("recap-timeline-data", normalizedTimeline);
-      },
-      resetTimelineItemToAuto: (index) => {
-        const state = getStore();
-        const currentItem = state.timeline[index];
-        if (!currentItem) return;
-
-        const baselineText = currentItem.scriptBaseline ?? "";
-        const nextItem = normalizeTimelineItem(
-          {
-            ...currentItem,
-            scriptItem: {
-              ...currentItem.scriptItem,
-              voiceover_text: baselineText,
-            },
-            scriptSegment: {
-              narration: baselineText,
-              status: "auto",
-              memorySnapshot: currentItem.scriptSegment?.memorySnapshot,
-            },
-            scriptStatus: "auto",
-            audioBlob: undefined,
-            audioDuration: undefined,
-            audioUrl: undefined,
-            audioStatus: baselineText.trim() ? "missing" : "missing",
-          },
-          index
-        );
-
-        if (currentItem.audioUrl && currentItem.audioUrl !== nextItem.audioUrl) {
-          try {
-            URL.revokeObjectURL(currentItem.audioUrl);
-          } catch {
-            // ignore
-          }
-        }
-
-        const nextTimeline = [...state.timeline];
-        nextTimeline[index] = nextItem;
-        set({
-          timeline: nextTimeline,
-          scriptMeta: {
-            ...state.scriptMeta,
-            status: nextTimeline.some((item) => item.scriptStatus === "edited") ? "edited" : "generated",
-            outdatedReason: undefined,
-          },
-        });
-        void idbSet("recap-timeline-data", nextTimeline);
-      },
       scriptMeta: EMPTY_SCRIPT_META,
       setScriptMeta: (scriptMeta) => set({ scriptMeta }),
       markScriptOutdated: (reason) =>
@@ -684,8 +526,6 @@ export const useRecapStore = create<RecapState>()(
       backendStatus: null,
       setBackendStatus: (backendStatus) => set({ backendStatus }),
 
-      activeRenderTab: "timeline",
-      setActiveRenderTab: (activeRenderTab) => set({ activeRenderTab }),
 
       init: async () => {
         set((state) => ({
@@ -757,7 +597,6 @@ export const useRecapStore = create<RecapState>()(
           renderError: null,
           previewUrl: null,
           backendStatus: null,
-          activeRenderTab: "timeline",
         });
         void idbSet("recap-virtual-strip-data", null);
         void idbSet("recap-panels-data", []);
@@ -782,7 +621,6 @@ export const useRecapStore = create<RecapState>()(
         aspectRatio: state.aspectRatio,
         benchmarkRecords: state.benchmarkRecords,
         renderConfig: normalizeRenderConfig(state.renderConfig, state.aspectRatio),
-        activeRenderTab: state.activeRenderTab,
         activeJobId: state.activeJobId,
         isRendering: state.isRendering,
         renderMode: state.renderMode,

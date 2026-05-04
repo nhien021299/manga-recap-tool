@@ -119,30 +119,23 @@ class VideoTtsService:
                 scene.duration_seconds
             )
 
-            # 2. Generate audio per chunk
-            chunk_wavs = []
-            for chunk_idx, chunk_text in enumerate(chunks, start=1):
-                if not chunk_text.strip():
-                    continue
-                tts_request = VoiceGenerateRequest(
-                    text=chunk_text,
-                    provider=request.provider,
-                    voiceKey=request.voice_key,
-                    speed=request.speed,
-                )
-                wav_bytes = self.voice_service.generate_audio(tts_request)
-                chunk_wavs.append(wav_bytes)
-
-            # 3. Concatenate and add padding
-            final_wav_bytes = concatenate_and_pad_audio(
-                chunk_wavs,
-                start_pad_ms=150,
-                end_pad_ms=600,
-                internal_pause_ms=200
+            # Generate with VietVoice
+            from app.services.tts.vietvoice.vietvoice_provider import get_vietvoice_service
+            
+            service = get_vietvoice_service()
+            output_name = f"scene_{scene_num:02d}.wav"
+            narration_audio_path = service.synthesize(
+                text=raw_text,
+                output_name=output_name,
+                voice_key=request.voice_key,
+                job_id=job_id,
             )
+            # Ensure path exists in right place
+            if narration_audio_path.parent != audio_dir:
+                import shutil
+                shutil.copy2(narration_audio_path, audio_dir / output_name)
+                narration_audio_path = audio_dir / output_name
 
-            narration_audio_path = audio_dir / f"scene_{scene_num:02d}.wav"
-            narration_audio_path.write_bytes(final_wav_bytes)
 
             # 4. Final duration logic
             narration_duration_ms = self._measure_audio_duration_ms(narration_audio_path)

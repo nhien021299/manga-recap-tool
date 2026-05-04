@@ -31,7 +31,7 @@ export const Scene: React.FC<SceneProps> = ({ direction, asset }) => {
       {/* Narration audio */}
       {asset.audioPath && (
         <Sequence from={Math.round((direction.audio_start_ms / 1000) * 30)}>
-          <Audio src={staticFile(asset.audioPath)} volume={1} />
+          <Audio src={asset.audioPath} volume={1} />
         </Sequence>
       )}
 
@@ -43,13 +43,21 @@ export const Scene: React.FC<SceneProps> = ({ direction, asset }) => {
               30,
           )}
         >
-          <Audio src={staticFile(asset.dialogueAudioPath)} volume={0.9} />
+          <Audio src={asset.dialogueAudioPath} volume={0.9} />
         </Sequence>
       )}
 
-      {/* Text overlays */}
+      {/* Text overlays synced with audio */}
       {direction.text_overlays.length > 0 && (
-        <TextOverlayLayer overlays={direction.text_overlays} />
+        <Sequence
+          from={Math.round((direction.audio_start_ms / 1000) * 30)}
+          durationInFrames={Math.round((asset.audioDurationMs / 1000) * 30)}
+        >
+          <TextOverlayLayer
+            overlays={direction.text_overlays}
+            durationInFrames={Math.round((asset.audioDurationMs / 1000) * 30)}
+          />
+        </Sequence>
       )}
     </AbsoluteFill>
   );

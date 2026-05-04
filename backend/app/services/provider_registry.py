@@ -1,48 +1,20 @@
 from __future__ import annotations
 
 from app.core.config import Settings
-from app.providers.tts.base import TTSProvider
-from app.providers.tts.vieneu_provider import VieneuTtsProvider
-from app.services.vieneu_worker_bridge import VieneuTtsWorkerBridge
 
 
 class ProviderRegistry:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
-        self.vieneu_runtime = VieneuTtsWorkerBridge(settings)
 
-    def get_text_provider(self) -> OllamaTextProvider | LlamaCppTextProvider:
-        if self.settings.text_provider == "llama_cpp":
-            return LlamaCppTextProvider(self.settings.llama_cpp_base_url, self.settings.text_model)
-        return OllamaTextProvider(self.settings.text_base_url, self.settings.text_model)
-
-    def get_vision_provider(self) -> OllamaVisionProvider:
-        return OllamaVisionProvider(
-            self.settings.vision_base_url,
-            self.settings.vision_model,
-            timeout_seconds=self.settings.vision_timeout_seconds,
-            timeout_retries=self.settings.vision_timeout_retries,
-            retry_delay_seconds=self.settings.vision_retry_delay_seconds,
-            max_width=self.settings.vision_max_width,
-            max_height=self.settings.vision_max_height,
-        )
-
-    def get_tts_providers(self) -> dict[str, TTSProvider]:
-        vieneu_provider = VieneuTtsProvider(self.vieneu_runtime)
-        return {
-            "vieneu": vieneu_provider,
-        }
+    def get_tts_providers(self) -> dict:
+        return {}
 
     def warm_tts_runtime(self) -> None:
-        if self.settings.tts_warm_on_startup:
-            self.vieneu_runtime.warm_up()
+        pass
 
     def get_default_tts_runtime(self):
-        return self.vieneu_runtime
+        return None
 
     def get_tts_runtime(self, provider_id: str | None = None):
-        resolved_provider = (provider_id or self.settings.tts_provider).strip().lower()
-        if resolved_provider == "vieneu":
-            return self.vieneu_runtime
-        raise ValueError(f"Unsupported TTS provider '{resolved_provider}'. Supported providers: vieneu")
-
+        return None

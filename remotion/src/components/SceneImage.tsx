@@ -33,7 +33,7 @@ export const SceneImage: React.FC<SceneImageProps> = ({
 }) => {
   const frame = useCurrentFrame();
   const { width, height, durationInFrames } = useVideoConfig();
-  const src = staticFile(imagePath);
+  const src = imagePath;
 
   const transform = getCameraTransform(
     frame,

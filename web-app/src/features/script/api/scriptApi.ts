@@ -103,6 +103,8 @@ export interface NarrationScene {
   narration: string;
   duration_seconds: number;
   dialogue?: string | null;
+  dialogue_speaker?: string | null;
+  dialogue_timing?: string | null;
 }
 
 export interface NarrationPayload {

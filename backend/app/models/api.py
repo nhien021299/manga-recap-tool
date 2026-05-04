@@ -88,7 +88,7 @@ class VoiceOptionsResponse(BaseModel):
 
 class VoiceGenerateRequest(BaseModel):
     text: str
-    provider: str = "vieneu"
+    provider: str = "vietvoice"
     voiceKey: str
     speed: float = 1.15
     dialogue: str | None = None

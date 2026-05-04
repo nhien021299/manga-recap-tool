@@ -3,24 +3,6 @@ import re
 import numpy as np
 import soundfile as sf
 
-GLOSSARY = [
-    "Tô Minh",
-    "A Công",
-    "Ô Sơn",
-    "Ô Long Tiên",
-    "Hỏa Man",
-    "Hỏa Man lực",
-    "Man Khải",
-    "Man thể",
-    "Man Sĩ",
-    "Man Văn",
-    "Man Huyết",
-    "Khai Trần",
-    "Khai Trần cảnh",
-    "Phong Quyến",
-    "Sơn Ngân",
-    "Lạp Tô",
-]
 
 def normalize_tts_text(text: str) -> str:
     if not text:
@@ -44,14 +26,15 @@ def merge_dialogue_into_narration(narration: str, dialogue: str | None, speaker:
     if not dialogue:
         return narration
 
+    n = narration.strip()
+    if n and n[-1] not in ".!?":
+        n += "."
+
     d = dialogue.strip()
     word_count = count_words(d)
     name = speaker.strip() if speaker else "Hắn"
 
-    if word_count <= 4:
-        return f"{narration} {name} khẽ bật ra: {d}"
-
-    return f"{narration} {name} nói: {d}"
+    return f"{n} {name} nói. ...{d}"
 
 def split_into_tts_chunks(text: str, min_words=6, ideal_max=18, hard_max=26) -> list[str]:
     # Basic sentence split.

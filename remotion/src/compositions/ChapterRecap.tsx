@@ -28,6 +28,7 @@ import type {
   SceneAsset,
 } from "../types/direction";
 import { transitionFrames } from "../effects/camera";
+import { TransitionWrapper } from "../effects/transitions";
 
 export const ChapterRecap: React.FC<VideoDirectionProps> = (props) => {
   const { scenes, assets, fps } = props;
@@ -92,130 +93,6 @@ export const ChapterRecap: React.FC<VideoDirectionProps> = (props) => {
           </React.Fragment>
         );
       })}
-    </AbsoluteFill>
-  );
-};
-
-/* ═══════════════════════════════════════════════════════════════
-   Cinematic Transitions
-   ═══════════════════════════════════════════════════════════════
-
-   Design philosophy:
-   - 90% of transitions should be smooth crossfade (professional, invisible)
-   - dip_to_black: dramatic pause, slow and intentional
-   - hard_cut: action sequences only, instant and punchy
-   - smooth_zoom_fade: crossfade + subtle zoom for reveal moments
-
-   Removed: flash_cut (cheesy), blur_fade (gimmicky)
-   Legacy names still mapped for backwards compatibility.
-   ═══════════════════════════════════════════════════════════════ */
-
-interface TransitionWrapperProps {
-  children: React.ReactNode;
-  transInFrames: number;
-  transOutFrames: number;
-  totalFrames: number;
-  transInType: string;
-  transOutType: string;
-}
-
-const isHardCut = (type: string) => type === "cut" || type === "hard_cut";
-const isDipToBlack = (type: string) =>
-  type === "fade_black" || type === "dip_to_black";
-const isZoomFade = (type: string) =>
-  type === "smooth_zoom_fade" || type === "blur_fade" || type === "flash_cut";
-
-const TransitionWrapper: React.FC<TransitionWrapperProps> = ({
-  children,
-  transInFrames,
-  transOutFrames,
-  totalFrames,
-  transInType,
-  transOutType,
-}) => {
-  const frame = useCurrentFrame();
-
-  let opacity = 1;
-
-  // ── Fade in (smooth ease-out curve) ──
-  if (transInFrames > 0 && !isHardCut(transInType)) {
-    opacity *= interpolate(frame, [0, transInFrames], [0, 1], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: Easing.out(Easing.cubic),
-    });
-  }
-
-  // ── Fade out (smooth ease-in curve) ──
-  if (transOutFrames > 0 && !isHardCut(transOutType)) {
-    const fadeOutStart = totalFrames - transOutFrames;
-    opacity *= interpolate(frame, [fadeOutStart, totalFrames], [1, 0], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: Easing.in(Easing.cubic),
-    });
-  }
-
-  // ── Dip to Black ──
-  // Cinematic black overlay — used for dramatic pauses.
-  // Keeps scene content visible underneath with slight darken.
-  if (isDipToBlack(transOutType) || isDipToBlack(transInType)) {
-    const blackOpacity = interpolate(opacity, [0, 1], [1, 0], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    });
-    return (
-      <AbsoluteFill style={{ opacity }}>
-        {children}
-        <AbsoluteFill
-          style={{
-            backgroundColor: "#020408",
-            opacity: blackOpacity,
-            pointerEvents: "none",
-          }}
-        />
-      </AbsoluteFill>
-    );
-  }
-
-  // ── Smooth Zoom Fade ──
-  // Replaces flash_cut and blur_fade: elegant crossfade with subtle scale
-  // that draws the eye forward. Used for reveals and mystery moments.
-  if (isZoomFade(transOutType) || isZoomFade(transInType)) {
-    const scaleVal = interpolate(opacity, [0, 1], [1.06, 1], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    });
-    return (
-      <AbsoluteFill
-        style={{
-          opacity,
-          transform: `scale(${scaleVal})`,
-          transformOrigin: "center center",
-        }}
-      >
-        {children}
-      </AbsoluteFill>
-    );
-  }
-
-  // ── Default Crossfade ──
-  // The workhorse: simple, elegant, professional.
-  // Tiny scale breath (1.015→1) adds subtle life without being noticeable.
-  const breathe = interpolate(opacity, [0, 1], [1.015, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  return (
-    <AbsoluteFill
-      style={{
-        opacity,
-        transform: `scale(${breathe})`,
-        transformOrigin: "center center",
-      }}
-    >
-      {children}
     </AbsoluteFill>
   );
 };

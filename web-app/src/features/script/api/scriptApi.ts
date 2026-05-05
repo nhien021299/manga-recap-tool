@@ -159,18 +159,33 @@ export async function submitNarrationProduction(
   narration: NarrationPayload,
   panels: Panel[],
   voiceConfig?: { voiceKey?: string; speed?: number; provider?: string },
+  directionData?: any,
+  audioBlobs?: { scene: number; blob: Blob }[]
 ): Promise<VideoJobStatus> {
   const base = normalizeBaseUrl(apiBaseUrl);
   const formData = new FormData();
 
-  formData.append("narration", JSON.stringify(narration));
+  const narrationBlob = new Blob([JSON.stringify(narration)], { type: "application/json" });
+  formData.append("narration_file", narrationBlob, "narration.json");
+  
   formData.append("voice_key", voiceConfig?.voiceKey || "voice_default");
   formData.append("speed", String(voiceConfig?.speed ?? 1.15));
   formData.append("provider", voiceConfig?.provider || "vieneu");
+  
+  if (directionData) {
+    const directionBlob = new Blob([JSON.stringify(directionData)], { type: "application/json" });
+    formData.append("direction_file", directionBlob, "direction.json");
+  }
 
   panels.forEach((panel, index) => {
     formData.append("files", panel.blob, `panel-${index + 1}.png`);
   });
+
+  if (audioBlobs) {
+    audioBlobs.forEach((item) => {
+      formData.append("audio_files", item.blob, `scene_${item.scene}.wav`);
+    });
+  }
 
   try {
     const response = await fetch(`${base}/api/v1/video/produce-from-narration`, {

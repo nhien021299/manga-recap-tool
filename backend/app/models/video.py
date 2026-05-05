@@ -182,6 +182,8 @@ class VideoProduceRequest(BaseModel):
     width: int = 1920
     height: int = 1080
     fps: int = 30
+    direction_data: dict | None = None
+    audio_paths: dict[int, str] | None = None
 
 
 # ---------------------------------------------------------------------------

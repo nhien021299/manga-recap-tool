@@ -120,7 +120,8 @@ app.add_middleware(
 @app.middleware("http")
 async def add_static_asset_embed_headers(request, call_next):
     response = await call_next(request)
-    if request.url.path.startswith("/assets/voice-samples/"):
+    path = request.url.path
+    if path.startswith("/assets/voice-samples/") or "/assets/voice-samples/" in path:
         response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
     return response
 
@@ -136,9 +137,12 @@ app.include_router(render_router, prefix=prefix)
 
 voice_samples_dir = Path(__file__).resolve().parents[1] / ".bench" / "samples"
 voice_samples_dir.mkdir(parents=True, exist_ok=True)
-app.mount("/assets/voice-samples", StaticFiles(directory=str(voice_samples_dir)), name="voice-samples")
+# Mount at both locations for compatibility
+app.mount(f"{prefix}/assets/voice-samples", StaticFiles(directory=str(voice_samples_dir)), name="voice-samples-prefixed")
+app.mount("/assets/voice-samples", StaticFiles(directory=str(voice_samples_dir)), name="voice-samples-raw")
 
 # Mount jobs directory to serve cached panels and voice files
 jobs_dir = get_settings().temp_root
 jobs_dir.mkdir(parents=True, exist_ok=True)
-app.mount("/assets/jobs", StaticFiles(directory=str(jobs_dir)), name="jobs")
+app.mount(f"{prefix}/assets/jobs", StaticFiles(directory=str(jobs_dir)), name="jobs-prefixed")
+app.mount("/assets/jobs", StaticFiles(directory=str(jobs_dir)), name="jobs-raw")

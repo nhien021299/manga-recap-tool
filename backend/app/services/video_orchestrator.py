@@ -16,6 +16,7 @@ from app.models.video import (
     BatchTtsRequest,
     BatchTtsResult,
     NarrationPackage,
+    SceneTtsResult,
     VideoDirection,
     VideoJobPhase,
     VideoJobStatus,
@@ -133,76 +134,108 @@ class VideoOrchestrator:
         job_id = state.job_id
 
         try:
-            # Phase 1: Batch TTS
-            state.phase = VideoJobPhase.tts_generating
-            state.progress = 5
-            state.detail = "Generating TTS audio for all scenes..."
-            logger.info("Video pipeline phase 1: TTS job_id=%s", job_id)
+            package = self.video_tts_service.parse_narration_file(request.narration_path)
 
-            tts_request = BatchTtsRequest(
-                narration_path=request.narration_path,
-                voice_key=request.voice_key,
-                speed=request.speed,
-                provider=request.provider,
-            )
-
-            def update_tts_progress(p: int, d: str):
-                state.progress = p
-                state.detail = d
-
-            tts_result: BatchTtsResult = await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: self.video_tts_service.generate_batch(
-                    tts_request, job_id=job_id, on_progress=update_tts_progress
-                ),
-            )
-
-            state.tts_result = tts_result
-            state.progress = 35
-            state.detail = (
-                f"TTS complete: {tts_result.total_scenes} scenes, "
-                f"{tts_result.total_audio_duration_ms}ms total audio"
-            )
-            logger.info(
-                "Video pipeline TTS complete job_id=%s scenes=%d audio_ms=%d",
-                job_id,
-                tts_result.total_scenes,
-                tts_result.total_audio_duration_ms,
-            )
-
-            # Phase 2: Gemini Video Direction
-            state.phase = VideoJobPhase.directing
-            state.progress = 40
-            state.detail = "Generating video direction via Gemini..."
-            logger.info("Video pipeline phase 2: Direction job_id=%s", job_id)
-
-            package = self.video_tts_service.parse_narration_file(
-                request.narration_path
-            )
-
-            direction: VideoDirection = (
-                await self.video_director_service.generate_direction(
-                    package=package,
-                    tts_result=tts_result,
+            if request.direction_data and request.audio_paths:
+                state.phase = VideoJobPhase.directing
+                state.progress = 55
+                state.detail = "Using pre-generated direction and audio from UI..."
+                logger.info("Video pipeline using UI pre-generated data job_id=%s", job_id)
+                
+                scene_results = []
+                total_audio_ms = 0
+                for scene in package.scenes:
+                    audio_path = request.audio_paths.get(scene.scene)
+                    audio_ms = 0
+                    if audio_path:
+                        audio_ms = self.video_tts_service._measure_audio_duration_ms(Path(audio_path))
+                        
+                    scene_results.append(SceneTtsResult(
+                        scene=scene.scene,
+                        title=scene.title,
+                        audio_path=audio_path or "",
+                        audio_duration_ms=audio_ms,
+                        target_duration_ms=int(scene.duration_seconds * 1000),
+                        narration=scene.narration,
+                    ))
+                    total_audio_ms += audio_ms
+                    
+                tts_result = BatchTtsResult(
                     job_id=job_id,
-                    width=request.width,
-                    height=request.height,
-                    fps=request.fps,
+                    total_scenes=len(package.scenes),
+                    total_audio_duration_ms=total_audio_ms,
+                    scene_results=scene_results
                 )
-            )
+                state.tts_result = tts_result
+                direction = VideoDirection(**request.direction_data)
+                state.direction = direction
+            else:
+                # Phase 1: Batch TTS
+                state.phase = VideoJobPhase.tts_generating
+                state.progress = 5
+                state.detail = "Generating TTS audio for all scenes..."
+                logger.info("Video pipeline phase 1: TTS job_id=%s", job_id)
 
-            state.direction = direction
-            state.progress = 55
-            state.detail = (
-                f"Direction complete: {len(direction.scenes)} scenes, "
-                f"{direction.total_duration_ms}ms total"
-            )
-            logger.info(
-                "Video pipeline direction complete job_id=%s scenes=%d total_ms=%d",
-                job_id,
-                len(direction.scenes),
-                direction.total_duration_ms,
-            )
+                tts_request = BatchTtsRequest(
+                    narration_path=request.narration_path,
+                    voice_key=request.voice_key,
+                    speed=request.speed,
+                    provider=request.provider,
+                )
+
+                def update_tts_progress(p: int, d: str):
+                    state.progress = p
+                    state.detail = d
+
+                tts_result: BatchTtsResult = await asyncio.get_event_loop().run_in_executor(
+                    None,
+                    lambda: self.video_tts_service.generate_batch(
+                        tts_request, job_id=job_id, on_progress=update_tts_progress
+                    ),
+                )
+
+                state.tts_result = tts_result
+                state.progress = 35
+                state.detail = (
+                    f"TTS complete: {tts_result.total_scenes} scenes, "
+                    f"{tts_result.total_audio_duration_ms}ms total audio"
+                )
+                logger.info(
+                    "Video pipeline TTS complete job_id=%s scenes=%d audio_ms=%d",
+                    job_id,
+                    tts_result.total_scenes,
+                    tts_result.total_audio_duration_ms,
+                )
+
+                # Phase 2: Gemini Video Direction
+                state.phase = VideoJobPhase.directing
+                state.progress = 40
+                state.detail = "Generating video direction via Gemini..."
+                logger.info("Video pipeline phase 2: Direction job_id=%s", job_id)
+
+                direction: VideoDirection = (
+                    await self.video_director_service.generate_direction(
+                        package=package,
+                        tts_result=tts_result,
+                        job_id=job_id,
+                        width=request.width,
+                        height=request.height,
+                        fps=request.fps,
+                    )
+                )
+
+                state.direction = direction
+                state.progress = 55
+                state.detail = (
+                    f"Direction complete: {len(direction.scenes)} scenes, "
+                    f"{direction.total_duration_ms}ms total"
+                )
+                logger.info(
+                    "Video pipeline direction complete job_id=%s scenes=%d total_ms=%d",
+                    job_id,
+                    len(direction.scenes),
+                    direction.total_duration_ms,
+                )
 
             # Phase 3: Remotion Render
             state.phase = VideoJobPhase.rendering

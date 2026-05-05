@@ -31,6 +31,7 @@ class VietVoiceService:
         output_name: str,
         voice_key: Optional[str] = None,
         job_id: Optional[str] = None,
+        speed: float = 1.0,
     ) -> Path:
         voice_key = voice_key or self.config.voice_key
         reference = self.registry.get(voice_key)
@@ -40,7 +41,8 @@ class VietVoiceService:
             raise ValueError("Empty TTS text after chunking.")
 
         safe_output_name = self._safe_output_name(output_name)
-        job_folder_name = job_id or self._hash_text(f"{voice_key}|{text}")[:16]
+        # Include speed in hash if no job_id to avoid cache collisions on different speeds
+        job_folder_name = job_id or self._hash_text(f"{voice_key}|{speed}|{text}")[:16]
         job_dir = self.config.output_root / job_folder_name
         job_dir.mkdir(parents=True, exist_ok=True)
 
@@ -50,6 +52,9 @@ class VietVoiceService:
             return final_path
 
         with self._lock:
+            # Set engine speed before synthesis
+            self.engine.config.speed = speed
+            
             chunk_paths: List[Path] = []
 
             for index, chunk in enumerate(chunks, start=1):

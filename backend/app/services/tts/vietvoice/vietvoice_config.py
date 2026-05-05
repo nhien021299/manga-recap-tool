@@ -49,7 +49,7 @@ class VietVoiceConfig:
             ref_root=(repo_backend_root / ref_root_raw).resolve(),
             output_root=(repo_backend_root / output_root_raw).resolve(),
             ffmpeg_path=os.getenv("AI_BACKEND_RENDER_FFMPEG_PATH", "ffmpeg"),
-            max_chars_per_chunk=_get_int("AI_BACKEND_TTS_VIETVOICE_MAX_CHARS_PER_CHUNK", 100),
+            max_chars_per_chunk=_get_int("AI_BACKEND_TTS_VIETVOICE_MAX_CHARS_PER_CHUNK", 200),
             short_sleep_seconds=_get_float("AI_BACKEND_TTS_VIETVOICE_SHORT_SLEEP_SECONDS", 0.5),
             batch_sleep_every=_get_int("AI_BACKEND_TTS_VIETVOICE_BATCH_SLEEP_EVERY", 8),
             batch_sleep_seconds=_get_float("AI_BACKEND_TTS_VIETVOICE_BATCH_SLEEP_SECONDS", 3.0),

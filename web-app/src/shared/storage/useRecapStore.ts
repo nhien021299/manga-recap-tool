@@ -77,8 +77,8 @@ interface RecapState {
 
   timeline: TimelineItem[];
   setTimeline: (timeline: TimelineItem[]) => void;
+  updateTimelineItem: (index: number, updates: Partial<TimelineItem>) => void;
   scriptMeta: ScriptMeta;
-  setScriptMeta: (meta: ScriptMeta) => void;
   setScriptMeta: (meta: ScriptMeta) => void;
   markScriptOutdated: (reason: string) => void;
   clearScriptData: () => void;
@@ -482,6 +482,31 @@ export const useRecapStore = create<RecapState>()(
         revokeTimelineAudioUrls(getStore().timeline);
         set({ timeline: normalizedTimeline });
         void idbSet("recap-timeline-data", normalizedTimeline);
+      },
+      updateTimelineItem: (index, updates) => {
+        const nextTimeline = [...getStore().timeline];
+        if (!nextTimeline[index]) return;
+        
+        const currentItem = nextTimeline[index];
+        // If we are replacing an existing audio blob, revoke the old URL if it was generated
+        if (updates.audioUrl && currentItem.audioUrl && updates.audioUrl !== currentItem.audioUrl) {
+          try { URL.revokeObjectURL(currentItem.audioUrl); } catch {}
+        }
+        
+        // For new audio blobs without explicit audioUrl, generate one
+        let newAudioUrl = updates.audioUrl ?? currentItem.audioUrl;
+        if (updates.audioBlob && !updates.audioUrl) {
+          newAudioUrl = URL.createObjectURL(updates.audioBlob);
+        }
+        
+        nextTimeline[index] = { 
+          ...currentItem, 
+          ...updates,
+          audioUrl: newAudioUrl
+        };
+        
+        set({ timeline: nextTimeline });
+        void idbSet("recap-timeline-data", nextTimeline);
       },
       scriptMeta: EMPTY_SCRIPT_META,
       setScriptMeta: (scriptMeta) => set({ scriptMeta }),

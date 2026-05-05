@@ -197,6 +197,13 @@ export const buildRenderPlan = (
 
     previousPreset = motionPreset;
 
+    // Recalculate duration and hold times to ensure transition gap prevents audio overlap
+    const baseHoldMs = Math.max(0, item.holdAfterMs ?? 250);
+    const dynamicHoldMs = Math.max(baseHoldMs, transitionDurationMs + 100);
+    const finalDurationMs = (item.audioStatus === "ready" && typeof item.audioDuration === "number" && item.audioDuration > 0)
+       ? Math.round(item.audioDuration * 1000) + dynamicHoldMs
+       : Math.max(MIN_SILENT_CLIP_MS, dynamicHoldMs);
+
     const text_overlays = renderConfig.captionMode === "burned" ? (() => {
       const overlays: Array<{text: string; start_pct: number; end_pct: number; style: string; position: string}> = [];
       const narrationText = (item.scriptItem.voiceover_text || "").trim();
@@ -289,13 +296,13 @@ export const buildRenderPlan = (
       panelId: item.panelId,
       orderIndex: index,
       startMs,
-      durationMs,
-      holdAfterMs: Math.max(0, item.holdAfterMs ?? 250),
+      durationMs: finalDurationMs,
+      holdAfterMs: dynamicHoldMs,
       captionText: item.scriptItem.voiceover_text.trim(),
       panelFileKey: `panel-${index + 1}`,
       audioFileKey: item.audioStatus === "ready" ? `audio-${index + 1}` : undefined,
       motionPreset,
-      motionSeed: hashString(`${panel.id}:${index}:${durationMs}`),
+      motionSeed: hashString(`${panel.id}:${index}:${finalDurationMs}`),
       motionIntensity,
       panel,
       imageBlob: item.imageBlob,
@@ -310,7 +317,7 @@ export const buildRenderPlan = (
       subtitleMood: item.subtitleMood,
       text_overlays,
     };
-    startMs += durationMs;
+    startMs += finalDurationMs;
     return clip;
   });
 

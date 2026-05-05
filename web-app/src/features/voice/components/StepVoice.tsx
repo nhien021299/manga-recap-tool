@@ -167,7 +167,7 @@ export function StepVoice() {
             Lồng Tiếng AI
           </h2>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <p>Tạo giọng đọc thuyết minh tự động bằng AI (VieNeu TTS).</p>
+            <p>Tạo giọng đọc thuyết minh tự động bằng AI (VietVoice TTS).</p>
             {totalDuration > 0 && !isLoading && (
               <div className="flex items-center gap-1.5 rounded-md border border-primary/20 bg-primary/10 px-2 py-0.5 font-medium text-primary">
                 <Clock className="h-3.5 w-3.5" />
@@ -177,6 +177,16 @@ export function StepVoice() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {!isLoading && timeline.length > 0 && (
+            <Button
+              onClick={generateAllVoices}
+              className="bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30 font-bold"
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+              {timeline.some(item => !item.audioUrl) ? "Bắt đầu lồng tiếng" : "Lồng tiếng lại"}
+            </Button>
+          )}
+
           {timeline.some((item) => item.audioUrl) && !isLoading && (
             <Button
               variant="outline"
@@ -296,163 +306,134 @@ export function StepVoice() {
         </div>
       )}
 
-      {isLoading || !timeline.some((item) => item.audioUrl) ? (
-        <div className="flex h-[400px] flex-col items-center justify-center space-y-6 rounded-3xl border border-dashed border-white/10 bg-white/5">
-          <div className="rounded-full bg-primary/10 p-8">
-            <Volume2 className="h-16 w-16 text-primary" />
+      {isLoading && (
+        <div className="space-y-4 rounded-3xl border border-white/5 bg-white/5 p-6 shadow-glow-sm">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-white">Đang xử lý lồng tiếng...</h3>
+              <p className="text-sm text-muted-foreground">Tiến trình hệ thống đang chạy ngầm</p>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-mono font-bold text-primary">{progress}%</div>
+            </div>
           </div>
-          <div className="space-y-2 text-center">
-            <h3 className="text-xl font-semibold">Tạo giọng đọc thuyết minh</h3>
-            <p className="max-w-sm px-4 text-muted-foreground">
-              Chuyển đổi kịch bản thành các tệp âm thanh WAV chất lượng cao bằng AI.
-            </p>
-          </div>
-
-          {error && (
-            <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-4 py-2 text-destructive">
-              <AlertCircle className="h-4 w-4" />
-              <span className="text-sm font-medium">{error}</span>
+          <Progress value={progress} className="h-2" />
+          
+          {currentVoiceGeneration && (
+            <div className="flex items-center gap-4 rounded-2xl bg-black/20 p-4 border border-white/5">
+              {activePanel?.thumbnail ? (
+                <img src={activePanel.thumbnail} className="h-12 w-12 rounded-lg object-cover border border-white/10" />
+              ) : (
+                <div className="h-12 w-12 rounded-lg bg-white/5 flex items-center justify-center text-xs text-white/40 border border-white/10">
+                  #{currentVoiceGeneration.panelOrder}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-white truncate">Panel {currentVoiceGeneration.panelOrder}</p>
+                <p className="text-xs text-muted-foreground italic truncate">
+                  Clip {currentVoiceGeneration.currentIndex}/{currentVoiceGeneration.totalCount} ({currentVoiceGeneration.textLength} chars)
+                </p>
+              </div>
+              <div className="text-right text-[10px] font-mono text-primary/60 uppercase font-bold tracking-widest">
+                {currentVoiceGeneration.voiceKey}
+              </div>
             </div>
           )}
-
-          <div className="w-full max-w-xs space-y-4">
-            <Button
-              size="lg"
-              onClick={generateAllVoices}
-              disabled={isLoading}
-              className="h-14 w-full rounded-2xl border-none bg-primary text-lg font-bold text-primary-foreground shadow-glow transition-all hover:opacity-90 active:scale-[0.98]"
-            >
-              {isLoading ? "Đang tạo giọng đọc..." : "Bắt đầu lồng tiếng toàn bộ"}
-            </Button>
-            {isLoading && (
-              <div className="space-y-3">
-                <div className="flex justify-between text-xs font-mono">
-                  <span>PROGRESS</span>
-                  <span>{progress}%</span>
-                </div>
-                <Progress value={progress} className="h-1.5" />
-                {currentVoiceGeneration && (
-                  <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-left">
-                    <div className="flex items-center justify-between gap-3 text-[11px] uppercase tracking-[0.2em] text-white/50">
-                      <span>
-                        Clip {currentVoiceGeneration.currentIndex}/{currentVoiceGeneration.totalCount}
-                      </span>
-                      <span>{currentVoiceGeneration.voiceKey}</span>
-                    </div>
-                    <div className="mt-2 flex items-center gap-3">
-                      {activePanel?.thumbnail ? (
-                        <img
-                          src={activePanel.thumbnail}
-                          alt={`Panel ${currentVoiceGeneration.panelOrder}`}
-                          className="h-12 w-12 rounded-lg border border-white/10 object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-[10px] text-white/50">
-                          #{currentVoiceGeneration.panelOrder}
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-white">Panel {currentVoiceGeneration.panelOrder}</p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {currentVoiceGeneration.textLength} chars, panelId {currentVoiceGeneration.panelId}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
         </div>
-      ) : (
-        <ScrollArea className="glass h-[calc(100vh-220px)] rounded-3xl border border-white/5 bg-white/5 p-2">
-          <div className="space-y-3 p-4">
-            {timeline.map((item, index) => {
-              const panel = panels.find((entry) => entry.id === item.panelId);
-              const isCurrentGenerating = currentVoiceGeneration?.panelId === item.panelId;
-              return (
-                <Card
-                  key={`${item.panelId}-${index}`}
-                  className="group flex items-center gap-4 rounded-2xl border-white/5 bg-background p-3 transition-all hover:border-primary/20"
-                >
-                  <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-white/5 bg-black">
-                    <img src={panel?.thumbnail} className="h-full w-full object-cover" />
-                  </div>
-
-                  <div className="flex-1 space-y-1">
-                    <p className="line-clamp-2 text-sm font-medium italic leading-relaxed text-muted-foreground">
-                      "{item.scriptItem.voiceover_text}"
-                    </p>
-                    {item.scriptItem.dialogue_text && (
-                      <p className="line-clamp-2 text-xs font-medium italic leading-relaxed text-primary/80">
-                        {item.scriptItem.dialogue_speaker || "Ẩn danh"}: "{item.scriptItem.dialogue_text}"
-                      </p>
-                    )}
-                    <div className="flex items-center gap-3">
-                      {item.audioUrl ? (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          className="h-8 rounded-full border-white/10 bg-white/5 hover:bg-white/10"
-                          onClick={() => togglePlay(index, item.audioUrl!)}
-                        >
-                          {playingIdx === index ? (
-                            <>
-                              <Pause className="mr-2 h-3 w-3" /> Dừng
-                            </>
-                          ) : (
-                            <>
-                              <Play className="mr-2 h-3 w-3" /> Nghe thử
-                            </>
-                          )}
-                        </Button>
-                      ) : (
-                        <span className="flex items-center gap-1 text-[10px] text-destructive">
-                          <AlertCircle className="h-3 w-3" /> Chưa có âm thanh
-                        </span>
-                      )}
-                      <span className="text-[10px] uppercase text-muted-foreground">
-                        {item.audioDuration ? `${item.audioDuration.toFixed(1)}s` : "--"}
-                      </span>
-                      {isCurrentGenerating && (
-                        <span className="flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-primary">
-                          <Loader2 className="h-3 w-3 animate-spin" /> Generating now
-                        </span>
-                      )}
-                    </div>
-                    {item.audioChunks && item.audioChunks.length > 0 && (
-                      <div className="mt-3 flex flex-col gap-2 rounded-xl border border-white/5 bg-black/20 p-3">
-                        {item.audioChunks.map((chunk) => (
-                          <div
-                            key={chunk.i}
-                            className="flex flex-col gap-1 border-b border-white/5 pb-2 last:border-0 last:pb-0"
-                          >
-                            <span className="font-mono text-[10px] text-primary/70">
-                              Chunk {chunk.i} ({chunk.w}w)
-                            </span>
-                            <span className="text-xs text-muted-foreground leading-relaxed">
-                              {chunk.text}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => generateSingleVoice(index)}
-                    className="rounded-full opacity-0 transition-opacity group-hover:opacity-100"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                  </Button>
-                </Card>
-              );
-            })}
-          </div>
-        </ScrollArea>
       )}
+
+      {error && (
+        <div className="flex items-center gap-2 rounded-xl bg-destructive/10 px-4 py-3 text-destructive border border-destructive/20">
+          <AlertCircle className="h-4 w-4" />
+          <span className="text-sm font-medium">{error}</span>
+        </div>
+      )}
+
+      <ScrollArea className="glass h-[calc(100vh-380px)] rounded-3xl border border-white/5 bg-white/5 p-2 transition-all">
+        <div className="space-y-3 p-4">
+          {timeline.length === 0 && (
+            <div className="flex h-60 flex-col items-center justify-center text-muted-foreground border border-dashed border-white/5 rounded-3xl">
+              <Volume2 className="h-12 w-12 mb-4 opacity-10" />
+              <p className="text-lg font-medium">Chưa có kịch bản để lồng tiếng</p>
+              <p className="text-sm opacity-60">Hãy hoàn thành Bước 2 để có kịch bản chi tiết</p>
+            </div>
+          )}
+          {timeline.map((item, index) => {
+            const panel = panels.find((entry) => entry.id === item.panelId);
+            const isCurrentGenerating = currentVoiceGeneration?.panelId === item.panelId;
+            return (
+              <Card
+                key={`${item.panelId}-${index}`}
+                className={`group flex items-center gap-4 rounded-2xl border-white/5 bg-background p-3 transition-all hover:border-primary/20 ${
+                  isCurrentGenerating ? "ring-2 ring-primary/40 bg-primary/5 border-primary/20" : ""
+                }`}
+              >
+                <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-white/5 bg-black">
+                  <img src={panel?.thumbnail} className="h-full w-full object-cover" />
+                </div>
+
+                <div className="flex-1 space-y-1 min-w-0">
+                  <p className="line-clamp-2 text-sm font-medium italic leading-relaxed text-muted-foreground">
+                    "{item.scriptItem.voiceover_text}"
+                  </p>
+                  {item.scriptItem.dialogue_text && (
+                    <p className="line-clamp-2 text-xs font-medium italic leading-relaxed text-primary/80">
+                      {item.scriptItem.dialogue_speaker || "Ẩn danh"}: "{item.scriptItem.dialogue_text}"
+                    </p>
+                  )}
+                  <div className="flex items-center gap-3">
+                    {item.audioUrl ? (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="h-8 rounded-full border-white/10 bg-white/5 hover:bg-white/10"
+                        onClick={() => togglePlay(index, item.audioUrl!)}
+                      >
+                        {playingIdx === index ? (
+                          <>
+                            <Pause className="mr-2 h-3 w-3" /> Dừng
+                          </>
+                        ) : (
+                          <>
+                            <Play className="mr-2 h-3 w-3" /> Nghe thử
+                          </>
+                        )}
+                      </Button>
+                    ) : (
+                      <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                        {isCurrentGenerating ? (
+                          <span className="text-primary flex items-center gap-1 uppercase tracking-wider font-bold animate-pulse">
+                            <Loader2 className="h-3 w-3 animate-spin" /> Đang tạo...
+                          </span>
+                        ) : (
+                          <>
+                            <AlertCircle className="h-3 w-3" /> Chưa lồng tiếng
+                          </>
+                        )}
+                      </span>
+                    )}
+                    <span className="text-[10px] uppercase font-mono text-muted-foreground/60">
+                      {item.audioDuration ? `${item.audioDuration.toFixed(1)}s` : "--"}
+                    </span>
+                  </div>
+                </div>
+
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => generateSingleVoice(index)}
+                  disabled={isLoading}
+                  className={`rounded-full transition-all ${
+                    isCurrentGenerating ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                  }`}
+                >
+                  <RefreshCw className={`h-4 w-4 ${isCurrentGenerating ? "animate-spin" : ""}`} />
+                </Button>
+              </Card>
+            );
+          })}
+        </div>
+      </ScrollArea>
     </div>
   );
 }

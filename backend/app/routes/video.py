@@ -111,7 +111,8 @@ async def produce_video(
 
 @router.post("/produce-from-narration", response_model=VideoJobStatus)
 async def produce_from_narration(
-    narration: str = Form(...),
+    narration: str = Form(default=None),
+    narration_file: UploadFile | None = File(default=None),
     voice_key: str = Form(default="voice_default"),
     speed: float = Form(default=1.15),
     provider: str = Form(default="vieneu"),
@@ -119,7 +120,10 @@ async def produce_from_narration(
     width: int = Form(default=1920),
     height: int = Form(default=1080),
     fps: int = Form(default=30),
+    direction: str = Form(default=None),
+    direction_file: UploadFile | None = File(default=None),
     files: list[UploadFile] = File(...),
+    audio_files: list[UploadFile] = File(default=[]),
     settings=Depends(get_app_settings),
     video_orchestrator=Depends(get_video_orchestrator),
 ) -> VideoJobStatus:
@@ -128,10 +132,17 @@ async def produce_from_narration(
     Accepts a narration JSON with scenes and panel image files.
     Maps each scene to an image by order, then runs:
     TTS → Gemini video direction → Remotion render.
+    If direction and audio_files are provided, skips TTS and Gemini.
     Returns a job ID for polling.
     """
     try:
-        narration_data = json.loads(narration)
+        if narration_file:
+            content = await narration_file.read()
+            narration_data = json.loads(content)
+        elif narration:
+            narration_data = json.loads(narration)
+        else:
+            raise HTTPException(status_code=400, detail="Missing narration data.")
     except json.JSONDecodeError as exc:
         raise HTTPException(
             status_code=400, detail=f"Invalid narration JSON: {exc}"
@@ -179,6 +190,34 @@ async def produce_from_narration(
         job_id, len(scenes), narration_path,
     )
 
+    # Handle optional direction data
+    direction_data = None
+    try:
+        if direction_file:
+            content = await direction_file.read()
+            direction_data = json.loads(content)
+        elif direction:
+            direction_data = json.loads(direction)
+    except json.JSONDecodeError:
+        pass
+
+    # Save audio files if provided
+    audio_paths = {}
+    if audio_files:
+        audio_dir = job_dir / "audio"
+        audio_dir.mkdir(parents=True, exist_ok=True)
+        for audio_file in audio_files:
+            if not audio_file.filename:
+                continue
+            audio_path = audio_dir / audio_file.filename
+            audio_content = await audio_file.read()
+            audio_path.write_bytes(audio_content)
+            # Extact scene number from filename "scene_1.wav"
+            import re
+            match = re.search(r'scene_(\d+)', audio_file.filename)
+            if match:
+                audio_paths[int(match.group(1))] = str(audio_path)
+
     # Start production pipeline
     request = VideoProduceRequest(
         narration_path=str(narration_path),
@@ -189,6 +228,8 @@ async def produce_from_narration(
         width=width,
         height=height,
         fps=fps,
+        direction_data=direction_data,
+        audio_paths=audio_paths if audio_paths else None,
     )
 
     try:

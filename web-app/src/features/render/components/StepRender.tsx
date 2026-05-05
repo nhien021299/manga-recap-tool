@@ -291,6 +291,11 @@ export function StepRender() {
       };
 
       const voiceConfig = useRecapStore.getState().voiceConfig;
+      
+      const audioBlobs = timeline
+        .map((item, index) => ({ scene: index + 1, blob: item.audioBlob }))
+        .filter((item): item is { scene: number; blob: Blob } => !!item.blob);
+
       const response = await submitNarrationProduction(
         config.apiBaseUrl,
         narrationPayload,
@@ -299,7 +304,9 @@ export function StepRender() {
           voiceKey: voiceConfig.voiceKey,
           speed: voiceConfig.speed,
           provider: voiceConfig.provider,
-        }
+        },
+        playerProps, // Passing the full direction plan from UI!
+        audioBlobs
       );
 
       setActiveJobId(response.job_id);

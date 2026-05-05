@@ -23,7 +23,16 @@ class VoiceService:
                     isAvailable=True,
                     description="VietVoice base TTS model",
                     styleTag="Recap",
-                    sampleUrl="/assets/voice-samples/voice_default.wav"
+                    sampleUrl="/api/v1/assets/voice-samples/voice_default.wav"
+                ),
+                VoiceOption(
+                    key="lat_radio",
+                    label="Lát Radio",
+                    provider="vietvoice",
+                    isAvailable=True,
+                    description="Giọng đọc truyền cảm chuyên cho podcast/radio",
+                    styleTag="Emotional",
+                    sampleUrl="/api/v1/assets/voice-samples/lat_radio.wav"
                 )
             ]
         )
@@ -54,5 +63,6 @@ class VoiceService:
             output_name="preview.wav",
             voice_key=request.voiceKey,
             job_id=None,
+            speed=request.speed,
         )
         return output_path.read_bytes()

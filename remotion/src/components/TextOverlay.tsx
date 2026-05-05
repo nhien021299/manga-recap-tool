@@ -102,7 +102,7 @@ const SingleOverlay: React.FC<SingleOverlayProps> = ({
         }}
       >
         <div style={style.textBox}>
-          <span style={style.text}>{overlay.text}</span>
+          <span style={style.text}>{overlay.text.toUpperCase()}</span>
         </div>
       </div>
     </div>
@@ -122,9 +122,6 @@ function getOverlayStyle(
   isPortrait: boolean,
   textLength: number
 ): OverlayStyles {
-  const isLongText = textLength > 42;
-  const isVeryLongText = textLength > 72;
-
   const baseContainer: React.CSSProperties = {
     position: "absolute",
     left: 0,
@@ -144,19 +141,11 @@ function getOverlayStyle(
 
   /**
    * Default subtitle config for dark manhwa recap.
-   *
-   * Landscape:
-   * - Slightly smaller than comic recap subtitles.
-   * - Avoids the "headline banner" feeling.
-   *
-   * Portrait:
-   * - Big enough for mobile.
-   * - Still compact enough to avoid covering too much artwork.
    */
   const config = {
     landscape: {
       bottom: "8.5%",
-      fontSize: isVeryLongText ? 38 : isLongText ? 40 : 42,
+      fontSize: 42,
       fontWeight: 700,
       lineHeight: 1.26,
       maxWidth: "62%",
@@ -165,7 +154,7 @@ function getOverlayStyle(
     },
     portrait: {
       bottom: "8.5%",
-      fontSize: isVeryLongText ? 42 : isLongText ? 44 : 46,
+      fontSize: 46,
       fontWeight: 700,
       lineHeight: 1.26,
       maxWidth: "82%",
@@ -227,24 +216,21 @@ function getOverlayStyle(
         container: { ...baseContainer, ...containerPos },
         motionWrapper: baseMotionWrapper,
         textBox: {
-          background: "rgba(10, 15, 25, 0.78)",
-          borderRadius: 14,
-          border: "1px solid rgba(120, 160, 220, 0.18)",
-          padding: isPortrait ? "11px 18px" : "12px 22px",
-          backdropFilter: "blur(6px)",
-          WebkitBackdropFilter: "blur(6px)",
-          boxShadow: "0 8px 22px rgba(0,0,0,0.28)",
+          background: "rgba(240, 244, 255, 0.95)",
+          borderRadius: "20px 20px 20px 4px",
+          border: "2px solid rgba(0, 0, 0, 0.8)",
+          padding: isPortrait ? "14px 22px" : "16px 26px",
+          boxShadow: "4px 4px 0px rgba(0,0,0,0.4)",
           textAlign: "center",
-          maxWidth: isPortrait ? "82%" : "58%",
+          maxWidth: isPortrait ? "75%" : "55%",
         },
         text: {
           ...commonFont,
-          color: "#DCE8FF",
-          fontSize: isPortrait ? 34 : 30,
-          fontWeight: 600,
+          color: "#050A12",
+          fontSize: isPortrait ? 38 : 34,
+          fontWeight: 800,
           fontStyle: "italic",
           lineHeight: 1.36,
-          textShadow: "0 2px 5px rgba(0,0,0,0.72)",
         },
       };
 
@@ -269,17 +255,7 @@ function getOverlayStyle(
         text: {
           ...commonFont,
           color: "#FFFFFF",
-          fontSize: isPortrait
-            ? isVeryLongText
-              ? 48
-              : isLongText
-                ? 50
-                : 54
-            : isVeryLongText
-              ? 44
-              : isLongText
-                ? 46
-                : 50,
+          fontSize: isPortrait ? 50 : 46,
           fontWeight: 900,
           lineHeight: 1.22,
           WebkitTextStroke: isPortrait

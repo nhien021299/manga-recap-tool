@@ -428,12 +428,16 @@ Implemented:
 
 ## Next Actions
 
-1. Surface character diagnostics directly in the UI so users can see why panels were grouped or left unknown.
-2. Continue tuning character prepass thresholds on real chapter data to improve grouping recall without introducing destructive merges.
-3. Continue narration polish and usability improvements on top of the now-stable timeline editor and export architecture.
-4. Keep README, ROADMAP, setup scripts, and active env defaults synchronized whenever TTS, character-system, or export decisions change.
-5. Decide later whether backend-native render should adopt the same motion spec as browser fallback for parity.
-6. Monitor render-job stability, ffmpeg availability, and TTL cleanup behavior in longer real-world exports.
+1. **[Planned Optimization] TTS Speed Upgrade for UI Step 4**: Refactor the frontend "Voice Generation" step to use the backend's `tts-batch` API instead of sequential single-scene requests. This will eliminate network overhead, leverage continuous GPU processing, provide a single progress bar UI, and achieve the exact same hyper-fast generation speed currently enjoyed by the background video export pipeline.
+2. **[Planned Optimization] Dynamic Video Size & Quality Tuning**: Update the backend Remotion render command to apply dynamic compression based on aspect ratio:
+   - For vertical formats (TikTok/Shorts, `height > width`), apply `--crf=23` or `--crf=24` with `--pixel-format=yuv420p` for aggressive size reduction (~40-50MB per 3 mins).
+   - For horizontal formats (YouTube, `width > height`), apply `--crf=21` with `--pixel-format=yuv420p` to preserve 1080p Full HD sharpness against heavy platform re-encoding (~70-90MB per 3 mins).
+3. Surface character diagnostics directly in the UI so users can see why panels were grouped or left unknown.
+4. Continue tuning character prepass thresholds on real chapter data to improve grouping recall without introducing destructive merges.
+5. Continue narration polish and usability improvements on top of the now-stable timeline editor and export architecture.
+6. Keep README, ROADMAP, setup scripts, and active env defaults synchronized whenever TTS, character-system, or export decisions change.
+7. Decide later whether backend-native render should adopt the same motion spec as browser fallback for parity.
+8. Monitor render-job stability, ffmpeg availability, and TTL cleanup behavior in longer real-world exports.
 
 ## Open Risks
 

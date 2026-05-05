@@ -16,3 +16,5 @@ uvicorn==0.34.2
 pytest==8.3.5
 pytest-asyncio==0.26.0
 openai>=1.0.0
+pydub==0.25.1
+tqdm==4.67.3

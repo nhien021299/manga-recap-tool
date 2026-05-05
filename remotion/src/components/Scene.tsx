@@ -13,6 +13,7 @@ import { AbsoluteFill, Audio, Sequence } from "remotion";
 import { SceneImage } from "./SceneImage";
 import { TextOverlayLayer } from "./TextOverlay";
 import type { SceneDirection, SceneAsset } from "../types/direction";
+import { resolveAssetPath } from "../utils/resolveAsset";
 
 interface SceneProps {
   direction: SceneDirection;
@@ -60,7 +61,7 @@ export const SceneAudio: React.FC<SceneProps> = ({ direction, asset }) => {
       {/* Narration audio */}
       {asset.audioPath && (
         <Sequence from={Math.round((direction.audio_start_ms / 1000) * 30)}>
-          <Audio src={asset.audioPath} volume={1} />
+          <Audio src={resolveAssetPath(asset.audioPath)} volume={1} />
         </Sequence>
       )}
 
@@ -72,7 +73,7 @@ export const SceneAudio: React.FC<SceneProps> = ({ direction, asset }) => {
               30,
           )}
         >
-          <Audio src={asset.dialogueAudioPath} volume={0.9} />
+          <Audio src={resolveAssetPath(asset.dialogueAudioPath)} volume={0.9} />
         </Sequence>
       )}
     </AbsoluteFill>

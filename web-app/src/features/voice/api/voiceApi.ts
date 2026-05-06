@@ -1,4 +1,10 @@
-import type { VoiceGenerateRequest, VoiceOptionsResponse, TtsChunk } from "@/shared/types";
+import type {
+  TtsChunk,
+  VoiceBatchGenerateRequest,
+  VoiceBatchGenerateResponse,
+  VoiceGenerateRequest,
+  VoiceOptionsResponse,
+} from "@/shared/types";
 
 const buildUrl = (apiBaseUrl: string, path: string): string =>
   `${apiBaseUrl.replace(/\/$/, "")}${path}`;
@@ -60,4 +66,38 @@ export async function generateVoiceAudio(
   }
 
   return { blob, chunks };
+}
+
+const base64ToBlob = (value: string, contentType: string): Blob => {
+  const binary = window.atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return new Blob([bytes], { type: contentType || "audio/wav" });
+};
+
+export async function generateVoiceBatchAudio(
+  apiBaseUrl: string,
+  request: VoiceBatchGenerateRequest
+): Promise<Array<{ itemId: string; blob: Blob; chunks?: TtsChunk[] }>> {
+  const response = await fetch(buildUrl(apiBaseUrl, "/api/v1/voice/generate-batch"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response));
+  }
+
+  const payload = (await response.json()) as VoiceBatchGenerateResponse;
+  return payload.results.map((item) => ({
+    itemId: item.itemId,
+    blob: base64ToBlob(item.audioBase64, item.contentType),
+    chunks: item.chunks,
+  }));
 }

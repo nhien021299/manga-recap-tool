@@ -137,3 +137,32 @@ def test_voice_generate_route_returns_missing_asset_error(tmp_path: Path):
         assert "missing assets" in response.json()["detail"]
     finally:
         app.dependency_overrides.clear()
+
+
+def test_voice_generate_batch_route_returns_audio_items(tmp_path: Path):
+    settings = build_voice_settings(tmp_path)
+    voice_service = VoiceService("vieneu", {"vieneu": DummyVoiceProvider()})
+    app.dependency_overrides[get_app_settings] = lambda: settings
+    app.dependency_overrides[get_voice_service] = lambda: voice_service
+
+    try:
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/v1/voice/generate-batch",
+                json={
+                    "provider": "vieneu",
+                    "voiceKey": "voice_default",
+                    "items": [
+                        {"itemId": "clip-1", "text": "Xin chao"},
+                        {"itemId": "clip-2", "text": "Tam biet"},
+                    ],
+                },
+            )
+        assert response.status_code == 200
+        payload = response.json()
+        assert [item["itemId"] for item in payload["results"]] == ["clip-1", "clip-2"]
+        assert payload["results"][0]["audioBase64"]
+        assert payload["results"][0]["contentType"] == "audio/wav"
+        assert payload["results"][0]["chunks"][0]["w"] > 0
+    finally:
+        app.dependency_overrides.clear()

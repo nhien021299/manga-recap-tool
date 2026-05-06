@@ -37,6 +37,64 @@ export interface Panel {
   rect?: { x: number; y: number; width: number; height: number };
 }
 
+export type CharacterClusterStatus = "draft" | "locked" | "merged" | "ignored" | "unknown" | string;
+
+export interface CharacterCluster {
+  clusterId: string;
+  canonicalName?: string;
+  displayLabel?: string;
+  status: CharacterClusterStatus;
+  occurrenceCount: number;
+  confidenceScore: number;
+  reviewFlags?: string[];
+  anchorPanelIds?: string[];
+  samplePanelIds?: string[];
+  anchorCropIds?: string[];
+  diagnostics?: Record<string, unknown>;
+}
+
+export interface CharacterCrop {
+  cropId: string;
+  panelId: string;
+  previewImage: string;
+  bbox: number[];
+  kind: string;
+  qualityBucket: string;
+  qualityScore: number;
+  detectionScore: number;
+  assignmentState: string;
+  assignedClusterId?: string | null;
+  detectorSource?: string;
+  detectorModel?: string | null;
+  diagnostics?: Record<string, unknown>;
+}
+
+export interface CharacterCandidateAssignment {
+  cropId: string;
+  clusterId: string;
+  rank: number;
+  score: number;
+  diagnostics?: Record<string, unknown>;
+}
+
+export interface CharacterPanelRef {
+  panelId: string;
+  clusterIds: string[];
+  diagnostics?: Record<string, unknown>;
+}
+
+export interface ChapterCharacterState {
+  chapterId: string;
+  prepassVersion?: string;
+  needsReview?: boolean;
+  clusters: CharacterCluster[];
+  crops?: CharacterCrop[];
+  candidateAssignments?: CharacterCandidateAssignment[];
+  panelCharacterRefs?: CharacterPanelRef[];
+  unresolvedPanelIds?: string[];
+  diagnostics?: Record<string, unknown>;
+}
+
 
 export interface ScriptContext {
   chapterId?: string;
@@ -221,6 +279,31 @@ export interface VoiceGenerateRequest {
   speed: number;
   dialogue?: string | null;
   speaker?: string | null;
+}
+
+export interface VoiceBatchGenerateItem {
+  itemId: string;
+  text: string;
+  dialogue?: string | null;
+  speaker?: string | null;
+}
+
+export interface VoiceBatchGenerateRequest {
+  provider: TTSProvider;
+  voiceKey: string;
+  speed: number;
+  items: VoiceBatchGenerateItem[];
+}
+
+export interface VoiceBatchGenerateResult {
+  itemId: string;
+  audioBase64: string;
+  contentType: string;
+  chunks?: TtsChunk[];
+}
+
+export interface VoiceBatchGenerateResponse {
+  results: VoiceBatchGenerateResult[];
 }
 
 export interface RenderConfig {

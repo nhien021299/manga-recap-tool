@@ -95,6 +95,31 @@ class VoiceGenerateRequest(BaseModel):
     speaker: str | None = None
 
 
+class VoiceBatchGenerateItem(BaseModel):
+    itemId: str
+    text: str
+    dialogue: str | None = None
+    speaker: str | None = None
+
+
+class VoiceBatchGenerateRequest(BaseModel):
+    provider: str = "vietvoice"
+    voiceKey: str
+    speed: float = 1.15
+    items: list[VoiceBatchGenerateItem] = Field(default_factory=list)
+
+
+class VoiceBatchGenerateResult(BaseModel):
+    itemId: str
+    audioBase64: str
+    contentType: str = "audio/wav"
+    chunks: list[dict] = Field(default_factory=list)
+
+
+class VoiceBatchGenerateResponse(BaseModel):
+    results: list[VoiceBatchGenerateResult] = Field(default_factory=list)
+
+
 class TtsRuntimeResponse(BaseModel):
     provider: str
     requestedRuntime: str

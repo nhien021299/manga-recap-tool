@@ -1,6 +1,5 @@
 // @ts-nocheck
 
-+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Scissors, UserPlus } from "lucide-react";
 
@@ -25,6 +24,25 @@ import type { CharacterCandidateAssignment, CharacterCrop } from "@/shared/types
 type DraftNames = Record<string, string>;
 type MergeTargets = Record<string, string>;
 type SplitSelections = Record<string, boolean>;
+
+const formatDiagnosticValue = (value: unknown): string => {
+  if (value === null || value === undefined || value === "") return "none";
+  if (typeof value === "number") return Number.isInteger(value) ? String(value) : value.toFixed(3);
+  if (typeof value === "string" || typeof value === "boolean") return String(value);
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return "unavailable";
+  }
+};
+
+const diagnosticEntries = (diagnostics: unknown): Array<[string, string]> => {
+  if (!diagnostics || typeof diagnostics !== "object") return [];
+  return Object.entries(diagnostics as Record<string, unknown>)
+    .filter(([, value]) => value !== undefined && value !== null && value !== "")
+    .slice(0, 8)
+    .map(([key, value]) => [key, formatDiagnosticValue(value)]);
+};
 
 export function StepCharacters() {
   const { config, panels, characterState, setCharacterState, clearCharacterState, setCurrentStep } = useRecapStore();
@@ -100,6 +118,7 @@ export function StepCharacters() {
   const selectedPanel = selectedPanelId ? panelById.get(selectedPanelId) || null : panels[0] || null;
   const selectedRef = selectedPanel ? refsByPanelId.get(selectedPanel.id) : undefined;
   const selectedPanelCrops = selectedPanel ? cropsByPanelId.get(selectedPanel.id) || [] : [];
+  const prepassDiagnostics = diagnosticEntries(characterState?.diagnostics?.summary || characterState?.diagnostics);
 
   useEffect(() => {
     if (!selectedPanelId && panels[0]) {
@@ -414,6 +433,28 @@ export function StepCharacters() {
         </Card>
       </div>
 
+      {prepassDiagnostics.length > 0 && (
+        <Card className="rounded-3xl border border-white/10 bg-black/20 p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40">Prepass diagnostics</p>
+              <p className="mt-1 text-sm text-white/55">Runtime signals that explain why the character pass grouped or skipped panels.</p>
+            </div>
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-white/55">
+              {characterState?.prepassVersion || "current"}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
+            {prepassDiagnostics.map(([key, value]) => (
+              <div key={key} className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-white/40">{key}</p>
+                <p className="mt-1 break-words text-xs text-white/75">{value}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-6">
           <Card className="glass rounded-3xl border-white/10 bg-white/5 p-6">
@@ -494,6 +535,17 @@ export function StepCharacters() {
                             </span>
                           ))}
                         </div>
+
+                        {diagnosticEntries(cluster.diagnostics).length > 0 && (
+                          <div className="grid grid-cols-1 gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-3 sm:grid-cols-2">
+                            {diagnosticEntries(cluster.diagnostics).map(([key, value]) => (
+                              <div key={key}>
+                                <p className="text-[10px] font-semibold uppercase tracking-wide text-white/40">{key}</p>
+                                <p className="mt-1 break-words text-xs text-white/70">{value}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
 
                         <div className="space-y-2">
                           <Label className="text-[10px] font-semibold uppercase tracking-wide text-white/70">Canonical Name</Label>
@@ -832,6 +884,16 @@ export function StepCharacters() {
                                 vùng chọn [{crop.bbox.join(", ")}] • đã gán {crop.assignedClusterId || "chưa biết"} • {crop.detectorSource}
                                 {crop.detectorModel ? ` / ${crop.detectorModel}` : ""}
                               </p>
+                              {diagnosticEntries(crop.diagnostics).length > 0 && (
+                                <div className="grid grid-cols-1 gap-2 rounded-xl border border-white/10 bg-white/[0.03] p-3 sm:grid-cols-2">
+                                  {diagnosticEntries(crop.diagnostics).map(([key, value]) => (
+                                    <div key={key}>
+                                      <p className="text-[10px] font-semibold uppercase tracking-wide text-white/40">{key}</p>
+                                      <p className="mt-1 break-words text-xs text-white/70">{value}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                               <div className="flex flex-wrap gap-2">
                                 {cropCandidates.length === 0 && (
                                   <span className="text-xs text-white/45">Không có gợi ý nhân vật phù hợp.</span>
@@ -850,6 +912,7 @@ export function StepCharacters() {
                                       candidate.clusterId}
                                     {" "}
                                     {Math.round(candidate.score * 100)}%
+                                    {candidate.diagnostics?.reason ? ` - ${candidate.diagnostics.reason}` : ""}
                                   </Button>
                                 ))}
                                 <Button

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { ComponentType } from "react";
 import {
   AlertCircle,
   ChevronLeft,
@@ -470,7 +471,7 @@ export function StepRender() {
       };
     });
 
-    const assets: SceneAsset[] = plan.clips.map((clip, idx) => {
+    const assets: SceneAsset[] = plan.clips.map((clip) => {
       return {
         scene: clip.orderIndex + 1,
         title: `Scene ${clip.orderIndex + 1}`,
@@ -877,7 +878,7 @@ export function StepRender() {
               <div className="h-full w-full">
                 <Player
                   key={JSON.stringify(playerProps.scenes.map(s => s.motion_preset + s.transition_out?.type))}
-                  component={ChapterRecap}
+                  component={ChapterRecap as unknown as ComponentType<Record<string, unknown>>}
                   inputProps={playerProps}
                   durationInFrames={playerDurationFrames}
                   fps={playerProps.fps}

@@ -120,7 +120,7 @@ function getOverlayStyle(
   styleType: string,
   position: string,
   isPortrait: boolean,
-  textLength: number
+  _textLength: number
 ): OverlayStyles {
   const baseContainer: React.CSSProperties = {
     position: "absolute",

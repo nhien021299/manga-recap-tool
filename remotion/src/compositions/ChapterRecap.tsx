@@ -17,9 +17,6 @@ import React from "react";
 import {
   AbsoluteFill,
   Sequence,
-  interpolate,
-  useCurrentFrame,
-  Easing,
 } from "remotion";
 import { Scene, SceneAudio } from "../components/Scene";
 import type {

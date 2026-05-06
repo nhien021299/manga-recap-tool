@@ -1,5 +1,4 @@
 import {
-  BarChart3,
   FileText,
   Mic2,
   Scissors,

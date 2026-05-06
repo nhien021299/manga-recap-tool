@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 
-import { generateVoiceAudio } from "@/features/voice/api/voiceApi";
+import { generateVoiceAudio, generateVoiceBatchAudio } from "@/features/voice/api/voiceApi";
 import { useRecapStore } from "@/shared/storage/useRecapStore";
 
 export function useVoiceGeneration() {
@@ -59,10 +59,43 @@ export function useVoiceGeneration() {
         .filter((entry): entry is { item: (typeof timeline)[number]; index: number } => !!entry.item)
         .filter(({ item }) => !!item.scriptItem?.voiceover_text?.trim());
 
+      if (queuedItems.length === 0) {
+        return;
+      }
+
+      queuedItems.forEach(({ index }) => updateTimelineItem(index, { audioStatus: "generating" }));
+      const firstItem = queuedItems[0]!;
+      setCurrentVoiceGeneration({
+        currentIndex: 1,
+        totalCount: queuedItems.length,
+        panelId: firstItem.item.panelId,
+        panelOrder: firstItem.index + 1,
+        voiceKey: voiceConfig.voiceKey,
+        textLength: firstItem.item.scriptItem.voiceover_text.trim().length,
+        startedAt: new Date().toISOString(),
+      });
+      setProgress(5);
+
+      const batchResults = await generateVoiceBatchAudio(config.apiBaseUrl, {
+        provider: voiceConfig.provider,
+        voiceKey: voiceConfig.voiceKey,
+        speed: voiceConfig.speed,
+        items: queuedItems.map(({ item, index }) => ({
+          itemId: String(index),
+          text: item.scriptItem.voiceover_text.trim(),
+          dialogue: item.scriptItem?.dialogue_text,
+          speaker: item.scriptItem?.dialogue_speaker,
+        })),
+      });
+      const resultByIndex = new Map(batchResults.map((result) => [Number(result.itemId), result]));
+
       for (let queueIndex = 0; queueIndex < queuedItems.length; queueIndex += 1) {
         const { item, index } = queuedItems[queueIndex]!;
-        const text = item.scriptItem?.voiceover_text?.trim();
-        if (!text) continue;
+        const result = resultByIndex.get(index);
+        if (!result) {
+          updateTimelineItem(index, { audioStatus: "error" });
+          continue;
+        }
 
         setCurrentVoiceGeneration({
           currentIndex: queueIndex + 1,
@@ -70,15 +103,9 @@ export function useVoiceGeneration() {
           panelId: item.panelId,
           panelOrder: index + 1,
           voiceKey: voiceConfig.voiceKey,
-          textLength: text.length,
+          textLength: item.scriptItem.voiceover_text.trim().length,
           startedAt: new Date().toISOString(),
         });
-
-        updateTimelineItem(index, { audioStatus: "generating" });
-        const result = await generateVoiceAudio(
-          config.apiBaseUrl, 
-          buildRequest(text, item.scriptItem?.dialogue_text, item.scriptItem?.dialogue_speaker)
-        );
         await attachAudioToTimeline(index, result.blob, result.chunks);
         setProgress(Math.round(((queueIndex + 1) / Math.max(queuedItems.length, 1)) * 100));
       }
@@ -86,10 +113,7 @@ export function useVoiceGeneration() {
       // Hold 100% briefly so the user can see completion before the list view settles.
       await new Promise((resolve) => setTimeout(resolve, 600));
     } catch (voiceError) {
-      const failedIndex = timeline.findIndex((item) => item.audioStatus === "generating");
-      if (failedIndex >= 0) {
-        updateTimelineItem(failedIndex, { audioStatus: "error" });
-      }
+      indexes.forEach((index) => updateTimelineItem(index, { audioStatus: "error" }));
       setError(voiceError instanceof Error ? voiceError.message : "Unknown voice generation error.");
     } finally {
       setCurrentVoiceGeneration(null);
@@ -97,13 +121,14 @@ export function useVoiceGeneration() {
     }
   }, [
     attachAudioToTimeline,
-    buildRequest,
     config.apiBaseUrl,
     setCurrentVoiceGeneration,
     setIsLoading,
     setProgress,
     timeline,
     updateTimelineItem,
+    voiceConfig.provider,
+    voiceConfig.speed,
     voiceConfig.voiceKey,
   ]);
 

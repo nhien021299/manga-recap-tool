@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import sys
-import io
+import shutil
 
 # Force UTF-8 on Windows to handle Vietnamese characters in logs/console
 if sys.platform == "win32":
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8")
 
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -137,6 +139,12 @@ app.include_router(render_router, prefix=prefix)
 
 voice_samples_dir = Path(__file__).resolve().parents[1] / ".bench" / "samples"
 voice_samples_dir.mkdir(parents=True, exist_ok=True)
+vieneu_samples_dir = voice_samples_dir / "vieneu"
+vieneu_samples_dir.mkdir(parents=True, exist_ok=True)
+default_sample = voice_samples_dir / "voice_default.wav"
+vieneu_default_sample = vieneu_samples_dir / "voice-default.wav"
+if default_sample.exists() and not vieneu_default_sample.exists():
+    shutil.copy2(default_sample, vieneu_default_sample)
 # Mount at both locations for compatibility
 app.mount(f"{prefix}/assets/voice-samples", StaticFiles(directory=str(voice_samples_dir)), name="voice-samples-prefixed")
 app.mount("/assets/voice-samples", StaticFiles(directory=str(voice_samples_dir)), name="voice-samples-raw")

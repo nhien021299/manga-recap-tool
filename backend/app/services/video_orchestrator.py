@@ -374,6 +374,7 @@ class VideoOrchestrator:
             "--codec=h264",
             "--image-format=jpeg",
             "--log=verbose",
+            *self._remotion_quality_flags(width=direction.width, height=direction.height),
         ]
 
         logger.info("Remotion render command: %s", " ".join(render_cmd))
@@ -409,6 +410,13 @@ class VideoOrchestrator:
         state.progress = 95
         state.detail = "Render complete, finalizing..."
         return output_path
+
+    def _remotion_quality_flags(self, *, width: int, height: int) -> list[str]:
+        crf = "23" if height > width else "21"
+        return [
+            f"--crf={crf}",
+            "--pixel-format=yuv420p",
+        ]
 
 
 class _JobState:

@@ -19,33 +19,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useScriptJob } from "@/features/script/hooks/useScriptJob";
 import { useRecapStore } from "@/shared/storage/useRecapStore";
-import type { Metrics, ScriptItem } from "@/shared/types";
+import type { ScriptItem } from "@/shared/types";
 import {
   type NarrationPayload,
 } from "@/features/script/api/scriptApi";
 
-const parseMetricsFromLogDetails = (details?: string | null): Metrics | null => {
-  if (!details) return null;
-  try {
-    const parsed = JSON.parse(details) as Partial<Metrics>;
-    if (!parsed || typeof parsed !== "object") return null;
-    if (typeof parsed.panelCount !== "number" || typeof parsed.totalMs !== "number") return null;
-    return {
-      panelCount: parsed.panelCount, totalMs: parsed.totalMs,
-      captionMs: parsed.captionMs ?? 0, scriptMs: parsed.scriptMs ?? 0,
-      avgPanelMs: parsed.avgPanelMs ?? 0, captionSource: parsed.captionSource ?? "unknown",
-      totalPromptTokens: parsed.totalPromptTokens ?? 0, totalCandidatesTokens: parsed.totalCandidatesTokens ?? 0,
-      totalTokens: parsed.totalTokens ?? 0, batchSizeUsed: parsed.batchSizeUsed ?? 0,
-      retryCount: parsed.retryCount ?? 0, rateLimitedCount: parsed.rateLimitedCount ?? 0,
-      throttleWaitMs: parsed.throttleWaitMs ?? 0,
-    };
-  } catch { return null; }
-};
-
 export function StepScript() {
   const {
     logs, timeline, panels, virtualStrip, panelUnderstandings, panelUnderstandingMeta,
-    scriptMeta, scriptContext, setScriptContext,
+    scriptContext, setScriptContext,
     setCurrentStep, clearScriptData, isLoading, setTimeline,
   } = useRecapStore();
   const { generateScript, error, isGenerating } = useScriptJob();

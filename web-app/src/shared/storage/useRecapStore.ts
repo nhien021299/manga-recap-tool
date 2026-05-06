@@ -78,6 +78,10 @@ interface RecapState {
   timeline: TimelineItem[];
   setTimeline: (timeline: TimelineItem[]) => void;
   updateTimelineItem: (index: number, updates: Partial<TimelineItem>) => void;
+  duplicateTimelineItem: (index: number) => void;
+  resetTimelineItemToAuto: (index: number) => void;
+  removeTimelineItem: (index: number) => void;
+  moveTimelineItem: (fromIndex: number, toIndex: number) => void;
   scriptMeta: ScriptMeta;
   setScriptMeta: (meta: ScriptMeta) => void;
   markScriptOutdated: (reason: string) => void;
@@ -488,24 +492,107 @@ export const useRecapStore = create<RecapState>()(
         if (!nextTimeline[index]) return;
         
         const currentItem = nextTimeline[index];
-        // If we are replacing an existing audio blob, revoke the old URL if it was generated
-        if (updates.audioUrl && currentItem.audioUrl && updates.audioUrl !== currentItem.audioUrl) {
+        const nextScriptItem = updates.scriptItem ? { ...currentItem.scriptItem, ...updates.scriptItem } : currentItem.scriptItem;
+        const narrationChanged =
+          updates.scriptItem !== undefined &&
+          (updates.scriptItem.voiceover_text ?? currentItem.scriptItem.voiceover_text) !== currentItem.scriptItem.voiceover_text;
+
+        if ((updates.audioBlob || narrationChanged) && currentItem.audioUrl) {
           try { URL.revokeObjectURL(currentItem.audioUrl); } catch {}
         }
         
-        // For new audio blobs without explicit audioUrl, generate one
         let newAudioUrl = updates.audioUrl ?? currentItem.audioUrl;
         if (updates.audioBlob && !updates.audioUrl) {
           newAudioUrl = URL.createObjectURL(updates.audioBlob);
+        }
+        if (narrationChanged) {
+          newAudioUrl = undefined;
         }
         
         nextTimeline[index] = { 
           ...currentItem, 
           ...updates,
-          audioUrl: newAudioUrl
+          scriptItem: nextScriptItem,
+          scriptStatus: narrationChanged ? "edited" : updates.scriptStatus ?? currentItem.scriptStatus,
+          scriptSegment: narrationChanged
+            ? { narration: nextScriptItem.voiceover_text, status: "edited" }
+            : updates.scriptSegment ?? currentItem.scriptSegment,
+          audioBlob: narrationChanged ? undefined : updates.audioBlob ?? currentItem.audioBlob,
+          audioDuration: narrationChanged ? undefined : updates.audioDuration ?? currentItem.audioDuration,
+          audioChunks: narrationChanged ? undefined : updates.audioChunks ?? currentItem.audioChunks,
+          audioStatus: narrationChanged ? "stale" : updates.audioStatus ?? currentItem.audioStatus,
+          audioUrl: newAudioUrl,
         };
         
-        set({ timeline: nextTimeline });
+        set((state) => ({
+          timeline: nextTimeline,
+          scriptMeta: narrationChanged ? { ...state.scriptMeta, status: "edited" } : state.scriptMeta,
+        }));
+        void idbSet("recap-timeline-data", nextTimeline);
+      },
+      duplicateTimelineItem: (index) => {
+        const source = getStore().timeline[index];
+        if (!source) return;
+        const duplicate = normalizeTimelineItem(
+          {
+            ...source,
+            audioBlob: undefined,
+            audioDuration: undefined,
+            audioUrl: undefined,
+            audioChunks: undefined,
+            audioStatus: source.scriptItem.voiceover_text.trim() ? "stale" : "missing",
+          },
+          index + 1
+        );
+        const nextTimeline = [...getStore().timeline];
+        nextTimeline.splice(index + 1, 0, duplicate);
+        set((state) => ({ timeline: nextTimeline, scriptMeta: { ...state.scriptMeta, status: "edited" } }));
+        void idbSet("recap-timeline-data", nextTimeline);
+      },
+      resetTimelineItemToAuto: (index) => {
+        const nextTimeline = [...getStore().timeline];
+        const currentItem = nextTimeline[index];
+        if (!currentItem) return;
+        if (currentItem.audioUrl) {
+          try { URL.revokeObjectURL(currentItem.audioUrl); } catch {}
+        }
+        const baseline = currentItem.scriptBaseline ?? currentItem.scriptItem.voiceover_text;
+        nextTimeline[index] = normalizeTimelineItem(
+          {
+            ...currentItem,
+            scriptItem: { ...currentItem.scriptItem, voiceover_text: baseline },
+            scriptStatus: "auto",
+            scriptSegment: { narration: baseline, status: "auto" },
+            audioBlob: undefined,
+            audioDuration: undefined,
+            audioUrl: undefined,
+            audioChunks: undefined,
+            audioStatus: "missing",
+          },
+          index
+        );
+        const allAuto = nextTimeline.every((item) => item.scriptStatus !== "edited");
+        set((state) => ({
+          timeline: nextTimeline,
+          scriptMeta: { ...state.scriptMeta, status: allAuto ? "generated" : "edited" },
+        }));
+        void idbSet("recap-timeline-data", nextTimeline);
+      },
+      removeTimelineItem: (index) => {
+        const nextTimeline = [...getStore().timeline];
+        const [removed] = nextTimeline.splice(index, 1);
+        if (removed?.audioUrl) {
+          try { URL.revokeObjectURL(removed.audioUrl); } catch {}
+        }
+        set((state) => ({ timeline: nextTimeline, scriptMeta: { ...state.scriptMeta, status: "edited" } }));
+        void idbSet("recap-timeline-data", nextTimeline);
+      },
+      moveTimelineItem: (fromIndex, toIndex) => {
+        const nextTimeline = [...getStore().timeline];
+        if (!nextTimeline[fromIndex] || toIndex < 0 || toIndex >= nextTimeline.length) return;
+        const [item] = nextTimeline.splice(fromIndex, 1);
+        nextTimeline.splice(toIndex, 0, item!);
+        set((state) => ({ timeline: nextTimeline, scriptMeta: { ...state.scriptMeta, status: "edited" } }));
         void idbSet("recap-timeline-data", nextTimeline);
       },
       scriptMeta: EMPTY_SCRIPT_META,

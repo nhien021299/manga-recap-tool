@@ -1,452 +1,229 @@
-# Manga Recap Tool - Executive Roadmap
+# Manga Recap Tool - Roadmap
+
+Last synchronized with the repo on `2026-05-07`.
 
 ## Current Product State
 
-Repo is now an active frontend-backend creator tool:
+The active product is a frontend-backend manga/webtoon recap creator.
 
 ```text
 manga-recap-tool/
-|- web-app/
-|- backend/
-|- ai/
-|- PLAN.md
-|- PLAN_EXPORT.md
-`- ROADMAP.md
+|- web-app/     React + Vite creator UI
+|- backend/     FastAPI backend
+|- remotion/    Remotion composition/player code
+|- PLAN.md      backend render architecture plan
+`- ROADMAP.md   current implementation state
 ```
 
-- `web-app/`: upload, extract, script, voice, timeline, and export UI
-- `backend/`: FastAPI service for Gemini script generation and backend-owned VieNeu TTS
-- `PLAN.md`: approved direction for native backend render jobs with browser fallback
-- `PLAN_EXPORT.md`: approved direction for cinematic Ken Burns / keyframed browser export motion
+Active user flow:
 
-Active architecture as of `2026-05-04`:
+```text
+Upload -> Extract -> Script -> Voice -> Render
+```
 
-- FE-BE structure is the active product shape
-- Upload and extraction stay browser-side
-- Step Characters now exists between Extract and Script
-- Step Script runs through backend Gemini
-- Step Voice runs only through backend routes
-- Timeline state lives in frontend store
-- Official MP4 export now runs through backend async native `ffmpeg`
-- Browser FFmpeg export remains as fallback/preview with deterministic motion
-- Remotion is integrated to provide dynamic CSS-based VFX and cinematic transitions.
+Current architecture:
 
-## Checkpoint: Cinematic Manga Pipeline Optimization (2026-05-04)
-
-### Completed
-
-- Implemented an advanced, metadata-driven cinematic Remotion rendering engine.
-- Replaced basic transitions with professional motion profiles: `crossfade`, `smooth_zoom_fade`, `dip_to_black`, `hard_cut`.
-- Introduced dynamic VFX layers (e.g., film grain, rain, fire embers, camera shake, edge glow) using pure CSS and SVGs.
-- Resolved audio cut-offs during crossfades by decoupling `SceneAudio` from the `TransitionWrapper`.
-- Integrated a new backend Gemini API endpoint (`POST /api/v1/video/suggest-effects`) to suggest moods, VFX tags, and transitions for each scene based on narrative context.
-- Fixed TypeScript build errors regarding verbatim module syntax and unresolved dependencies.
-- Added Remotion path aliases in `tsconfig.app.json` for cleaner imports.
-
-## Checkpoint: Character System 4-Phase Upgrade (2026-04-24)
-
-### Phase 1: Block Heuristic Auto Cluster ✅ (Target: 6/10)
-
-- Modified clustering policy so `heuristic` crops never create `auto_confirmed` assignments.
-- Heuristic-only clusters stay as `suggested` or `unknown` and require manual review.
-- Script context no longer receives any cluster based solely on heuristic signals.
-- Tests updated to verify `suggested` candidates and explicit anchors.
-
-### Phase 2: Anime Face/Head as Primary Identity ✅ (Target: 7.5/10)
-
-- Added `warmup_test()` method to `CharacterCropDetector` for verifying anime face/head provider availability.
-- Added `runtime_diagnostics()` to expose provider loaded/error, device, model path, and per-kind detection counts.
-- Detector now tracks `_total_face_count`, `_total_head_count`, `_total_heuristic_count`, `_total_object_count`.
-- `DETECTOR_VERSION` bumped to `hybrid-detector-v4`.
-- `PREPASS_VERSION` bumped to `character-hybrid-v4`.
-- Prepass diagnostics now use the detector's `runtime_diagnostics()` for full observability.
-- Face/head crops remain the only kind eligible for `auto_confirmed` identity anchoring.
-- If anime provider fails, system falls back to OpenCV heuristic with diagnostics explaining the reason.
-
-### Phase 3: Cast-Anchor Propagation ✅ (Target: 8.5/10)
-
-- Built anchor bank from locked clusters' face/head embedding vectors loaded from cache.
-- On rerun, new unassigned face/head crops are scored against the anchor bank.
-- If similarity ≥ 0.88 with margin ≥ 0.10, the crop is `auto_confirmed` via anchor propagation.
-- If two locked anchors conflict (both ≥ 0.88, margin < 0.10), the crop is set to `suggested` with `anchor_conflict` review flag.
-- Split constraints collected from `splitFromClusterId` diagnostics prevent re-merge of previously split clusters.
-- Manual panel overrides and locked cluster names are preserved through reruns.
-- Panel refs updated for propagated crops.
-
-### Phase 4: DINOv2 Learned Embedding ✅ (Target: 9/10)
-
-- Added hybrid `CharacterCropEmbedder` with DINOv2 support.
-- `EMBEDDER_VERSION` bumped to `crop-embedding-v2`.
-- `CLUSTER_VERSION` bumped to `hybrid-hdbscan-v4`.
-- New config settings added:
-  - `AI_BACKEND_CHARACTER_EMBEDDER` (default: `handcrafted`)
-  - `AI_BACKEND_CHARACTER_DINO_MODEL_PATH` (default: empty)
-  - `AI_BACKEND_CHARACTER_EMBED_DEVICE` (default: `auto`)
-- When DINOv2 model path exists locally:
-  - DINOv2 embedding is the primary signal (weight 2.8x)
-  - Handcrafted descriptor is supplementary (weight 0.6x)
-  - Combined into a single hybrid normalized vector
-- When DINOv2 model is missing, system falls back to handcrafted-only with diagnostics.
-- Cache key includes: embedder provider, DINO model hash, device, crop kind, detector version/config.
-- Added `embed_batch()` for batch DINOv2 inference to avoid per-crop model calls.
-- Added `runtime_diagnostics()` to the embedder for observability.
-- Model never downloads at runtime — only uses local file.
-
-### Current Achievement Assessment
-
-| Phase | Target | Status | Notes |
-| --- | --- | --- | --- |
-| Phase 1 | 6/10 | ✅ Fully met | Heuristic auto-confirm blocked, script context clean. |
-| Phase 2 | 7.5/10 | ✅ Code complete | Anime face/head is primary identity path with runtime diagnostics. Warmup test available. Without anime-face-detector dependency installed, system operates at Phase 1 quality (~6/10). |
-| Phase 3 | 8.5/10 | ✅ Code complete | Anchor bank propagation, split protection, and conflict detection implemented. Effective only when previous locked state exists with cached embeddings. |
-| Phase 4 | 9/10 | ✅ Code complete | DINOv2 hybrid embedding ready. Requires local DINOv2 .pt model file to activate. Without it, falls back to handcrafted (~Phase 2/3 quality). |
-
-**Current effective quality: ~6/10** (Phase 1 fully active). Phases 2–4 are code-complete but require runtime dependencies to reach their target scores:
-- Phase 2 needs `anime-face-detector` Python package installed
-- Phase 3 needs previous locked state with cached embeddings
-- Phase 4 needs DINOv2 `.pt` model file at the configured path
-
-## Checkpoint: Character System V2 WIP Save (2026-04-24)
-
-This is the saved handoff state for the crop-level rewrite. Character V2 is **not finished yet** and should not be treated as production-complete.
-
-### Already implemented
-
-- Backend character state moved from panel-only grouping toward crop-level review data.
-- New backend modules added for the V2 pipeline:
-  - `detector.py`
-  - `quality.py`
-  - `embedder.py`
-  - `cluster.py`
-- `prepass.py` was rewritten to orchestrate:
-  - multi-crop detection
-  - crop quality scoring
-  - embedding cache
-  - agglomerative clustering
-  - panel-ref aggregation
-- Review state now supports crop-level manual assignment through:
-  - `POST /api/v1/characters/crop-mapping`
-- Frontend `StepCharacters` was rewritten around crop previews and crop candidate review instead of full-panel-only merge review.
-
-### Current validation snapshot
-
-- Passing:
-  - `pytest backend/tests/test_routes.py -q`
-  - `pytest backend/tests/test_character_prepass.py -q`
-  - `npm run build:web`
-
-### Latest refinement
-
-- `backend/app/services/characters/cluster.py` now includes a singleton-anchor refinement pass.
-- Non-anchor crop candidate scoring now rejects same-panel cluster collapse, so separate crops in one mixed panel can confirm separate `panelCharacterRefs`.
-- Prepass cache version was bumped to `character-crop-v2` and cluster version to `crop-cluster-v2` so older crop-level results are recomputed.
-
-### Main unfinished item
-
-- Character V2 still needs real-chapter threshold tuning and UI diagnostics polish before it should be treated as production-complete.
-
-### Source of truth for continuation
-
-- Continue from [PLAN_CHARACTER.md](./PLAN_CHARACTER.md)
-
-## Checkpoint: Character System Integration (2026-04-24)
-
-### Completed
-
-- Integrated a dedicated character review step into the main pipeline:
-  - `Extract -> Characters -> Script -> Voice -> Render`
-- Added backend-owned character prepass and review state handling:
-  - cluster generation
-  - rename / merge / panel mapping actions
-  - script-context generation for downstream prompt enforcement
-- Added active character API surface:
-  - `POST /api/v1/characters/prepass`
-  - `GET /api/v1/characters/review`
-  - `POST /api/v1/characters/review/rename`
-  - `POST /api/v1/characters/review/merge`
-  - `POST /api/v1/characters/review/panel-mapping`
-  - `POST /api/v1/characters/review/create-cluster`
-  - `POST /api/v1/characters/review/status`
-  - `GET /api/v1/characters/script-context`
-- Added frontend character workflow and storage wiring:
-  - new `StepCharacters`
-  - chapter-scoped prepass loading
-  - character review state persisted in frontend store
-  - script request now forwards `characterContext`
-- Updated script generation contract so locked or reviewed character names are enforced through backend Gemini prompt context.
-- Moved the selected panel preview to the left column under `Character List` to keep review flow tighter and reduce inspection friction.
-
-### Prepass Evolution
-
-- Initial prepass was intentionally conservative and favored `unknown` over risky merges.
-- Prepass was then upgraded to a more proactive heuristic clusterer:
-  - pairwise match scoring
-  - multi-region perceptual hashes
-  - shape profile comparison
-  - Hu moments
-  - foreground bbox and center-of-mass features
-  - orientation histogram comparison
-  - graph connected-components clustering
-  - singleton attach for near-miss panels
-- Current backend prepass version is:
-  - `character-crop-v2`
-
-### Diagnostics And Observability
-
-- Added diagnostics payloads to character state so prepass decisions are inspectable:
-  - `state.diagnostics.summary`
-  - `cluster.diagnostics`
-  - `panelCharacterRef.diagnostics`
-  - `crop.diagnostics`
-  - `candidateAssignment.diagnostics`
-- Diagnostics now expose:
-  - panel and cluster counts
-  - auto-assigned vs unknown counts
-  - threshold values
-  - crop detection and quality metadata
-  - candidate cluster scores
-  - singleton refinement decisions
-
-### Cache / Stale State Fix
-
-- Fixed a real backend bug where `POST /api/v1/characters/prepass` could return stale cached state even after prepass logic changed.
-- Root cause:
-  - cache reuse previously depended only on `chapterContentHash`
-  - old state with the same chapter content but older `prepassVersion` or missing diagnostics was still treated as valid
-- Current invalidation rule now requires:
-  - matching `chapterContentHash`
-  - matching `prepassVersion`
-  - non-empty diagnostics payload
-- This prevents the frontend from silently receiving old prepass results after backend upgrades.
-
-### Verification
-
-- Backend tests passed after character-system work and stale-cache invalidation:
-  - `python -m pytest tests`
-  - `python -m pytest backend/tests/test_character_prepass.py backend/tests/test_routes.py`
-- Frontend build passed after character workflow integration:
-  - `npm --prefix web-app run build`
-- Frontend lint passed with only pre-existing unrelated warnings in `StepVoice.tsx`.
-
-## Checkpoint: TTS Runtime Hardening (2026-04-22)
-
-### Completed
-
-- Standardized production TTS on one path only:
-  - provider: `vieneu`
-  - model: `pnnbao-ump/VieNeu-TTS-0.3B`
-  - mode: `standard`
-  - canonical voice key: `voice_default`
-- Confirmed runtime uses cached preset data from:
-  - `backend/.models/vieneu-voices/voices.json`
-- Confirmed runtime does not re-encode reference wav/txt on each request.
-- Added preset build tooling:
-  - [backend/scripts/build_voice_default_preset.py](./backend/scripts/build_voice_default_preset.py)
-- Fixed missing dependency/runtime visibility issues around the dedicated VieNeu venv.
-- Added more actionable backend errors for missing Python dependencies.
-- Added backend logging for TTS generation:
-  - `voiceKey`
-  - resolved voice key
-  - text length
-  - elapsed time per clip
-- Changed `GET /api/v1/voice/options` so it no longer loads and warms the VieNeu model.
-- Removed legacy default handling around `voice_2_clone` and F5-related env/config assumptions from the active path.
-- Set production temperature baseline to:
-  - `AI_BACKEND_TTS_VIENEU_TEMPERATURE=0.7`
-
-### Product Behavior Now Locked
-
-- Opening or reloading the Voice step must not trigger model warmup.
-- Only explicit user generation should load the model and synthesize clips.
-- Restarting the backend will require model load + warmup again in RAM, but should reuse local cached weights instead of redownloading.
-
-## Checkpoint: Legacy Local-AI and OCR Cleanup (2026-04-23)
-
-### Completed
-
-- **Standardized on Vision-Only Gemini**: Completely removed the inactive local-AI flows (Ollama text, Ollama vision, Llama.cpp) and OCR logic from the codebase.
-- **Removed OCR Dependencies**: Uninstalled and removed `paddleocr` and `paddlepaddle` from `requirements.txt`.
-- **Deleted Legacy Providers and Services**:
-  - Removed `ollama_text.py`, `ollama_vision.py`, `llama_cpp_text.py`.
-  - Deleted the entire `backend/app/providers/ocr/` directory.
-  - Removed unused fallback logic (`llm_service.py`, `json_retry.py`).
-- **Pruned Domain Models and API Interfaces**:
-  - Cleaned `domain.py` by removing dead models (`OCRLine`, `OCRResult`, `VisionCaptionRaw`, etc.).
-  - Stripped out legacy metrics (`ocrMs`, `mergeMs`, `identityOcrMs`) from both the backend `Metrics` model and frontend TypeScript definitions (`StepScript.tsx`, `index.ts`).
-  - Removed `ProvidersResponse` and the `/system/providers` route.
-- **Cleaned Configuration**:
-  - Removed ~15 obsolete local-AI settings (chunk sizes, token limits, base URLs) from `.env`, `.env.example`, and `config.py`.
-- **Refined Tests and Documentation**:
-  - Fixed test assertions in `test_gemini_script_service.py` to match the cleaned vision-only identity fallback paths.
-  - Updated Agent guides (`AGENTS.md`, `BACKEND-AGENTS.md`, etc.) to remove all mentions of legacy OCR and local LLM routing.
-  - Deleted obsolete local-AI benchmarks (`vision-eval.md`).
-
-## Checkpoint: Render And Export (2026-04-22)
-
-### Completed Or Confirmed
-
-- Browser export path is active and can produce a final MP4 from the timeline.
-- FFmpeg core is bundled locally instead of fetched from CDN.
-- Browser render now surfaces FFmpeg failures with better error detail instead of only `Render failed`.
-- Render cleanup now deletes temporary clip files after each segment to reduce WASM FS pressure.
-- Official export now runs through backend render jobs with native `ffmpeg`.
-- Frontend now uploads one self-contained render payload to backend per export request.
-- Backend render jobs now support:
-  - progress phases
-  - result download
-  - cancellation
-  - ephemeral result retention with TTL cleanup
-- Backend render API is now active:
-  - `POST /api/v1/render/jobs`
-  - `GET /api/v1/render/jobs/{job_id}`
-  - `GET /api/v1/render/jobs/{job_id}/result`
-  - `POST /api/v1/render/jobs/{job_id}/cancel`
-- Frontend render step now uses backend export as primary path.
-- Browser fallback export now uses deterministic keyframed panel motion instead of single static frame per clip.
-- Render plan now carries motion metadata and stable file-key mapping so backend and browser paths share one source of truth.
-- Browser fallback progress now exposes clip animation/encode phases instead of one generic export state.
-- Voice sample static serving was fixed on the backend.
-- Voice sample assets now return a cross-origin policy compatible with frontend playback/preview.
-- `206 Partial Content` on sample WAV requests is expected and valid for browser audio streaming.
-- Frontend now shows per-clip voice generation progress instead of only a generic loading state.
-- Frontend agent guidance was refreshed to reflect the real product shape:
-  - browser-first for ingest/extract/edit
-  - backend-assisted for AI generation and TTS
-  - render/export-aware frontend architecture
-- A dedicated render/export rule section now exists in:
-  - [web-app/WEB-AGENTS.md](./web-app/WEB-AGENTS.md)
-- Stale F5 setup references were removed from:
-  - [setup.ps1](./setup.ps1)
-  - [setup.sh](./setup.sh)
-
-### Implemented From Approved Plans
-
-#### 1. Official Export Architecture
-
-Source of truth:
-- [PLAN.md](./PLAN.md)
-
-Implemented:
-- official MP4 export moved to backend async render jobs using native `ffmpeg`
-- browser render kept as fallback/preview only
-- frontend sends one self-contained render payload to backend
-- export flow exposes explicit progress, result preview/download, and cancel flow
-
-#### 2. Cinematic Browser Motion Set
-
-Source of truth:
-- [PLAN_EXPORT.md](./PLAN_EXPORT.md)
-
-Implemented:
-- browser export upgraded from static frames to deterministic keyframed motion
-- style target stays controlled and recap-oriented
-- hard cuts between clips remain in v1
-- no B-roll
-- no subtitle animation
-- motion metadata stays reusable at render-plan level
+- Upload and extraction stay browser-side.
+- Step Script sends panel image files to backend Gemini.
+- Step Voice runs through backend TTS routes.
+- Multi-scene voice generation uses `POST /api/v1/voice/generate-batch`.
+- Timeline state lives in the frontend store.
+- Official MP4 export runs through backend async native `ffmpeg` render jobs.
+- Remotion powers the preview/composition path and backend video production route.
+- Browser-side media work remains useful for preview/fallback, but backend render is the official export path.
 
 ## Current Milestones
 
 | Milestone | Status | Notes |
 | --- | --- | --- |
-| M0 Architecture | Done | FE-BE product structure is stable. |
-| M1 Extract | Done | Browser-side upload and extraction are active. |
+| M0 Architecture | Done | FE-BE structure is stable. |
+| M1 Upload/Extract | Done | Browser-side upload and extraction are active. |
 | M2 Script | Done | Backend Gemini route is the production script path. |
-| M3 Voice | Done | Production TTS is standardized on `VieNeu-TTS-0.3B` with cached preset `voice_default`. |
-| M4 Timeline | Done | Timeline editing now owns narration edits, clip actions, and export contract state from the frontend store. |
-| M5 Browser Export | Done | Browser export remains available as fallback with deterministic keyframed motion. |
-| M6 Native Export | Done | Backend async render jobs with native `ffmpeg` are now the official export path. |
-| M7 Motion Polish | Done | Browser fallback now ships cinematic panel motion with hard cuts. |
-| M8 Character System | Code Complete | All 4 phases implemented: heuristic block, anime face/head identity, cast-anchor propagation, DINOv2 hybrid embedding. Effective runtime quality depends on available dependencies (~6/10 baseline, up to 9/10 with full stack). |
-| M9 Cinematic Engine | Done | Remotion rendering with automated, AI-suggested CSS VFX, advanced transitions, and decoupled audio/visual playback. |
+| M3 Voice | Done | Backend voice generation is active, including batch generation for the Voice step. |
+| M4 Timeline | Done | Frontend store owns narration edits, clip ordering, duplicate/remove/reset/move actions, audio status, and render intent. |
+| M5 Backend Export | Done | Async render jobs with native `ffmpeg` are active. |
+| M6 Remotion Preview/Video | Done | Remotion player and server-side production route are wired. |
+| M7 Cinematic Effects | Done | Effect suggestion, VFX metadata, transitions, and Remotion composition support are active. |
+| M8 Dynamic Quality | Done | Remotion render commands use aspect-aware CRF and `yuv420p`. |
+| M9 Character Review | Dormant/WIP | Frontend character review code exists, but backend character routes are not registered in the current FastAPI app and the step is not in active navigation. |
+
+## Completed Checkpoints
+
+### Roadmap Sync And Follow-through (2026-05-07)
+
+- Added `POST /api/v1/voice/generate-batch`.
+- Added backend batch voice request/response models with per-item WAV payloads and TTS chunk diagnostics.
+- Updated the frontend Voice step so bulk generation uses one backend request.
+- Kept single-clip voice generation on `POST /api/v1/voice/generate`.
+- Added backend tests for voice batch generation.
+- Added Remotion quality flags:
+  - vertical output: `--crf=23 --pixel-format=yuv420p`
+  - horizontal output: `--crf=21 --pixel-format=yuv420p`
+- Added tests for Remotion quality flag selection.
+- Surfaced character diagnostics in the existing Character Review UI code.
+- Restored timeline editor actions in the frontend store:
+  - duplicate clip
+  - reset clip narration to auto baseline
+  - remove clip
+  - move clip
+- Fixed Windows test collection by replacing stdout/stderr wrapper replacement with `reconfigure()`.
+- Restored TTS runtime status behavior through `ProviderRegistry`.
+- Synced voice sample serving for `/assets/voice-samples/vieneu/voice-default.wav`.
+- Cleaned TypeScript build blockers from unused imports and Remotion Player typing.
+- Verified backend route coverage and frontend build.
+
+### Cinematic Pipeline (2026-05-04)
+
+- Added metadata-driven Remotion rendering.
+- Added transition presets:
+  - `crossfade`
+  - `smooth_zoom_fade`
+  - `dip_to_black`
+  - `hard_cut`
+- Added CSS/SVG VFX layers such as grain, rain, embers, camera shake, and edge glow.
+- Decoupled scene audio from visual transition wrappers to avoid audio cut-offs during fades.
+- Added backend effect suggestion route: `POST /api/v1/video/suggest-effects`.
+- Added Remotion path aliases for cleaner imports.
+
+### Render And Export
+
+- Backend render jobs are active:
+  - create job
+  - poll status
+  - stream result
+  - reveal result on Windows
+  - cancel job
+  - TTL cleanup
+- Frontend render submits a self-contained payload to the backend.
+- Render progress surfaces phases and details instead of one generic failure.
+- Browser preview/fallback remains deterministic at the render-plan level.
+
+### Script Generation
+
+- Backend Gemini is the production script path.
+- Script generation accepts multipart panel uploads and structured context.
+- Backend logs request, result, and error details for frontend inspection.
+- Async script jobs exist alongside the direct generate route.
+
+### Voice/TTS
+
+- Active generation provider is `vietvoice`.
+- Canonical voice key is `voice_default`.
+- Frontend and backend env defaults now use `vietvoice`.
+- Runtime status accepts `vieneu` as a compatibility alias, but generation should use `vietvoice`.
+- Voice sample assets are served with cross-origin headers for frontend preview.
+- Voice step uses batch generation for multiple clips and preserves the single route for one-off generation.
 
 ## Active API Surface
 
-- `POST /api/v1/characters/prepass`
-- `GET /api/v1/characters/review`
-- `POST /api/v1/characters/review/rename`
-- `POST /api/v1/characters/review/merge`
-- `POST /api/v1/characters/review/panel-mapping`
-- `POST /api/v1/characters/review/create-cluster`
-- `POST /api/v1/characters/review/status`
-- `GET /api/v1/characters/script-context`
+### Health
+
+- `GET /api/v1/health`
+
+### Script
+
 - `POST /api/v1/script/generate`
+- `POST /api/v1/script/jobs`
+- `GET /api/v1/script/jobs/{job_id}`
+- `GET /api/v1/script/jobs/{job_id}/result`
+- `POST /api/v1/script/jobs/{job_id}/cancel`
+
+### Voice
+
 - `GET /api/v1/voice/options`
 - `POST /api/v1/voice/generate`
+- `POST /api/v1/voice/generate-batch`
+
+### System
+
 - `GET /api/v1/system/tts`
+
+### Video / Remotion Production
+
 - `POST /api/v1/video/suggest-effects`
+- `POST /api/v1/video/tts-batch`
+- `POST /api/v1/video/produce`
+- `POST /api/v1/video/produce-from-narration`
+- `GET /api/v1/video/jobs/{job_id}`
+- `GET /api/v1/video/jobs/{job_id}/result`
+- `POST /api/v1/video/jobs/{job_id}/cancel`
+- `POST /api/v1/video/jobs/purge`
+
+### Render Jobs
+
 - `POST /api/v1/render/jobs`
 - `GET /api/v1/render/jobs/{job_id}`
 - `GET /api/v1/render/jobs/{job_id}/result`
+- `POST /api/v1/render/jobs/{job_id}/reveal`
 - `POST /api/v1/render/jobs/{job_id}/cancel`
 
-## Agent Workflow And Rule Audit
+### Dormant / Not Registered
 
-### What Still Fits
+The current FastAPI app does not include a character router. The frontend has character review code under `web-app/src/features/characters`, but these routes are not active:
 
-- Root router in [AGENTS.md](./AGENTS.md) still fits the repo well:
-  - frontend
-  - backend
-  - full-stack routing
-- Backend guide in [backend/BACKEND-AGENTS.md](./backend/BACKEND-AGENTS.md) still fits:
-  - API-first backend
-  - service-layer orchestration
-  - config/logging discipline
-  - queue/cancellation guidance
-- Shared project rules in [web-app/ai/project-rules.md](./web-app/ai/project-rules.md) still fit:
-  - separation of UI and orchestration
-  - explicit state handling
-  - memory-safe processing
+- `/api/v1/characters/prepass`
+- `/api/v1/characters/clusters`
+- `/api/v1/characters/rename`
+- `/api/v1/characters/merge`
+- `/api/v1/characters/split`
+- `/api/v1/characters/panel-mapping`
+- `/api/v1/characters/crop-mapping`
+- `/api/v1/characters/status`
 
-### Recently Updated
+## Runtime Requirements
 
-- [web-app/ai/design-rules.md](./web-app/ai/design-rules.md) was refreshed to describe the live workstation-style UI more accurately:
-  - premium dark creator tool
-  - denser control surfaces
-  - modular workstation layout
-  - restrained glow and glass usage
+### Frontend
 
-### Ongoing Documentation Rule
+- Node.js with npm workspaces.
+- Vite dev server for `web-app`.
 
-1. Keep setup guidance and root docs aligned with:
-   - VieNeu-only production TTS
-   - backend-native official export
-   - browser fallback render behavior
+### Backend
+
+- Python environment with `backend/requirements.txt`.
+- `AI_BACKEND_GEMINI_API_KEY` for script generation and effect suggestion.
+- Native `ffmpeg` in `PATH` or configured through `AI_BACKEND_RENDER_FFMPEG_PATH`.
+- Local VietVoice runtime dependencies for TTS.
+
+## Validation Snapshot
+
+Passing on `2026-05-07`:
+
+```bash
+python -m pytest backend/tests/test_routes.py backend/tests/test_render_routes.py backend/tests/test_render_queue.py backend/tests/test_voice_routes.py backend/tests/test_video_orchestrator.py -q
+npm --prefix web-app run build
+npm --prefix web-app test -- --run src/shared/storage/useRecapStore.test.ts
+```
+
+Observed but non-blocking:
+
+- `pytest-asyncio` warns about the future default fixture loop scope.
+- Vite warns that the main frontend chunk is larger than 500 kB.
 
 ## Current Product Conclusions
 
-1. Character review is now a first-class step between extraction and script generation.
-2. Backend prepass should prefer helping the user by clustering aggressively enough to be useful, while preserving manual override as the final source of truth.
-3. Character naming consistency now depends on backend-supplied script context, not prompt luck alone.
-4. Cache invalidation for character prepass must stay version-aware to avoid stale UI state.
-5. One TTS path only should remain active: `vieneu + voice_default`.
-6. `voice_default` must continue to be treated as a cached preset, not a per-request clone.
-7. Backend-native render is now the official export engine.
-8. Browser render remains useful as fallback/preview, but stays the heavier path for long timelines.
-9. Frontend workflow guidance and design guidance are now aligned more closely with the live workstation-style UI.
-10. Timeline editing is now consolidated around the Timeline & Render step, with reset/duplicate/remove clip actions and bulk stale-audio regeneration.
+1. The active product flow is `Upload -> Extract -> Script -> Voice -> Render`.
+2. Backend Gemini owns production script generation.
+3. Backend TTS owns voice generation; batch voice generation is the preferred path for multi-clip UI generation.
+4. Timeline editing is centralized in the frontend store.
+5. Backend native render is the official MP4 export path.
+6. Remotion is the cinematic preview/composition system and the video production renderer.
+7. TTS generation provider should be documented as `vietvoice`; `vieneu` remains a runtime/status compatibility label.
+8. Character review should not be documented as active until backend routes are restored and the step is wired into app navigation.
 
 ## Next Actions
 
-1. **[Planned Optimization] TTS Speed Upgrade for UI Step 4**: Refactor the frontend "Voice Generation" step to use the backend's `tts-batch` API instead of sequential single-scene requests. This will eliminate network overhead, leverage continuous GPU processing, provide a single progress bar UI, and achieve the exact same hyper-fast generation speed currently enjoyed by the background video export pipeline.
-2. **[Planned Optimization] Dynamic Video Size & Quality Tuning**: Update the backend Remotion render command to apply dynamic compression based on aspect ratio:
-   - For vertical formats (TikTok/Shorts, `height > width`), apply `--crf=23` or `--crf=24` with `--pixel-format=yuv420p` for aggressive size reduction (~40-50MB per 3 mins).
-   - For horizontal formats (YouTube, `width > height`), apply `--crf=21` with `--pixel-format=yuv420p` to preserve 1080p Full HD sharpness against heavy platform re-encoding (~70-90MB per 3 mins).
-3. Surface character diagnostics directly in the UI so users can see why panels were grouped or left unknown.
-4. Continue tuning character prepass thresholds on real chapter data to improve grouping recall without introducing destructive merges.
-5. Continue narration polish and usability improvements on top of the now-stable timeline editor and export architecture.
-6. Keep README, ROADMAP, setup scripts, and active env defaults synchronized whenever TTS, character-system, or export decisions change.
-7. Decide later whether backend-native render should adopt the same motion spec as browser fallback for parity.
-8. Monitor render-job stability, ffmpeg availability, and TTL cleanup behavior in longer real-world exports.
+1. Decide whether to restore the backend character router or remove dormant character UI code.
+2. If character review is restored, wire it into app navigation and add backend route tests before marking it active.
+3. Continue tuning narration editing and render usability now that timeline actions are restored.
+4. Add frontend code splitting for the large Vite output chunk.
+5. Keep README, env examples, ROADMAP, and agent guides synchronized whenever TTS, render, or active flow changes.
+6. Monitor longer real-world exports for ffmpeg availability, render job TTL cleanup, and host disk pressure.
 
 ## Open Risks
 
-- Heuristic character grouping is stronger now, but still depends on panel crops rather than a learned identity embedding model.
-- More aggressive auto-grouping increases usefulness, but also increases the risk of false merges on visually similar silhouettes.
-- Diagnostics exist in API payloads, but are not yet surfaced clearly in the frontend review UI.
-- Character review state correctness depends on keeping `chapterId`, extracted panel order, and prepass cache invalidation aligned.
-- Browser-side FFmpeg remains memory-heavy for long timelines even as fallback.
-- Backend-native export depends on a valid local `ffmpeg` binary path and host runtime availability.
-- Browser and backend render paths now share plan structure, but visual parity is not yet exact because motion is currently implemented only in browser fallback.
-- Rebuilding `voice_default` from a different reference source will change the production narration voice globally.
-- VieNeu standard mode still depends on a complete Python runtime with `torch`, `torchaudio`, `transformers`, `neucodec`, and `vieneu`.
+- Character review is currently not production-active because backend routes are missing.
+- Browser media processing can remain memory-heavy for long chapters.
+- Backend native export depends on a valid local `ffmpeg`.
+- Gemini requests depend on backend API key configuration and rate limits.
+- TTS runtime depends on local VietVoice dependencies and model/runtime availability.
+- Remotion preview/player and backend render share data concepts, but browser preview and exported MP4 can still diverge if composition props drift.

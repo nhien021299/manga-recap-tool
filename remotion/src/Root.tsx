@@ -31,7 +31,7 @@ export const RemotionRoot: React.FC = () => {
     <>
       <Composition
         id="ChapterRecap"
-        component={ChapterRecap}
+        component={ChapterRecap as unknown as React.ComponentType<Record<string, unknown>>}
         durationInFrames={totalFrames}
         fps={fps}
         width={width}

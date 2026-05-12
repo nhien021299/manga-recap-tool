@@ -3,6 +3,8 @@ import re
 import numpy as np
 import soundfile as sf
 
+from app.utils.dialogue_text import strip_duplicate_dialogue_from_narration, strip_speaker_prefix
+
 
 def normalize_tts_text(text: str) -> str:
     if not text:
@@ -26,15 +28,15 @@ def merge_dialogue_into_narration(narration: str, dialogue: str | None, speaker:
     if not dialogue:
         return narration
 
-    n = narration.strip()
+    n = strip_duplicate_dialogue_from_narration(narration, dialogue, speaker)
     if n and n[-1] not in ".!?":
         n += "."
 
-    d = dialogue.strip()
-    word_count = count_words(d)
+    d = strip_speaker_prefix(dialogue, speaker)
     name = speaker.strip() if speaker else "Hắn"
 
-    return f"{n} {name} nói. ...{d}"
+    prefix = f"{n} " if n else ""
+    return f"{prefix}{name} nói. ...{d}"
 
 def split_into_tts_chunks(text: str, min_words=6, ideal_max=18, hard_max=26) -> list[str]:
     # Basic sentence split.

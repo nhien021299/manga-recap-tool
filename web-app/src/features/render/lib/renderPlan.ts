@@ -9,6 +9,7 @@ import type {
 } from "@/shared/types";
 import { resolveSceneEffects } from "./effectResolver";
 import type { SceneType, SceneMood, MotionPreset, TransitionPreset } from "./effectSchema";
+import { stripDuplicateDialogueFromNarration, stripSpeakerPrefix } from "./dialogueText";
 
 const MIN_SILENT_CLIP_MS = 1500;
 const DEFAULT_FRAME_RATE = 30;
@@ -211,28 +212,11 @@ export const buildRenderPlan = (
       const dialogueSpeaker = (item.scriptItem.dialogue_speaker || "").trim();
       const hasDialogue = dialogueText.length > 0;
 
-      // When dialogue exists, strip it from narration to avoid duplication.
-      // The TTS audio merges narration + dialogue, but subtitles should show them separately.
-      let pureNarration = narrationText;
-      if (hasDialogue) {
-        // Remove dialogue text from narration if it appears inside it
-        pureNarration = narrationText.replace(dialogueText, "").trim();
-        // Also try removing common merged patterns like "Speaker nói: dialogue"
-        const speakerPatterns = dialogueSpeaker
-          ? [
-              `${dialogueSpeaker} nói: ${dialogueText}`,
-              `${dialogueSpeaker} nói ${dialogueText}`,
-              `${dialogueSpeaker}: ${dialogueText}`,
-            ]
-          : [];
-        for (const pattern of speakerPatterns) {
-          if (pureNarration.includes(pattern)) {
-            pureNarration = pureNarration.replace(pattern, "").trim();
-          }
-        }
-        // Clean up trailing/leading punctuation artifacts
-        pureNarration = pureNarration.replace(/[,.:;]\s*$/, "").trim();
-      }
+      const pureNarration = stripDuplicateDialogueFromNarration(
+        narrationText,
+        dialogueText,
+        dialogueSpeaker,
+      );
 
       const hasPureNarration = pureNarration.length > 0;
 
@@ -244,7 +228,8 @@ export const buildRenderPlan = (
 
       // Narration overlays (subtitle_stroke style — bold, no background, heavy outline)
       if (hasPureNarration) {
-        const chunks = item.audioChunks && item.audioChunks.length > 0 
+        const canReuseAudioChunks = !hasDialogue && pureNarration === narrationText;
+        const chunks = canReuseAudioChunks && item.audioChunks && item.audioChunks.length > 0
           ? item.audioChunks 
           : pureNarration.split(/(?<=[.!?])\s+/).map((t, i) => ({ i: i + 1, text: t, w: t.split(/\s+/).length }));
 
@@ -265,8 +250,9 @@ export const buildRenderPlan = (
 
       // Dialogue overlays (subtitle_stroke with speaker prefix)
       if (hasDialogue) {
+        const dialogueDisplayText = stripSpeakerPrefix(dialogueText, dialogueSpeaker);
         const prefix = dialogueSpeaker ? `"${dialogueSpeaker}: ` : `"`;
-        const dialogueChunks = dialogueText.split(/(?<=[.!?])\s+/);
+        const dialogueChunks = dialogueDisplayText.split(/(?<=[.!?])\s+/);
         const dialogueTotalWords = dialogueChunks.reduce((acc, t) => acc + t.split(/\s+/).length, 0);
         let currentPct = narrationEndPct;
         for (let i = 0; i < dialogueChunks.length; i++) {

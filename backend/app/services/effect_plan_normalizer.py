@@ -20,6 +20,7 @@ from app.models.video import (
     TextOverlay,
     VideoDirection
 )
+from app.utils.dialogue_text import strip_duplicate_dialogue_from_narration
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +93,7 @@ class EffectPlanNormalizer:
 
             tts = tts_map.get(scene_num)
             audio_ms = tts.audio_duration_ms if tts else 0
-            dialogue_ms = tts.dialogue_duration_ms if tts else 0
+            dialogue_ms = (tts.dialogue_duration_ms or 0) if tts else 0
             total_audio_ms = audio_ms + dialogue_ms
 
             # Safe duration clamp
@@ -104,15 +105,11 @@ class EffectPlanNormalizer:
             
             # Narration
             if scene_input.narration:
-                # To prevent duplicate dialogue in narration, we can strip the dialogue if it exists
-                # Or just display it. We'll strip it if it perfectly matches.
-                narration_text = scene_input.narration
-                if scene_input.dialogue and scene_input.dialogue in narration_text:
-                    narration_text = narration_text.replace(scene_input.dialogue, "").strip()
-                
-                # Check for quotes if dialogue isn't perfectly stripped
-                if scene_input.dialogue:
-                    narration_text = re.sub(r'["\'].*?["\']', '', narration_text).strip()
+                narration_text = strip_duplicate_dialogue_from_narration(
+                    scene_input.narration,
+                    scene_input.dialogue,
+                    scene_input.dialogue_speaker,
+                )
 
                 if narration_text:
                     text_overlays.append(TextOverlay(
@@ -197,13 +194,19 @@ class EffectPlanNormalizer:
 
         text_overlays = []
         if scene_input.narration:
-            text_overlays.append(TextOverlay(
-                text=scene_input.narration,
-                start_pct=0.05,
-                end_pct=0.95,
-                style="subtitle",
-                position="bottom_center"
-            ))
+            narration_text = strip_duplicate_dialogue_from_narration(
+                scene_input.narration,
+                scene_input.dialogue,
+                scene_input.dialogue_speaker,
+            )
+            if narration_text:
+                text_overlays.append(TextOverlay(
+                    text=narration_text,
+                    start_pct=0.05,
+                    end_pct=0.95,
+                    style="subtitle",
+                    position="bottom_center"
+                ))
 
         return SceneDirection(
             scene=scene_input.scene,

@@ -7,7 +7,10 @@ Manages job state and progress tracking.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
+import re
+import subprocess
 import uuid
 from pathlib import Path
 
@@ -42,6 +45,7 @@ class VideoOrchestrator:
         self.video_director_service = video_director_service
         self._jobs: dict[str, _JobState] = {}
         self._tasks: dict[str, asyncio.Task] = {}
+        self._render_processes: dict[str, subprocess.Popen] = {}
 
     def _video_jobs_root(self) -> Path:
         return self.settings.render_temp_root.parent / "video-jobs"
@@ -65,6 +69,8 @@ class VideoOrchestrator:
         """Stop all running jobs and delete all temporary job files."""
         # 1. Stop all tasks
         cancelled_count = 0
+        for job_id in list(self._render_processes):
+            self._terminate_running_process(job_id)
         for task in self._tasks.values():
             task.cancel()
             cancelled_count += 1
@@ -121,6 +127,7 @@ class VideoOrchestrator:
             # Actually cancel the background task
             task = self._tasks.get(job_id)
             if task:
+                self._terminate_running_process(job_id)
                 task.cancel()
                 logger.info("Video background task cancelled job_id=%s", job_id)
             
@@ -277,7 +284,6 @@ class VideoOrchestrator:
         """Execute Remotion render and return the output path."""
         import json
         import shutil
-        import subprocess
 
         job_dir = self._video_jobs_root() / job_id
         output_path = job_dir / "output" / f"chapter_{package.chapter}_final.mp4"
@@ -373,26 +379,37 @@ class VideoOrchestrator:
             f"--props={props_path}",
             "--codec=h264",
             "--image-format=jpeg",
+            "--jpeg-quality=100",
             "--log=verbose",
+            "--gl=angle",
             *self._remotion_quality_flags(width=direction.width, height=direction.height),
         ]
 
         logger.info("Remotion render command: %s", " ".join(render_cmd))
 
-        def run_remotion():
-            return subprocess.run(
-                render_cmd,
-                cwd=str(remotion_root),
-                capture_output=True,
+        total_frames = self._estimate_total_frames(direction)
+        remotion_task = asyncio.create_task(
+            asyncio.to_thread(
+                self._run_remotion_command_streaming,
+                job_id=job_id,
+                render_cmd=render_cmd,
+                remotion_root=remotion_root,
+                total_frames=total_frames,
+                state=state,
             )
+        )
 
-        process = await asyncio.to_thread(run_remotion)
+        try:
+            return_code, output_lines = await remotion_task
+        except asyncio.CancelledError:
+            self._terminate_running_process(job_id)
+            with contextlib.suppress(BaseException):
+                await asyncio.shield(remotion_task)
+            raise
 
-        if process.returncode != 0:
-            stderr_text = process.stderr.decode("utf-8", errors="replace").strip()
-            stdout_text = process.stdout.decode("utf-8", errors="replace").strip()
-            detail = stderr_text or stdout_text or f"Remotion exit code {process.returncode}"
-            logger.error("Remotion render stderr:\n%s", detail[:2000])
+        if return_code != 0:
+            detail = "\n".join(output_lines[-20:]).strip() or f"Remotion exit code {return_code}"
+            logger.error("Remotion render output:\n%s", detail[:2000])
             raise RuntimeError(f"Remotion render failed: {detail[:500]}")
 
         if not output_path.exists():
@@ -410,6 +427,157 @@ class VideoOrchestrator:
         state.progress = 95
         state.detail = "Render complete, finalizing..."
         return output_path
+
+    def _run_remotion_command_streaming(
+        self,
+        *,
+        job_id: str,
+        render_cmd: list[str],
+        remotion_root: Path,
+        total_frames: int,
+        state: _JobState,
+    ) -> tuple[int, list[str]]:
+        creationflags = subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW") else 0
+        process = subprocess.Popen(
+            render_cmd,
+            cwd=str(remotion_root),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            bufsize=0,
+            creationflags=creationflags,
+        )
+        self._render_processes[job_id] = process
+
+        output_lines: list[str] = []
+        last_progress = state.progress
+        pending_output = ""
+
+        try:
+            if process.stdout:
+                while True:
+                    raw_chunk = process.stdout.read(4096)
+                    if not raw_chunk:
+                        break
+                    pending_output += raw_chunk.decode("utf-8", errors="replace")
+                    parts = re.split(r"[\r\n]+", pending_output)
+                    pending_output = parts.pop() if parts else ""
+                    for line in parts:
+                        last_progress = self._consume_remotion_output_line(
+                            line=line.strip(),
+                            output_lines=output_lines,
+                            total_frames=total_frames,
+                            state=state,
+                            last_progress=last_progress,
+                        )
+
+                if pending_output.strip():
+                    self._consume_remotion_output_line(
+                        line=pending_output.strip(),
+                        output_lines=output_lines,
+                        total_frames=total_frames,
+                        state=state,
+                        last_progress=last_progress,
+                    )
+
+            return process.wait(), output_lines
+        finally:
+            with contextlib.suppress(Exception):
+                if process.stdout:
+                    process.stdout.close()
+            self._render_processes.pop(job_id, None)
+
+    def _terminate_running_process(self, job_id: str) -> None:
+        process = self._render_processes.get(job_id)
+        if process is None or process.poll() is not None:
+            return
+
+        process.terminate()
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait(timeout=5)
+
+    def _consume_remotion_output_line(
+        self,
+        *,
+        line: str,
+        output_lines: list[str],
+        total_frames: int,
+        state: _JobState,
+        last_progress: int,
+    ) -> int:
+        if not line:
+            return last_progress
+
+        output_lines.append(line)
+        if len(output_lines) > 80:
+            del output_lines[:-80]
+
+        remotion_progress = self._parse_remotion_progress(line, total_frames)
+        if remotion_progress is None:
+            return last_progress
+
+        mapped_progress = min(95, 68 + round(remotion_progress * 27))
+        if mapped_progress <= last_progress:
+            return last_progress
+
+        state.progress = mapped_progress
+        state.detail = self._build_remotion_progress_detail(
+            line,
+            remotion_progress,
+            total_frames,
+        )
+        return mapped_progress
+
+    def _estimate_total_frames(self, direction: VideoDirection) -> int:
+        fps = max(1, direction.fps)
+        current_frame = 0
+        last_end_frame = 1
+        for scene in direction.scenes:
+            scene_frames = max(1, round((scene.total_duration_ms / 1000) * fps))
+            last_end_frame = current_frame + scene_frames
+            transition_ms = scene.transition_out.duration_ms if scene.transition_out else 0
+            overlap = max(0, round((transition_ms / 1000) * fps))
+            current_frame += max(1, scene_frames - overlap)
+        return max(1, last_end_frame)
+
+    def _parse_remotion_progress(self, line: str, total_frames: int) -> float | None:
+        normalized = line.replace("\x1b", "")
+        percent_match = re.search(r"(\d{1,3}(?:\.\d+)?)\s*%", normalized)
+        if percent_match:
+            percent = float(percent_match.group(1))
+            if 0 <= percent <= 100:
+                return percent / 100
+
+        frame_pair = re.search(r"(\d+)\s*/\s*(\d+)", normalized)
+        if frame_pair:
+            current = int(frame_pair.group(1))
+            total = max(1, int(frame_pair.group(2)))
+            return max(0.0, min(1.0, current / total))
+
+        frame_match = re.search(r"(?:frame|rendered)\D+(\d+)", normalized, flags=re.IGNORECASE)
+        if frame_match:
+            current = int(frame_match.group(1))
+            return max(0.0, min(1.0, current / max(1, total_frames)))
+
+        return None
+
+    def _build_remotion_progress_detail(
+        self,
+        line: str,
+        remotion_progress: float,
+        total_frames: int,
+    ) -> str:
+        frame_pair = re.search(r"(\d+)\s*/\s*(\d+)", line)
+        if frame_pair:
+            return f"Rendering Remotion frame {frame_pair.group(1)}/{frame_pair.group(2)}..."
+
+        frame_match = re.search(r"(?:frame|rendered)\D+(\d+)", line, flags=re.IGNORECASE)
+        if frame_match:
+            return f"Rendering Remotion frame {frame_match.group(1)}/{total_frames}..."
+
+        return f"Rendering Remotion... {round(remotion_progress * 100)}%"
 
     def _remotion_quality_flags(self, *, width: int, height: int) -> list[str]:
         crf = "23" if height > width else "21"

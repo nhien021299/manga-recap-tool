@@ -20,12 +20,12 @@ export const VfxLayer: React.FC<VfxLayerProps> = ({ vfxTags, frame, durationInFr
           style={{
             position: "absolute",
             inset: 0,
-            opacity: 0.06,
+            opacity: 0.045,
             backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
             backgroundSize: "128px 128px",
             // Animate grain by shifting the background position each frame
             backgroundPosition: `${(frame * 73) % 128}px ${(frame * 47) % 128}px`,
-            mixBlendMode: "overlay",
+            mixBlendMode: "soft-light",
           }}
         />
       )}
@@ -39,8 +39,8 @@ export const VfxLayer: React.FC<VfxLayerProps> = ({ vfxTags, frame, durationInFr
               top: 0,
               left: 0,
               right: 0,
-              height: "6%",
-              background: "#000",
+              height: "3.5%",
+              background: "rgba(0,0,0,0.72)",
             }}
           />
           <div
@@ -49,8 +49,8 @@ export const VfxLayer: React.FC<VfxLayerProps> = ({ vfxTags, frame, durationInFr
               bottom: 0,
               left: 0,
               right: 0,
-              height: "6%",
-              background: "#000",
+              height: "3.5%",
+              background: "rgba(0,0,0,0.72)",
             }}
           />
         </>
@@ -62,17 +62,17 @@ export const VfxLayer: React.FC<VfxLayerProps> = ({ vfxTags, frame, durationInFr
           style={{
             position: "absolute",
             inset: 0,
-            opacity: 0.35,
+            opacity: 0.24,
             background: `repeating-linear-gradient(
               ${100 + Math.sin(progress * Math.PI * 0.5) * 5}deg,
               transparent,
               transparent 18px,
-              rgba(174,194,224,0.18) 18px,
-              rgba(174,194,224,0.18) 19px
+              rgba(174,194,224,0.13) 18px,
+              rgba(174,194,224,0.13) 19px
             )`,
             // Rain falls by shifting background
             backgroundPosition: `0px ${frame * 12}px`,
-            mixBlendMode: "screen",
+            mixBlendMode: "normal",
           }}
         />
       )}
@@ -116,7 +116,7 @@ export const VfxLayer: React.FC<VfxLayerProps> = ({ vfxTags, frame, durationInFr
               right: 0,
               height: "25%",
               background:
-                "linear-gradient(to top, rgba(255,80,0,0.12), transparent)",
+                "linear-gradient(to top, rgba(255,100,30,0.055), transparent)",
               filter: "blur(20px)",
             }}
           />
@@ -137,8 +137,8 @@ export const VfxLayer: React.FC<VfxLayerProps> = ({ vfxTags, frame, durationInFr
                   height: size,
                   borderRadius: "50%",
                   background: `hsl(${hue}, 100%, 55%)`,
-                  boxShadow: `0 0 ${size * 2}px hsl(${hue}, 100%, 45%)`,
-                  opacity: 0.5 + Math.sin(frame * 0.3 + i) * 0.3,
+                  boxShadow: `0 0 ${size * 1.5}px hsla(${hue}, 100%, 45%, 0.55)`,
+                  opacity: 0.32 + Math.sin(frame * 0.3 + i) * 0.16,
                   filter: "blur(0.5px)",
                 }}
               />
@@ -158,7 +158,7 @@ export const VfxLayer: React.FC<VfxLayerProps> = ({ vfxTags, frame, durationInFr
               right: 0,
               height: "35%",
               background:
-                "linear-gradient(to top, rgba(180,200,230,0.12) 0%, transparent 100%)",
+                "linear-gradient(to top, rgba(205,220,245,0.065) 0%, transparent 100%)",
               filter: "blur(30px)",
               transform: `translateX(${Math.sin(progress * Math.PI * 2) * 20}px)`,
             }}
@@ -171,7 +171,7 @@ export const VfxLayer: React.FC<VfxLayerProps> = ({ vfxTags, frame, durationInFr
               right: 0,
               height: "20%",
               background:
-                "linear-gradient(to top, rgba(200,210,240,0.08) 0%, transparent 100%)",
+                "linear-gradient(to top, rgba(220,230,250,0.045) 0%, transparent 100%)",
               filter: "blur(40px)",
               transform: `translateX(${Math.cos(progress * Math.PI * 2) * 30}px)`,
             }}
@@ -186,7 +186,7 @@ export const VfxLayer: React.FC<VfxLayerProps> = ({ vfxTags, frame, durationInFr
             position: "absolute",
             inset: 0,
             background:
-              "radial-gradient(ellipse at 50% 80%, rgba(0,0,0,0.35) 0%, transparent 55%)",
+              "radial-gradient(ellipse at 50% 80%, rgba(0,0,0,0.14) 0%, transparent 55%)",
             filter: "blur(25px)",
             transform: `translateY(${Math.sin(progress * Math.PI) * -10}px)`,
           }}
@@ -204,7 +204,7 @@ export const VfxLayer: React.FC<VfxLayerProps> = ({ vfxTags, frame, durationInFr
               width: "22%",
               height: "22%",
               background:
-                "radial-gradient(circle, rgba(120,0,0,0.5) 0%, transparent 65%)",
+                "radial-gradient(circle, rgba(160,20,20,0.16) 0%, transparent 65%)",
               filter: "blur(6px)",
             }}
           />
@@ -216,7 +216,7 @@ export const VfxLayer: React.FC<VfxLayerProps> = ({ vfxTags, frame, durationInFr
               width: "16%",
               height: "16%",
               background:
-                "radial-gradient(circle, rgba(120,0,0,0.35) 0%, transparent 65%)",
+                "radial-gradient(circle, rgba(160,20,20,0.12) 0%, transparent 65%)",
               filter: "blur(8px)",
             }}
           />
@@ -229,13 +229,13 @@ export const VfxLayer: React.FC<VfxLayerProps> = ({ vfxTags, frame, durationInFr
           style={{
             position: "absolute",
             inset: 0,
-            opacity: 0.2,
+            opacity: 0.16,
             background: `repeating-linear-gradient(
               ${85 + Math.sin(frame * 0.2) * 3}deg,
               transparent,
               transparent 8px,
-              rgba(255,255,255,0.08) 8px,
-              rgba(255,255,255,0.08) 9px
+              rgba(255,255,255,0.07) 8px,
+              rgba(255,255,255,0.07) 9px
             )`,
             backgroundPosition: `0px ${frame * 8}px`,
           }}
@@ -249,8 +249,8 @@ export const VfxLayer: React.FC<VfxLayerProps> = ({ vfxTags, frame, durationInFr
             position: "absolute",
             inset: 0,
             background:
-              "radial-gradient(ellipse at 50% 30%, rgba(255,200,100,0.08) 0%, transparent 60%)",
-            opacity: 0.6 + Math.sin(progress * Math.PI * 2) * 0.3,
+              "radial-gradient(ellipse at 50% 30%, rgba(255,220,150,0.045) 0%, transparent 60%)",
+            opacity: 0.42 + Math.sin(progress * Math.PI * 2) * 0.12,
           }}
         />
       )}
@@ -261,9 +261,9 @@ export const VfxLayer: React.FC<VfxLayerProps> = ({ vfxTags, frame, durationInFr
           style={{
             position: "absolute",
             inset: 0,
-            background: "rgba(180,0,30,0.04)",
-            opacity: 0.4 + Math.sin(frame * 0.15) * 0.4,
-            mixBlendMode: "color",
+            background: "rgba(255,80,100,0.025)",
+            opacity: 0.2 + Math.sin(frame * 0.15) * 0.12,
+            mixBlendMode: "normal",
           }}
         />
       )}

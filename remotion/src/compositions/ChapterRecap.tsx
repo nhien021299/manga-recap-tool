@@ -40,7 +40,7 @@ export const ChapterRecap: React.FC<VideoDirectionProps> = (props) => {
   const sceneTiming = calculateSceneTiming(scenes, fps);
 
   return (
-    <AbsoluteFill style={{ backgroundColor: "#040810" }}>
+    <AbsoluteFill style={{ backgroundColor: "#080b12" }}>
       {sceneTiming.map((timing, index) => {
         const direction = scenes[index];
         const asset = assetMap.get(direction.scene);

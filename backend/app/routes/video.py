@@ -284,6 +284,25 @@ async def get_video_job_result(
     )
 
 
+@router.post("/jobs/{job_id}/reveal")
+async def reveal_video_job_result(
+    job_id: str,
+    video_orchestrator=Depends(get_video_orchestrator),
+):
+    """Open the folder containing the final rendered video in the OS."""
+    import subprocess
+    result_path = video_orchestrator.get_result_path(job_id)
+    if result_path is None:
+        raise HTTPException(status_code=404, detail="Video job not found or not ready.")
+
+    try:
+        subprocess.Popen(f'explorer /select,"{str(result_path)}"')
+        return {"status": "success", "message": "Folder opened"}
+    except Exception as e:
+        logger.error("Failed to open folder: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to open folder.")
+
+
 @router.post("/jobs/purge")
 async def purge_video_data(
     video_orchestrator=Depends(get_video_orchestrator),

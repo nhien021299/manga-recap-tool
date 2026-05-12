@@ -20,6 +20,12 @@ import type { KeyframeEffect } from "../types/direction";
 import { VfxLayer } from "../effects/vfx/VfxLayer";
 import { resolveAssetPath } from "../utils/resolveAsset";
 
+const DISABLED_VIDEO_DARKENING_VFX = new Set([
+  "letterbox",
+  "dark_smoke",
+  "color_pulse",
+]);
+
 interface SceneImageProps {
   imagePath: string;
   keyframes: KeyframeEffect[];
@@ -49,24 +55,35 @@ export const SceneImage: React.FC<SceneImageProps> = ({
     motionIntensity,
   );
 
-  // Color grade filter
   const colorFilter = getColorGradeFilter(colorGrade);
+  const backgroundFilter = "blur(34px) brightness(0.62) saturate(1.08)";
+  const safeVfxTags = vfxTags.filter((tag) => !DISABLED_VIDEO_DARKENING_VFX.has(tag));
 
   return (
     <AbsoluteFill>
       {/* ────── Layer 1: Blurred background fill ────── */}
-      {/* Uses the same scene image, scaled up + heavily blurred to fill 16:9 */}
-      <AbsoluteFill>
-        <Img
-          src={src}
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            filter: `blur(40px) brightness(0.28) saturate(1.3) ${colorFilter}`,
-            transform: "scale(1.2)", // prevent blur edge gaps
-          }}
-        />
+      <AbsoluteFill
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          overflow: "hidden",
+          transform: "scale(1.12)",
+          filter: backgroundFilter,
+        }}
+      >
+        {[0, 1, 2].map((index) => (
+          <Img
+            key={index}
+            src={src}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              objectPosition: index === 0 ? "left center" : index === 1 ? "center center" : "right center",
+              transform: index === 1 ? "scaleX(-1)" : undefined,
+            }}
+          />
+        ))}
       </AbsoluteFill>
 
       {/* ────── Layer 2: Gradient overlay on background ────── */}
@@ -74,7 +91,7 @@ export const SceneImage: React.FC<SceneImageProps> = ({
       <AbsoluteFill
         style={{
           background:
-            "linear-gradient(180deg, rgba(4,6,12,0.45) 0%, rgba(4,6,12,0.25) 40%, rgba(4,6,12,0.45) 100%)",
+            "linear-gradient(180deg, rgba(4,6,12,0.18) 0%, rgba(4,6,12,0.08) 45%, rgba(4,6,12,0.28) 100%)",
         }}
       />
 
@@ -100,10 +117,9 @@ export const SceneImage: React.FC<SceneImageProps> = ({
           <Img
             src={src}
             style={{
-              maxWidth: "auto",
-              height: "100%",
+              maxWidth: "100%",
+              maxHeight: "100%",
               objectFit: "contain",
-              filter: colorFilter || undefined,
             }}
           />
         </div>
@@ -113,35 +129,22 @@ export const SceneImage: React.FC<SceneImageProps> = ({
       <AbsoluteFill
         style={{
           background:
-            "radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.55) 100%)",
+            "radial-gradient(ellipse at center, transparent 52%, rgba(0,0,0,0.28) 100%)",
           pointerEvents: "none",
         }}
       />
 
       {/* ────── Layer 5: VFX overlays ────── */}
-      <VfxLayer vfxTags={vfxTags} frame={frame} durationInFrames={durationInFrames} />
+      <VfxLayer vfxTags={safeVfxTags} frame={frame} durationInFrames={durationInFrames} />
     </AbsoluteFill>
   );
 };
 
 /* ═══════════════════════════════════════════════════════════════
-   Color Grade Filters
+   Color Grade Filters (Only used for background or removed if needed)
    ═══════════════════════════════════════════════════════════════ */
 
 function getColorGradeFilter(grade: string): string {
-  switch (grade) {
-    case "warm_firelight":
-      return "sepia(0.15) saturate(1.2) brightness(1.05)";
-    case "cold_blue":
-      return "saturate(0.85) hue-rotate(10deg) brightness(0.95)";
-    case "cold_dusk":
-      return "saturate(0.8) hue-rotate(15deg) brightness(0.9)";
-    case "dark_jade":
-      return "saturate(0.9) hue-rotate(25deg) brightness(0.85)";
-    case "blood_amber":
-      return "sepia(0.25) saturate(1.3) hue-rotate(-10deg) brightness(0.9)";
-    case "neutral":
-    default:
-      return "";
-  }
+  // Filters removed from main image per user request
+  return "";
 }

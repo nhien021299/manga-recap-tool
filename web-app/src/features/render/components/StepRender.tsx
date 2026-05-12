@@ -24,10 +24,9 @@ import type { VideoDirectionProps, SceneDirection, SceneAsset } from "@remotion-
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
-  revealRenderResult,
   resolveRenderResultUrl,
 } from "@/features/render/api/renderApi";
-import { submitNarrationProduction, pollVideoJobStatus, cancelVideoJob, purgeVideoData, suggestEffectMetadata } from "@/features/script/api/scriptApi";
+import { submitNarrationProduction, pollVideoJobStatus, cancelVideoJob, purgeVideoData, suggestEffectMetadata, revealVideoResult } from "@/features/script/api/scriptApi";
 import { buildRenderPlan, validateRenderPlan } from "@/features/render/lib/renderPlan";
 import { useVoiceGeneration } from "@/features/voice/hooks/useVoiceGeneration";
 import { useRecapStore } from "@/shared/storage/useRecapStore";
@@ -221,6 +220,7 @@ export function StepRender() {
           narration: item.scriptItem.voiceover_text,
           duration_seconds: item.audioDuration || 0,
           dialogue: item.scriptItem.dialogue_text || null,
+          dialogue_speaker: item.scriptItem.dialogue_speaker || null,
         }));
 
       const response = await suggestEffectMetadata(config.apiBaseUrl, scenes);
@@ -279,6 +279,7 @@ export function StepRender() {
             narration: item.scriptItem.voiceover_text,
             duration_seconds: item.audioDuration || 0,
             dialogue: item.scriptItem.dialogue_text || null,
+            dialogue_speaker: item.scriptItem.dialogue_speaker || null,
             scene_type: item.sceneType,
             mood: item.mood,
             motion_preset: item.motionPreset,
@@ -378,21 +379,29 @@ export function StepRender() {
     if (!jobId) return;
 
     try {
-      await revealRenderResult(config.apiBaseUrl, jobId);
+      await revealVideoResult(config.apiBaseUrl, jobId);
     } catch (error) {
       setRenderError(describeRenderError(error));
     }
   };
 
-  const handleDownloadResult = () => {
+  const handleDownloadResult = async () => {
     if (!previewUrl) return;
-    const anchor = document.createElement("a");
-    anchor.href = previewUrl;
-    anchor.download = "manga-recap-export.mp4";
-    anchor.rel = "noopener";
-    document.body.append(anchor);
-    anchor.click();
-    anchor.remove();
+    try {
+      const response = await fetch(previewUrl);
+      if (!response.ok) throw new Error("Tải file thất bại.");
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = blobUrl;
+      anchor.download = `manga-recap-${backendStatus?.jobId || "export"}.mp4`;
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    } catch (error) {
+      setRenderError(describeRenderError(error));
+    }
   };
 
   const blockingIssues = [...validationErrors, ...(renderError ? [renderError] : [])];

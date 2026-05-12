@@ -260,6 +260,24 @@ export async function purgeVideoData(apiBaseUrl: string): Promise<any> {
 }
 
 /**
+ * Open the folder containing the final rendered video in the OS.
+ */
+export async function revealVideoResult(apiBaseUrl: string, jobId: string): Promise<any> {
+  const base = normalizeBaseUrl(apiBaseUrl);
+  try {
+    const response = await fetch(`${base}/api/v1/video/jobs/${jobId}/reveal`, {
+      method: "POST",
+    });
+    if (!response.ok) {
+      throw new Error(await parseResponseError(response));
+    }
+    return response.json();
+  } catch (error) {
+    throw parseFetchError(error, apiBaseUrl);
+  }
+}
+
+/**
  * Suggest cinematic effects for a narration package using Gemini.
  */
 export async function suggestEffectMetadata(

@@ -228,9 +228,11 @@ function getOverlayStyle(
           ...commonFont,
           color: "#050A12",
           fontSize: isPortrait ? 38 : 34,
-          fontWeight: 800,
+          fontWeight: 700,
           fontStyle: "italic",
           lineHeight: 1.36,
+          letterSpacing: 0,
+          wordSpacing: "3px",
         },
       };
 
@@ -256,15 +258,16 @@ function getOverlayStyle(
           ...commonFont,
           color: "#FFFFFF",
           fontSize: isPortrait ? 50 : 46,
-          fontWeight: 900,
+          fontWeight: 800,
           lineHeight: 1.22,
           WebkitTextStroke: isPortrait
-            ? "3.5px rgba(0,0,0,0.95)"
-            : "3px rgba(0,0,0,0.95)",
+            ? "3px rgba(0,0,0,0.95)"
+            : "2.6px rgba(0,0,0,0.95)",
           paintOrder: "stroke fill",
           textShadow:
-            "0 2px 0 rgba(0,0,0,0.85), 0 4px 0 rgba(0,0,0,0.6), 0 6px 14px rgba(0,0,0,0.5)",
-          letterSpacing: "-0.3px",
+            "0 1px 0 rgba(0,0,0,0.82), 0 3px 0 rgba(0,0,0,0.52), 0 5px 12px rgba(0,0,0,0.45)",
+          letterSpacing: 0,
+          wordSpacing: "4px",
         },
       };
 
